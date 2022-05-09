@@ -21,8 +21,7 @@ type Client struct {
 	ctx        context.Context
 }
 
-func NewClient(host, apiKey string, insecure bool) *Client {
-
+func NewClientWithContext(ctx context.Context, host, apiKey string, insecure bool) *Client {
 	tr := http.DefaultTransport.(*http.Transport)
 	tr.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: insecure,
@@ -36,8 +35,12 @@ func NewClient(host, apiKey string, insecure bool) *Client {
 		Host:   host,
 		APIkey: apiKey,
 		Base:   DefaultAPIBase,
-		ctx:    context.Background(),
+		ctx:    ctx,
 	}
+}
+
+func NewClient(host, apiKey string, insecure bool) *Client {
+	return NewClientWithContext(context.Background(), host, apiKey, insecure)
 }
 
 func (c *Client) ImportLab(topo string) (*Lab, error) {

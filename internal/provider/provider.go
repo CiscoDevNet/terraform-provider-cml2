@@ -62,7 +62,8 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	// initialize the CML2 API client
-	p.client = cmlclient.NewClient(
+	p.client = cmlclient.NewClientWithContext(
+		ctx,
 		data.Address.Value,
 		data.Token.Value,
 		data.SkipVerify.Value,

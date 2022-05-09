@@ -14,8 +14,8 @@ description: |-
 
 ```terraform
 provider "cml2" {
-  address     = "address of cml2 host, https://"
-  token       = "jwt"
+  address     = var.cml_hostname
+  token       = var.cml_token
   skip_verify = true
 }
 ```

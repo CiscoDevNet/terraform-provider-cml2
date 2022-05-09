@@ -38,6 +38,8 @@ lab as defined in `topology.yml`, then start it and wait for it to converge
 via `cml2_lab_details` using the ID from the import and print out the lab
 details.  Only nodes with an IP address are considered for output (`only_with_ip = true`).
 
+[![asciicast](https://asciinema.org/a/PfYfD1Br3QtytmR76kbGL1pva.svg)](https://asciinema.org/a/PfYfD1Br3QtytmR76kbGL1pva)
+
 ```hcl
 terraform {
   required_providers {
