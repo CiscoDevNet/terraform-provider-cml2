@@ -1,12 +1,12 @@
 package cmlclient
 
 import (
-	"crypto/tls"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 const (
@@ -14,33 +14,9 @@ const (
 	DefaultAPIBase string = "/api/v0/"
 )
 
-type Client struct {
-	HttpClient *http.Client
-	ApiKey     string
-	Host       string
-	Base       string
-}
-
-func NewCMLClient(host, apiKey string, insecure bool) *Client {
-
-	tr := http.DefaultTransport.(*http.Transport)
-	tr.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: insecure,
-	}
-
-	return &Client{
-		HttpClient: &http.Client{
-			Timeout:   15 * time.Second,
-			Transport: tr,
-		},
-		Host:   host,
-		ApiKey: apiKey,
-		Base:   DefaultAPIBase,
-	}
-}
-
-func (c *Client) apiRequest(method string, path string, data io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(
+func (c *Client) apiRequest(ctx context.Context, method string, path string, data io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(
+		ctx,
 		method,
 		fmt.Sprintf("%s%s%s", c.Host, c.Base, path),
 		data,
@@ -50,7 +26,7 @@ func (c *Client) apiRequest(method string, path string, data io.Reader) (*http.R
 	}
 
 	// set headers
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.ApiKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIkey))
 	req.Header.Set("Accept", ContentType)
 	if data != nil {
 		req.Header.Set("Content-Type", ContentType)
@@ -72,6 +48,22 @@ func (c *Client) doAPI(req *http.Request) ([]byte, error) {
 	if res.StatusCode == http.StatusOK || res.StatusCode == http.StatusNoContent {
 		return body, err
 	} else {
-		return nil, fmt.Errorf("status: %d", res.StatusCode)
+		return nil, fmt.Errorf("status: %d, %s", res.StatusCode, body)
 	}
+}
+
+func (c *Client) jsonGet(ctx context.Context, api string, data interface{}) error {
+	req, err := c.apiRequest(ctx, http.MethodGet, api, nil)
+	if err != nil {
+		return err
+	}
+	res, err := c.doAPI(req)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(res, data)
+	if err != nil {
+		return err
+	}
+	return nil
 }

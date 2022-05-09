@@ -3,24 +3,37 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
-	"github.com/rschmied/terraform-provider-ciscocml/m/v2/pkg/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
 )
 
 func main() {
-	token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20uY2lzY28udmlybCIsImlhdCI6MTY1MTc1MDM0MywiZXhwIjoxNjUxODM2NzQzLCJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtYTAwMC0wMDAwMDAwMDAwMDAifQ.xBGNWzKyOsUq22ALHwOYosMr7yVhNKFatdvFa5yOkA8"
-
-	client := cmlclient.NewCMLClient("https://192.168.122.245", token, true)
-	l, err := client.GetLab("52d5c824-e10c-450a-b9c5-b700bd3bc17a")
-	if err != nil {
-		fmt.Println(err)
+	host, found := os.LookupEnv("CML_HOST")
+	if !found {
+		fmt.Fprintln(os.Stderr, "CML_HOST env var not found!")
 		return
 	}
-	// fmt.Print(l)
+	token, found := os.LookupEnv("CML_TOKEN")
+	if !found {
+		fmt.Fprintln(os.Stderr, "CML_TOKEN env var not found!")
+		return
+	}
+	labID, found := os.LookupEnv("CML_LABID")
+	if !found {
+		fmt.Fprintln(os.Stderr, "CML_LABID env var not found!")
+		return
+	}
+	client := cmlclient.NewClient(host, token, true)
+	l, err := client.GetLab(labID, false)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
 
 	je, err := json.Marshal(l)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 	}
 	fmt.Println(string(je))
 }
