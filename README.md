@@ -44,8 +44,8 @@ details.  Only nodes with an IP address are considered for output (`only_with_ip
 terraform {
   required_providers {
     cml2 = {
-      version = "~>0.0.1"
-      source  = "cisco.com/dev/cml2"
+      version = "0.1.0-alpha"
+      source  = "registry.terraform.io/ciscodevnet/cml2"
     }
 }
 
@@ -88,6 +88,51 @@ data "cml2_lab_details" "example" {
 output "bla" {
   value = data.cml2_lab_details.example
 }
+```
+
+Example `.terraformrc`:
+
+```hcl
+provider_installation {
+
+  # dev_overrides {
+  #   "hashicorp/cml2" = "/home/rschmied/Projects/terraform-provider-cml2"
+  # }
+
+  # For all other providers, install them directly from their origin provider
+  # registries as normal. If you omit this, Terraform will _only_ use
+  # the dev_overrides block, and so no other providers will be available.
+  # direct {}
+  filesystem_mirror {
+    path = "/tmp/terraform"
+    include = [ "registry.terraform.io/ciscodevnet/*" ]
+  }
+}
+```
+
+Sample filesystem mirror layout:
+
+```
+/tmp/terraform/
+└── registry.terraform.io
+    └── ciscodevnet
+        └── cml2
+            ├── terraform-provider-cml2_0.1.0-alpha_darwin_amd64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_darwin_arm64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_freebsd_386.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_freebsd_amd64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_freebsd_arm64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_freebsd_arm.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_linux_386.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_linux_amd64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_linux_arm64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_linux_arm.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_windows_386.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_windows_amd64.zip
+            ├── terraform-provider-cml2_0.1.0-alpha_windows_arm64.zip
+            └── terraform-provider-cml2_0.1.0-alpha_windows_arm.zip
+
+3 directories, 14 files
 ```
 
 ## Developing the Provider
