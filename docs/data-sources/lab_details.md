@@ -34,7 +34,7 @@ data "cml2_lab_details" "example" {
 ### Read-Only
 
 - `nodes` (Attributes List) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
-- `state` (String) Lab state (DEFINED_ON_CORE, STPOPPED or STARTED)
+- `state` (String) Lab state (DEFINED_ON_CORE, STOPPED or STARTED)
 
 <a id="nestedatt--nodes"></a>
 ### Nested Schema for `nodes`

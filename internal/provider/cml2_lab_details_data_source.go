@@ -32,7 +32,7 @@ func (t cmlLabDetailDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema
 				Required:            true,
 			},
 			"state": {
-				MarkdownDescription: "Lab state (DEFINED_ON_CORE, STPOPPED or STARTED)",
+				MarkdownDescription: "Lab state (DEFINED_ON_CORE, STOPPED or STARTED)",
 				Type:                types.StringType,
 				Computed:            true,
 			},

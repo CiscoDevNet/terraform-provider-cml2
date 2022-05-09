@@ -5,6 +5,8 @@ As this provider is "work-in-progress", there's still plenty of work to do:
 - documentation (content, consistency)
 - tests (none so far)
 - add CA pem file to provider config
+- "filter" implementation for lab details data source (if needed at all)
+- naming consistency (cml vs cml2)?
 - additional resources and data sources
 
 Especially the last bullet requires some discussion in terms of what makes

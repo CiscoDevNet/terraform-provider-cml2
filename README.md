@@ -1,8 +1,8 @@
-# Terraform Provider Cisco CML2 (Terraform Plugin Framework)
+# Terraform Provider for Cisco CML2
 
 _This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://www.terraform.io/docs/plugin/which-sdk.html) in the Terraform documentation for additional information._
 
-This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.4 and later. It's current state is "work-in-progress".  The current implementation provides:
+This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "work-in-progress".  The current implementation provides:
 
 - A resource and a data source (`internal/provider/`),
   - resource `cml2_lab` to create, update and destroy a lab based on a YAML topology file
@@ -32,7 +32,11 @@ go install
 
 ## Using the provider
 
-Fill this in for each provider
+Here's a simple example that shows how to use the provider. It will import a
+lab as defined in `topology.yml`, then start it and wait for it to converge
+(e.g. all nodes report that they are BOOTED).  Then it will read the lab data
+via `cml2_lab_details` using the ID from the import and print out the lab
+details.  Only nodes with an IP address are considered for output (`only_with_ip = true`).
 
 ```hcl
 terraform {
@@ -69,7 +73,7 @@ provider "cml2" {
 
 resource "cml2_lab" "bananas" {
   topology = templatefile("topology.yaml", { toponame = var.toponame })
-  start    = false
+  # start    = false
   # wait     = false
   # state    = "STARTED"
 }
