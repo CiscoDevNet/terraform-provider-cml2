@@ -14,12 +14,12 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.ResourceType = cmlLabResourceType{}
+var _ tfsdk.ResourceType = cml2LabResourceType{}
 var _ tfsdk.Resource = cmlLabResource{}
 var _ tfsdk.ResourceWithImportState = cmlLabResource{}
 var _ tfsdk.AttributeValidator = labStateValidator{}
 
-type cmlLabResourceType struct{}
+type cml2LabResourceType struct{}
 
 type labStateValidator struct{}
 
@@ -66,7 +66,7 @@ func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 	}
 }
 
-func (t cmlLabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (t cml2LabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "CML Lab resource",
@@ -82,11 +82,6 @@ func (t cmlLabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 				PlanModifiers: []tfsdk.AttributePlanModifier{
 					tfsdk.RequiresReplace(),
 				},
-			},
-			"start": {
-				MarkdownDescription: "topology will be started if true",
-				Optional:            true,
-				Type:                types.BoolType,
 			},
 			"wait": {
 				MarkdownDescription: "wait until topology is BOOTED if true",
@@ -117,7 +112,7 @@ func (t cmlLabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.D
 	}, nil
 }
 
-func (t cmlLabResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (t cml2LabResourceType) NewResource(ctx context.Context, in tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
 	return cmlLabResource{
@@ -127,14 +122,13 @@ func (t cmlLabResourceType) NewResource(ctx context.Context, in tfsdk.Provider) 
 
 type cmlLabResourceData struct {
 	Topology types.String `tfsdk:"topology"`
-	Start    types.Bool   `tfsdk:"start"`
 	Wait     types.Bool   `tfsdk:"wait"`
 	Id       types.String `tfsdk:"id"`
 	State    types.String `tfsdk:"state"`
 }
 
 type cmlLabResource struct {
-	provider provider
+	provider cml2
 }
 
 func (r cmlLabResource) converge(ctx context.Context, diag diag.Diagnostics, id string) {
@@ -147,7 +141,7 @@ func (r cmlLabResource) converge(ctx context.Context, diag diag.Diagnostics, id 
 
 	for !converged {
 
-		converged, err = r.provider.client.ConvergedLab(id)
+		converged, err = r.provider.client.ConvergedLab(ctx, id)
 		if err != nil {
 			diag.AddError(
 				CML2ErrorLabel,
@@ -218,21 +212,12 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		}
 	}
 
-	// is a change of the start attribute planned?
-	if !noState && planData.Start.Value != stateData.Start.Value && !stateData.Id.Null {
-		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
-			"The resource is already created, it doesn't make sense to change the start attribute.",
-		)
-		return
-	}
-
 	tflog.Info(ctx, "modify plan done")
 }
 
 func (r cmlLabResource) stop(ctx context.Context, diag diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab stop")
-	err := r.provider.client.StopLab(id)
+	err := r.provider.client.StopLab(ctx, id)
 	if err != nil {
 		diag.AddError(
 			CML2ErrorLabel,
@@ -245,7 +230,7 @@ func (r cmlLabResource) stop(ctx context.Context, diag diag.Diagnostics, id stri
 
 func (r cmlLabResource) wipe(ctx context.Context, diag diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab wipe")
-	err := r.provider.client.WipeLab(id)
+	err := r.provider.client.WipeLab(ctx, id)
 	if err != nil {
 		diag.AddError(
 			CML2ErrorLabel,
@@ -258,7 +243,7 @@ func (r cmlLabResource) wipe(ctx context.Context, diag diag.Diagnostics, id stri
 
 func (r cmlLabResource) start(ctx context.Context, diag diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab start")
-	err := r.provider.client.StartLab(id)
+	err := r.provider.client.StartLab(ctx, id)
 	if err != nil {
 		diag.AddError(
 			CML2ErrorLabel,
@@ -279,7 +264,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	tflog.Info(ctx, "lab import")
-	lab, err := r.provider.client.ImportLab(data.Topology.Value)
+	lab, err := r.provider.client.ImportLab(ctx, data.Topology.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -288,7 +273,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		return
 	}
 
-	if data.Start.Null || data.Start.Value {
+	if data.State.Value == cmlclient.LabStateStarted {
 		r.start(ctx, resp.Diagnostics, lab.ID)
 	}
 
@@ -297,7 +282,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	// fetch lab again
-	lab, err = r.provider.client.GetLab(lab.ID, true)
+	lab, err = r.provider.client.GetLab(ctx, lab.ID, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -326,7 +311,7 @@ func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 
 	tflog.Info(ctx, "lab read")
 
-	lab, err := r.provider.client.GetLab(data.Id.Value, true)
+	lab, err := r.provider.client.GetLab(ctx, data.Id.Value, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -414,7 +399,7 @@ func (r cmlLabResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 		return
 	}
 
-	lab, err := r.provider.client.GetLab(data.Id.Value, true)
+	lab, err := r.provider.client.GetLab(ctx, data.Id.Value, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -430,7 +415,7 @@ func (r cmlLabResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 		r.wipe(ctx, resp.Diagnostics, data.Id.Value)
 	}
 
-	err = r.provider.client.DestroyLab(data.Id.Value)
+	err = r.provider.client.DestroyLab(ctx, data.Id.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

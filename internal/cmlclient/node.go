@@ -59,10 +59,15 @@ type Node struct {
 	ImageDefinition string       `json:"image_definition"`
 	Configuration   string       `json:"configuration"`
 	CPUs            int          `json:"cpus"`
+	CPUlimit        int          `json:"cpu_limit"`
 	RAM             int          `json:"ram"`
 	State           string       `json:"state"`
 	DataVolume      int          `json:"data_volume"`
+	BootDiskSize    int          `json:"boot_disk_size"`
+	HideLinks       bool         `json:"hide_links"`
 	Interfaces      interfaceMap `json:"interfaces"`
+	Tags            []string     `json:"tags"`
+	BootProgress    string       `json:"boot_progress"`
 
 	// extra
 	lab *Lab

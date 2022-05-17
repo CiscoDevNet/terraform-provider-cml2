@@ -15,7 +15,7 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ tfsdk.DataSourceType = cmlLabDetailDataSourceType{}
-var _ tfsdk.DataSource = cmlLabDetailDataSource{}
+var _ tfsdk.DataSource = cml2LabDetailDataSource{}
 
 type cmlLabDetailDataSourceType struct{}
 
@@ -145,7 +145,7 @@ func nodeSchema() map[string]tfsdk.Attribute {
 func (t cmlLabDetailDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
-	return cmlLabDetailDataSource{
+	return cml2LabDetailDataSource{
 		provider: provider,
 	}, diags
 }
@@ -200,7 +200,7 @@ func (rn resultNode) ToTerraformValue(ctx context.Context) (tftypes.Value, error
 // 	return nodeSchema().AttributeType()
 // }
 
-type cmlDataSourceData struct {
+type cml2DataSourceData struct {
 	Id         types.String `tfsdk:"id"`
 	State      types.String `tfsdk:"state"`
 	Filter     types.String `tfsdk:"filter"`
@@ -209,12 +209,12 @@ type cmlDataSourceData struct {
 	// Nodes types.List `tfsdk:"nodes"`
 }
 
-type cmlLabDetailDataSource struct {
-	provider provider
+type cml2LabDetailDataSource struct {
+	provider cml2
 }
 
-func (d cmlLabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	var data cmlDataSourceData
+func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
+	var data cml2DataSourceData
 
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -223,7 +223,7 @@ func (d cmlLabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSour
 		return
 	}
 
-	lab, err := d.provider.client.GetLab(data.Id.Value, false)
+	lab, err := d.provider.client.GetLab(ctx, data.Id.Value, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
