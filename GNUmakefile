@@ -5,7 +5,7 @@ ORG := registry.terraform.io/ciscodevnet
 NAME := cml2
 ARCH := linux_amd64
 
-VERSION := 0.1.0-alpha
+VERSION := $(shell git describe --match 'v*' --always --long --abbrev=16 | sed -re 's/^v(.*)$$/\1/')
 DEST := ~/.terraform.d/plugins/$(ORG)/$(NAME)/$(VERSION)/$(ARCH)
 
 MIRROR := /tmp/terraform/$(ORG)/$(NAME)
@@ -16,7 +16,7 @@ testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
 build: main.go
-	go build -o terraform-provider-$(NAME) .
+	go build -o terraform-provider-$(NAME) -ldflags "-X main.version=$(VERSION)" .
 
 devinstall: build
 	test -d $(DEST) || mkdir -p $(DEST)

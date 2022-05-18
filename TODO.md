@@ -27,4 +27,3 @@ outdated material.
 - Release and Publish a Provider <https://learn.hashicorp.com/tutorials/terraform/provider-release-publish?in=terraform/providers>
 - GitHub Encrypted Secrets <https://docs.github.com/en/actions/security-guides/encrypted-secrets>
 - GoRelease GitHub Action <https://github.com/marketplace/actions/goreleaser-action>
-
