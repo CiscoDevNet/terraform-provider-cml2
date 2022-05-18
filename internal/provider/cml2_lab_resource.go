@@ -194,15 +194,6 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		}
 	}
 
-	// if no TF state and there should be a lab state set
-	// if noState && !configData.State.Null {
-	// 	resp.Diagnostics.AddError(
-	// 		CML2ErrorLabel,
-	// 		"Can't set lab state when it isn't yet created!",
-	// 	)
-	// 	return
-	// }
-
 	// get the planned state
 	diags = resp.Plan.Get(ctx, &planData)
 	resp.Diagnostics.Append(diags...)
@@ -225,20 +216,21 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 	if !noState && planData.State.Value != stateData.State.Value {
 		tflog.Info(ctx, "ModifyPlan: state change")
 
-		// this doesn't work as I'm not changing the actually data :(
-		for _, nodeElem := range planData.Nodes.Elems {
-			node := resultNode{}
-			nodeElem.(types.Object).As(ctx, node, types.ObjectAsOptions{})
-			node.State.Unknown = true
-			for _, ifaceElem := range node.Interfaces.Elems {
-				iface := resultInterface{}
-				ifaceElem.(types.Object).As(ctx, iface, types.ObjectAsOptions{})
-				iface.State.Unknown = true
-				iface.MACaddress.Unknown = true
-				iface.IP4 = nil
-			}
-		}
-		// planData.Nodes.Unknown = true
+		// this doesn't work as I'm not changing the actual data :(
+		// for _, nodeElem := range planData.Nodes.Elems {
+		// 	node := resultNode{}
+		// 	nodeElem.(types.Object).As(ctx, node, types.ObjectAsOptions{})
+		// 	node.State.Unknown = true
+		// 	for _, ifaceElem := range node.Interfaces.Elems {
+		// 		iface := resultInterface{}
+		// 		ifaceElem.(types.Object).As(ctx, iface, types.ObjectAsOptions{})
+		// 		iface.State.Unknown = true
+		// 		iface.MACaddress.Unknown = true
+		// 		iface.IP4 = nil
+		// 	}
+		// }
+		// mark everything "nodes" as unknown
+		planData.Nodes.Unknown = true
 		diags = resp.Plan.Set(ctx, planData)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
@@ -333,7 +325,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	data.Nodes.Elems = populateNodes(ctx, lab)
 	data.Nodes.Null = false
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	tflog.Info(ctx, "Create: done")
 }
@@ -475,7 +467,7 @@ func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	data.Nodes.Elems = populateNodes(ctx, lab)
 	data.Nodes.Null = false
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, "Read: errors!")
@@ -537,11 +529,27 @@ func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		if data.Wait.Null || data.Wait.Value {
 			r.converge(ctx, resp.Diagnostics, data.Id.Value)
 		}
+
+		// since we have changed lab state, we need to re-read all the node
+		// state...
+		lab, err := r.provider.client.GetLab(ctx, data.Id.Value, false)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				CML2ErrorLabel,
+				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
+			)
+			return
+		}
+		tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
+		data.State = types.String{Value: lab.State}
+		data.Nodes.Elems = populateNodes(ctx, lab)
+		data.Nodes.Null = false
+		data.Nodes.Unknown = false
 	}
 
-	diags = resp.State.Set(ctx, &data)
+	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
-	tflog.Info(ctx, "update a resource")
+	tflog.Info(ctx, "Update: done")
 }
 
 func (r cmlLabResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {

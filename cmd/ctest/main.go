@@ -60,13 +60,30 @@ func main() {
 	// }
 	// l, err := client.ImportLab(ctx, string(topo))
 
-	l, err := client.GetLab(ctx, labID, false)
+	// l, err := client.GetLab(ctx, labID, false)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// nd, err := client.GetNodeDefs(ctx)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+
+	// for _, n := range nd {
+	// 	a := n.Device.Interfaces.DefaultCount
+	// 	log.Println(a)
+	// }
+
+	nd, err := client.GetImageDefs(ctx)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	je, err := json.Marshal(l)
+	je, err := json.Marshal(nd)
 	if err != nil {
 		log.Println(err)
 	}

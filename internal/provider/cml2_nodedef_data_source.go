@@ -13,12 +13,12 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.DataSourceType = cmlLabDetailDataSourceType{}
-var _ tfsdk.DataSource = cml2LabDetailDataSource{}
+var _ tfsdk.DataSourceType = cmlNodeDefDataSourceType{}
+var _ tfsdk.DataSource = cml2NodeDefDataSource{}
 
-type cmlLabDetailDataSourceType struct{}
+type cmlNodeDefDataSourceType struct{}
 
-func (t cmlLabDetailDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (t cmlNodeDefDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
@@ -173,15 +173,23 @@ func nodeSchema() map[string]tfsdk.Attribute {
 	}
 }
 
-func (t cmlLabDetailDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
+func (t cmlNodeDefDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {
 	provider, diags := convertProviderType(in)
 
-	return cml2LabDetailDataSource{
+	return cml2NodeDefDataSource{
 		provider: provider,
 	}, diags
 }
 
-type resultInterface struct {
+type cml2Node struct {
+	Id         types.String    `tfsdk:"id"`
+	Label      types.String    `tfsdk:"label"`
+	State      types.String    `tfsdk:"state"`
+	NodeType   types.String    `tfsdk:"nodetype"`
+	Interfaces []cml2Interface `tfsdk:"interfaces"`
+}
+
+type cml2Interface struct {
 	Id          types.String   `tfsdk:"id"`
 	Label       types.String   `tfsdk:"label"`
 	State       types.String   `tfsdk:"state"`
@@ -191,29 +199,20 @@ type resultInterface struct {
 	IP6         []types.String `tfsdk:"ip6"`
 }
 
-type resultNode struct {
-	Id         types.String `tfsdk:"id"`
-	Label      types.String `tfsdk:"label"`
-	State      types.String `tfsdk:"state"`
-	NodeType   types.String `tfsdk:"nodetype"`
-	Interfaces types.List   `tfsdk:"interfaces"`
-}
-
-type cml2DataSourceData struct {
+type cml2NodeDefDataSourceData struct {
 	Id         types.String `tfsdk:"id"`
 	State      types.String `tfsdk:"state"`
 	Filter     types.String `tfsdk:"filter"`
 	OnlyWithIP types.Bool   `tfsdk:"only_with_ip"`
-	Nodes      []resultNode `tfsdk:"nodes"`
-	// Nodes types.List `tfsdk:"nodes"`
+	Nodes      []cml2Node   `tfsdk:"nodes"`
 }
 
-type cml2LabDetailDataSource struct {
+type cml2NodeDefDataSource struct {
 	provider cml2
 }
 
-func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
-	var data cml2DataSourceData
+func (d cml2NodeDefDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourceRequest, resp *tfsdk.ReadDataSourceResponse) {
+	var data cml2NodeDefDataSourceData
 
 	diags := req.Config.Get(ctx, &data)
 	resp.Diagnostics.Append(diags...)
@@ -256,7 +255,7 @@ func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSou
 	// }
 
 	for _, node := range nodeList {
-		rnode := resultNode{
+		rnode := cml2Node{
 			Id:       types.String{Value: node.ID},
 			Label:    types.String{Value: node.Label},
 			State:    types.String{Value: node.State},

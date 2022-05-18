@@ -15,8 +15,11 @@ CML Lab resource
 ```terraform
 resource "cml2_lab" "bananas" {
   topology = file("topology.yaml")
-  # start    = true
+  # if wait is set then wait until the lab converged, it defaults to true
   # wait     = false
+  # state can be STARTED or DEFINED_ON_CORE when creating
+  # for running lab, it can be also set to STOPPED
+  # if not set, it defaults to STARTED (e.g. the lab starts after creating)
   # state    = "STARTED"
 }
 ```
@@ -30,12 +33,36 @@ resource "cml2_lab" "bananas" {
 
 ### Optional
 
-- `start` (Boolean) topology will be started if true
 - `state` (String) CML lab state
 - `wait` (Boolean) wait until topology is BOOTED if true
 
 ### Read-Only
 
 - `id` (String) CML lab identifier, a UUID
+- `nodes` (Attributes List) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
+
+<a id="nestedatt--nodes"></a>
+### Nested Schema for `nodes`
+
+Read-Only:
+
+- `id` (String) Node ID (UUID)
+- `interfaces` (Attributes List) interfaces on the node (see [below for nested schema](#nestedatt--nodes--interfaces))
+- `label` (String) label
+- `nodetype` (String) Node Type / Definition
+- `state` (String) state
+
+<a id="nestedatt--nodes--interfaces"></a>
+### Nested Schema for `nodes.interfaces`
+
+Read-Only:
+
+- `id` (String) Interface ID (UUID)
+- `ip4` (List of String) IPv4 address list
+- `ip6` (List of String) IPv6 address list
+- `is_connected` (Boolean) connection status
+- `label` (String) label
+- `mac_address` (String) MAC address
+- `state` (String) state
 
 

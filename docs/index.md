@@ -14,9 +14,18 @@ description: |-
 
 ```terraform
 provider "cml2" {
-  address     = var.cml_hostname
-  token       = var.cml_token
-  skip_verify = true
+  # address must use https://
+  address = var.address
+  # set either a JWT or username/password
+  # token   = var.token
+  username = var.username
+  password = var.password
+  # read the CA certificate from file
+  # if not specified, he system root CAs are used
+  cacert = file("ca.pem")
+  # should the certificate be verified?
+  # (defaults to true)
+  # skip_verify = false
 }
 ```
 
@@ -25,9 +34,12 @@ provider "cml2" {
 
 ### Required
 
-- `address` (String) CML controller address
-- `token` (String, Sensitive) CML API token (JWT)
+- `address` (String) CML2 controller address
 
 ### Optional
 
-- `skip_verify` (Boolean) disable TLS certificate verification
+- `cacert` (String) CA CERT, PEM encoded
+- `password` (String, Sensitive) CML2 password
+- `skip_verify` (Boolean) Disable TLS certificate verification
+- `token` (String, Sensitive) CML2 API token (JWT)
+- `username` (String) CML2 username
