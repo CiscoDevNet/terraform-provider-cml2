@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
 )
@@ -49,7 +48,6 @@ func (t cmlLabDetailDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema
 			"nodes": {
 				MarkdownDescription: "List of nodes and their interfaces with IP addresses",
 				Computed:            true,
-				Sensitive:           false,
 				// Type: types.ListType{
 				// 	ElemType: resultNode{},
 				// },
@@ -68,26 +66,41 @@ func interfaceSchema() map[string]tfsdk.Attribute {
 			MarkdownDescription: "Interface ID (UUID)",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"label": {
 			MarkdownDescription: "label",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"mac_address": {
 			MarkdownDescription: "MAC address",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"is_connected": {
 			MarkdownDescription: "connection status",
 			Type:                types.BoolType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"state": {
 			MarkdownDescription: "state",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"ip4": {
 			MarkdownDescription: "IPv4 address list",
@@ -95,7 +108,9 @@ func interfaceSchema() map[string]tfsdk.Attribute {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
-			Sensitive: false,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"ip6": {
 			MarkdownDescription: "IPv6 address list",
@@ -103,7 +118,9 @@ func interfaceSchema() map[string]tfsdk.Attribute {
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
-			Sensitive: false,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 	}
 }
@@ -114,30 +131,44 @@ func nodeSchema() map[string]tfsdk.Attribute {
 			MarkdownDescription: "Node ID (UUID)",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"label": {
 			MarkdownDescription: "label",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"state": {
 			MarkdownDescription: "state",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"nodetype": {
 			MarkdownDescription: "Node Type / Definition",
 			Type:                types.StringType,
 			Computed:            true,
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 		"interfaces": {
 			MarkdownDescription: "interfaces on the node",
 			Computed:            true,
-			Sensitive:           false,
 			Attributes: tfsdk.ListNestedAttributes(
 				interfaceSchema(),
 				tfsdk.ListNestedAttributesOptions{},
 			),
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				tfsdk.UseStateForUnknown(),
+			},
 		},
 	}
 }
@@ -161,44 +192,12 @@ type resultInterface struct {
 }
 
 type resultNode struct {
-	Id         types.String      `tfsdk:"id"`
-	Label      types.String      `tfsdk:"label"`
-	State      types.String      `tfsdk:"state"`
-	NodeType   types.String      `tfsdk:"nodetype"`
-	Interfaces []resultInterface `tfsdk:"interfaces"`
+	Id         types.String `tfsdk:"id"`
+	Label      types.String `tfsdk:"label"`
+	State      types.String `tfsdk:"state"`
+	NodeType   types.String `tfsdk:"nodetype"`
+	Interfaces types.List   `tfsdk:"interfaces"`
 }
-
-// func (rn resultNode) Equal(v attr.Type) bool {
-// 	return true
-// }
-
-// func (rn resultNode) String() string {
-// 	return "as"
-// }
-
-// func (rn resultNode) TerraformType(ctx context.Context) tftypes.Type {
-// 	return tftypes.DynamicPseudoType
-// }
-
-// func (rn resultNode) ApplyTerraform5AttributePathStep(ps tftypes.AttributePathStep) (interface{}, error) {
-// 	return nil, nil
-// }
-
-// func (rn resultNode) ValueFromTerraform(ctx context.Context, v tftypes.Value) (attr.Value, error) {
-// 	return nil, nil
-// }
-
-func (rn resultNode) ToTerraformValue(ctx context.Context) (tftypes.Value, error) {
-	v := tftypes.NewValue(
-		tftypes.Tuple{},
-		rn,
-	)
-	return v, nil
-}
-
-// func (rn resultNode) Type(ctx context.Context) attr.Type {
-// 	return nodeSchema().AttributeType()
-// }
 
 type cml2DataSourceData struct {
 	Id         types.String `tfsdk:"id"`
@@ -236,10 +235,10 @@ func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSou
 
 	data.State = types.String{Value: lab.State}
 
-	needsIP := false
+	// needsIP := false
 	if !data.OnlyWithIP.Null && data.OnlyWithIP.Value {
 		tflog.Info(ctx, "nodes need IP addresses to be considered!")
-		needsIP = true
+		// needsIP = true
 	}
 
 	// we want this as a stable sort by node UUID
@@ -263,7 +262,7 @@ func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSou
 			State:    types.String{Value: node.State},
 			NodeType: types.String{Value: node.NodeDefinition},
 		}
-		hasIP := false
+		// hasIP := false
 
 		// we want this as a stable sort by interface UUID
 		ilist := []*cmlclient.Interface{}
@@ -295,29 +294,29 @@ func (d cml2LabDetailDataSource) Read(ctx context.Context, req tfsdk.ReadDataSou
 
 		// data.Nodes.Elems = append(data.Nodes.Elems, rnode)
 
-		for _, iface := range ilist {
-			if needsIP && len(iface.IP4) == 0 && len(iface.IP6) == 0 {
-				continue
-			}
-			hasIP = true
-			riface := resultInterface{
-				Id:          types.String{Value: iface.ID},
-				Label:       types.String{Value: iface.Label},
-				State:       types.String{Value: iface.State},
-				MACaddress:  types.String{Value: iface.MACaddress},
-				IsConnected: types.Bool{Value: iface.IsConnected},
-			}
-			for _, ip := range iface.IP4 {
-				riface.IP4 = append(riface.IP4, types.String{Value: ip})
-			}
-			for _, ip := range iface.IP6 {
-				riface.IP6 = append(riface.IP6, types.String{Value: ip})
-			}
-			rnode.Interfaces = append(rnode.Interfaces, riface)
-		}
-		if needsIP && !hasIP {
-			continue
-		}
+		// for _, iface := range ilist {
+		// 	if needsIP && len(iface.IP4) == 0 && len(iface.IP6) == 0 {
+		// 		continue
+		// 	}
+		// 	hasIP = true
+		// 	riface := resultInterface{
+		// 		Id:          types.String{Value: iface.ID},
+		// 		Label:       types.String{Value: iface.Label},
+		// 		State:       types.String{Value: iface.State},
+		// 		MACaddress:  types.String{Value: iface.MACaddress},
+		// 		IsConnected: types.Bool{Value: iface.IsConnected},
+		// 	}
+		// 	for _, ip := range iface.IP4 {
+		// 		riface.IP4 = append(riface.IP4, types.String{Value: ip})
+		// 	}
+		// 	for _, ip := range iface.IP6 {
+		// 		riface.IP6 = append(riface.IP6, types.String{Value: ip})
+		// 	}
+		// 	rnode.Interfaces = append(rnode.Interfaces, riface)
+		// }
+		// if needsIP && !hasIP {
+		// 	continue
+		// }
 		data.Nodes = append(data.Nodes, rnode)
 	}
 

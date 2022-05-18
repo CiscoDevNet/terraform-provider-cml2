@@ -84,7 +84,7 @@ func (p *cml2) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest
 		)
 	}
 	if data.SkipVerify.Null {
-		tflog.Warn(ctx, "##### null!")
+		tflog.Warn(ctx, "unspecified certificate verification, will verify")
 		data.SkipVerify.Value = false
 	}
 
@@ -109,12 +109,6 @@ func (p *cml2) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest
 			)
 		}
 	}
-
-	tflog.Info(ctx,
-		"initializing",
-		map[string]interface{}{"token": data.Token.Value},
-	)
-
 	p.configured = true
 }
 
@@ -129,7 +123,7 @@ func (p *cml2) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType,
 
 func (p *cml2) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
 	return map[string]tfsdk.DataSourceType{
-		"cml2_lab_details": cmlLabDetailDataSourceType{},
+		// "cml2_lab_details": cmlLabDetailDataSourceType{},
 	}, nil
 }
 

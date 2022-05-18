@@ -3,8 +3,10 @@ package provider
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -38,7 +40,6 @@ func (v labStateValidator) MarkdownDescription(ctx context.Context) string {
 // Validate runs the main validation logic of the validator, reading
 // configuration data out of `req` and updating `resp` with diagnostics.
 func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
-	tflog.Info(ctx, "##### i am here")
 	var labState types.String
 	diags := tfsdk.ValueAs(ctx, req.AttributeConfig, &labState)
 	resp.Diagnostics.Append(diags...)
@@ -46,13 +47,9 @@ func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 		return
 	}
 
-	tflog.Info(ctx, "##### now here")
-
 	if labState.Unknown || labState.Null {
 		return
 	}
-
-	tflog.Info(ctx, "##### finally here:["+labState.Value+"]")
 
 	if labState.Value != cmlclient.LabStateDefined &&
 		labState.Value != cmlclient.LabStateStopped &&
@@ -67,13 +64,14 @@ func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 }
 
 func (t cml2LabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "CML Lab resource",
 
 		Attributes: map[string]tfsdk.Attribute{
-			// topology is mostly marked as sensitive b/c lengthy topo
-			// yaml clutters the output
+			// topology is marked as sensitive mostly b/c lengthy topology
+			// YAML clutters the output.
 			"topology": {
 				MarkdownDescription: "topology to start",
 				Required:            true,
@@ -108,6 +106,17 @@ func (t cml2LabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.
 					labStateValidator{},
 				},
 			},
+			"nodes": {
+				MarkdownDescription: "List of nodes and their interfaces with IP addresses",
+				Computed:            true,
+				Attributes: tfsdk.ListNestedAttributes(
+					nodeSchema(),
+					tfsdk.ListNestedAttributesOptions{},
+				),
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.UseStateForUnknown(),
+				},
+			},
 		},
 	}, nil
 }
@@ -125,6 +134,7 @@ type cmlLabResourceData struct {
 	Wait     types.Bool   `tfsdk:"wait"`
 	Id       types.String `tfsdk:"id"`
 	State    types.String `tfsdk:"state"`
+	Nodes    types.List   `tfsdk:"nodes"`
 }
 
 type cmlLabResource struct {
@@ -166,7 +176,7 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		stateData  cmlLabResourceData
 	)
 
-	tflog.Info(ctx, "modify plan")
+	tflog.Info(ctx, "ModifyPlan")
 
 	diags := req.Config.Get(ctx, &configData)
 	resp.Diagnostics.Append(diags...)
@@ -184,20 +194,20 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		}
 	}
 
-	// check if a specified configuration is valid
-	if noState && !configData.State.Null {
-		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
-			"Can't set state when lab isn't yet created!",
-		)
-		return
-	}
+	// if no TF state and there should be a lab state set
+	// if noState && !configData.State.Null {
+	// 	resp.Diagnostics.AddError(
+	// 		CML2ErrorLabel,
+	// 		"Can't set lab state when it isn't yet created!",
+	// 	)
+	// 	return
+	// }
 
 	// get the planned state
 	diags = resp.Plan.Get(ctx, &planData)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, "ModifyPlan: plan has errors")
 		return
 	}
 
@@ -212,7 +222,34 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		}
 	}
 
-	tflog.Info(ctx, "modify plan done")
+	if !noState && planData.State.Value != stateData.State.Value {
+		tflog.Info(ctx, "ModifyPlan: state change")
+
+		// this doesn't work as I'm not changing the actually data :(
+		for _, nodeElem := range planData.Nodes.Elems {
+			node := resultNode{}
+			nodeElem.(types.Object).As(ctx, node, types.ObjectAsOptions{})
+			node.State.Unknown = true
+			for _, ifaceElem := range node.Interfaces.Elems {
+				iface := resultInterface{}
+				ifaceElem.(types.Object).As(ctx, iface, types.ObjectAsOptions{})
+				iface.State.Unknown = true
+				iface.MACaddress.Unknown = true
+				iface.IP4 = nil
+			}
+		}
+		// planData.Nodes.Unknown = true
+		diags = resp.Plan.Set(ctx, planData)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			tflog.Error(ctx, "ModifyPlan: plan has errors")
+			return
+		}
+	}
+
+	// tflog.Info(ctx, "ModifyPlan: done", map[string]interface{}{
+	// 	"nodes": planData.Nodes,
+	// })
 }
 
 func (r cmlLabResource) stop(ctx context.Context, diag diag.Diagnostics, id string) {
@@ -263,7 +300,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		return
 	}
 
-	tflog.Info(ctx, "lab import")
+	tflog.Info(ctx, "Create: import")
 	lab, err := r.provider.client.ImportLab(ctx, data.Topology.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -273,7 +310,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		return
 	}
 
-	if data.State.Value == cmlclient.LabStateStarted {
+	if data.State.Null || data.State.Value == cmlclient.LabStateStarted {
 		r.start(ctx, resp.Diagnostics, lab.ID)
 	}
 
@@ -281,8 +318,8 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 		r.converge(ctx, resp.Diagnostics, lab.ID)
 	}
 
-	// fetch lab again
-	lab, err = r.provider.client.GetLab(ctx, lab.ID, true)
+	// fetch lab again, with nodes and interfaces
+	lab, err = r.provider.client.GetLab(ctx, lab.ID, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -293,10 +330,120 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
+	data.Nodes.Elems = populateNodes(ctx, lab)
+	data.Nodes.Null = false
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
-	tflog.Info(ctx, "lab create done")
+	tflog.Info(ctx, "Create: done")
+}
+
+var (
+	ifaceObject = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":           types.StringType,
+			"label":        types.StringType,
+			"state":        types.StringType,
+			"mac_address":  types.StringType,
+			"is_connected": types.BoolType,
+			"ip4": types.ListType{
+				ElemType: types.StringType,
+			},
+			"ip6": types.ListType{
+				ElemType: types.StringType,
+			},
+		},
+	}
+	nodeObject = types.Object{
+		AttrTypes: map[string]attr.Type{
+			"id":       types.StringType,
+			"label":    types.StringType,
+			"state":    types.StringType,
+			"nodetype": types.StringType,
+			"interfaces": types.ListType{
+				ElemType: ifaceObject,
+			},
+		},
+	}
+)
+
+func populateNodes(ctx context.Context, lab *cmlclient.Lab) []attr.Value {
+	// we want this as a stable sort by node UUID
+	nodeList := []*cmlclient.Node{}
+	for _, node := range lab.Nodes {
+		nodeList = append(nodeList, node)
+	}
+	sort.Slice(nodeList, func(i, j int) bool {
+		return nodeList[i].ID < nodeList[j].ID
+	})
+
+	nodes := make([]attr.Value, 0)
+	for _, node := range nodeList {
+
+		// we want this as a stable sort by interface UUID
+		ilist := []*cmlclient.Interface{}
+		for _, iface := range node.Interfaces {
+			ilist = append(ilist, iface)
+		}
+		sort.Slice(ilist, func(i, j int) bool {
+			return ilist[i].ID < ilist[j].ID
+		})
+
+		ifaces := make([]attr.Value, 0)
+		for _, iface := range ilist {
+
+			ip4list := make([]attr.Value, 0)
+			for _, ip := range iface.IP4 {
+				ip4list = append(ip4list, types.String{Value: ip})
+			}
+			ip6list := make([]attr.Value, 0)
+			for _, ip := range iface.IP6 {
+				ip6list = append(ip6list, types.String{Value: ip})
+			}
+
+			ifaceElem := types.Object{
+				AttrTypes: ifaceObject.AttrTypes,
+				Attrs: map[string]attr.Value{
+					"id":           types.String{Value: iface.ID},
+					"label":        types.String{Value: iface.Label},
+					"state":        types.String{Value: iface.State},
+					"mac_address":  types.String{Value: iface.MACaddress},
+					"is_connected": types.Bool{Value: iface.IsConnected},
+					"ip4": types.List{
+						ElemType: types.StringType,
+						Elems:    ip4list,
+						Null:     false,
+					},
+					"ip6": types.List{
+						ElemType: types.StringType,
+						Elems:    ip6list,
+						Null:     false,
+					},
+				},
+			}
+			ifaces = append(ifaces, ifaceElem)
+		}
+
+		o := types.Object{
+			AttrTypes: nodeObject.AttrTypes,
+			Attrs: map[string]attr.Value{
+				"id":       types.String{Value: node.ID},
+				"label":    types.String{Value: node.Label},
+				"state":    types.String{Value: node.State},
+				"nodetype": types.String{Value: node.NodeDefinition},
+				"interfaces": types.List{
+					ElemType: ifaceObject,
+					Elems:    ifaces,
+					Null:     false,
+				},
+			},
+		}
+		// tflog.Info(ctx, "node add", map[string]interface{}{
+		// 	"object": o,
+		// })
+		nodes = append(nodes, o)
+	}
+	return nodes
 }
 
 func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
@@ -306,26 +453,35 @@ func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	resp.Diagnostics.Append(diags...)
 
 	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, "Read: errors!")
 		return
 	}
 
-	tflog.Info(ctx, "lab read")
+	tflog.Info(ctx, "Read: start")
 
-	lab, err := r.provider.client.GetLab(ctx, data.Id.Value, true)
+	lab, err := r.provider.client.GetLab(ctx, data.Id.Value, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
-			fmt.Sprintf("Unable to read CML2 lab, got error: %s", err),
+			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 		)
 		return
 	}
+
+	tflog.Info(ctx, fmt.Sprintf("Read: lab state: %s", lab.State))
+
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
+	data.Nodes.Elems = populateNodes(ctx, lab)
+	data.Nodes.Null = false
 
 	diags = resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
-
-	tflog.Info(ctx, "lab read done")
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, "Read: errors!")
+		return
+	}
+	tflog.Info(ctx, "Read: done")
 }
 
 func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
@@ -349,7 +505,6 @@ func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		tflog.Info(ctx, "state changed")
 
 		// this is very blunt ...
-
 		if current.State.Value == cmlclient.LabStateStarted {
 			if data.State.Value == cmlclient.LabStateStopped {
 				r.stop(ctx, resp.Diagnostics, data.Id.Value)
