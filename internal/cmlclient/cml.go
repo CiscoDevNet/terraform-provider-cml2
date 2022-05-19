@@ -6,11 +6,17 @@ import (
 	"time"
 )
 
+type apiClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type Client struct {
-	httpClient *http.Client
-	apiToken   string
-	host       string
-	userpass   userPass
+	httpClient     apiClient
+	apiToken       string
+	host           string
+	userpass       userPass
+	versionChecked bool
+	compatible     error
 }
 
 func NewClient(host string, insecure bool) *Client {
@@ -27,5 +33,6 @@ func NewClient(host string, insecure bool) *Client {
 			Timeout:   15 * time.Second,
 			Transport: tr,
 		},
+		versionChecked: false,
 	}
 }

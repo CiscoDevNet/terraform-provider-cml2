@@ -47,6 +47,14 @@ func (c *Client) apiRequest(ctx context.Context, method string, path string, dat
 func (c *Client) doAPI(ctx context.Context, req *http.Request) ([]byte, error) {
 	retrying := false
 
+	if !c.versionChecked {
+		c.versionChecked = true
+		c.compatible = c.versionCheck(ctx)
+	}
+	if c.compatible != nil {
+		return nil, c.compatible
+	}
+
 retry:
 	res, err := c.httpClient.Do(req)
 	if err != nil {

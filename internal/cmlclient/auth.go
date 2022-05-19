@@ -66,7 +66,11 @@ func (c *Client) SetCACert(cert []byte) error {
 	if !ok {
 		return errors.New("failed to parse root certificate")
 	}
-	tr := c.httpClient.Transport.(*http.Transport)
+	httpClient, ok := c.httpClient.(*http.Client)
+	if !ok {
+		return errors.New("can't set certs on mocked client")
+	}
+	tr := httpClient.Transport.(*http.Transport)
 	tr.TLSClientConfig.RootCAs = caCertPool
 	return nil
 }
