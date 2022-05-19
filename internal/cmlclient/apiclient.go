@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	contentType string = "application/json"
-	apiBase     string = "/api/v0/"
-	authAPI     string = "auth_extended"
+	contentType   string = "application/json"
+	apiBase       string = "/api/v0/"
+	authAPI       string = "auth_extended"
+	systemInfoAPI string = "system_information"
 )
 
 func setTokenHeader(req *http.Request, token string) {
@@ -33,7 +34,7 @@ func (c *Client) apiRequest(ctx context.Context, method string, path string, dat
 	}
 
 	// set headers (this avoids a loop when actually authenticating)
-	if path != authAPI {
+	if path != authAPI && path != systemInfoAPI && len(c.apiToken) > 0 {
 		setTokenHeader(req, c.apiToken)
 	}
 	req.Header.Set("Accept", contentType)
