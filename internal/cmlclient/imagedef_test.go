@@ -15,7 +15,8 @@ func TestClient_GetImageDefs(t *testing.T) {
 
 	mclient, ctx := mc.NewMockClient()
 	c.httpClient = mclient
-	c.SetUsernamePassword("bla", "blubb")
+	c.authChecked = true
+	c.versionChecked = true
 
 	tests := []struct {
 		name      string
@@ -25,21 +26,6 @@ func TestClient_GetImageDefs(t *testing.T) {
 		{
 			"good",
 			mc.MockRespList{
-				mc.MockResp{
-					Data: []byte(`{"version": "2.4.1","ready": true}`),
-					Code: 200,
-				},
-				mc.MockResp{
-					Data: []byte(`{
-						"description": "Not authenticated: 401 Unauthorized: No authorization token provided.",
-						"code": 401
-					}`),
-					Code: 401,
-				},
-				mc.MockResp{
-					Data: []byte(`{"username": "qwe", "id": "007", "token": "secret"}`),
-					Code: 200,
-				},
 				mc.MockResp{
 					Data: []byte(
 						`[{

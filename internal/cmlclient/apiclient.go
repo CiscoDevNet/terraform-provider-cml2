@@ -15,6 +15,7 @@ const (
 	contentType   string = "application/json"
 	apiBase       string = "/api/v0/"
 	authAPI       string = "auth_extended"
+	authOK        string = "authok"
 	systemInfoAPI string = "system_information"
 )
 
@@ -34,7 +35,7 @@ func (c *Client) apiRequest(ctx context.Context, method string, path string, dat
 	}
 
 	// set headers (this avoids a loop when actually authenticating)
-	if path != authAPI && path != systemInfoAPI && len(c.apiToken) > 0 {
+	if path != authAPI && len(c.apiToken) > 0 {
 		setTokenHeader(req, c.apiToken)
 	}
 	req.Header.Set("Accept", contentType)
@@ -46,7 +47,6 @@ func (c *Client) apiRequest(ctx context.Context, method string, path string, dat
 }
 
 func (c *Client) doAPI(ctx context.Context, req *http.Request) ([]byte, error) {
-	retrying := false
 
 	if !c.versionChecked {
 		c.versionChecked = true
@@ -54,9 +54,19 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request) ([]byte, error) {
 	}
 	if c.compatible != nil {
 		return nil, c.compatible
+	} else {
+		if !c.authChecked {
+			c.authChecked = true
+			if err := c.jsonGet(ctx, "authok", nil); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 retry:
+	if c.authChecked && len(c.apiToken) > 0 {
+		setTokenHeader(req, c.apiToken)
+	}
 	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -68,11 +78,10 @@ retry:
 	}
 	// no authorization and not retrying already
 	if res.StatusCode == http.StatusUnauthorized {
-		if retrying || !c.userpass.valid() {
-			return nil, errors.New("can't authorize")
+		log.Println("need to authenticate", req.URL)
+		if !c.userpass.valid() {
+			return nil, errors.New("no username or password provided")
 		}
-		retrying = true
-		log.Println("need to authenticate")
 		err = c.authenticate(ctx, c.userpass)
 		if err != nil {
 			return nil, err

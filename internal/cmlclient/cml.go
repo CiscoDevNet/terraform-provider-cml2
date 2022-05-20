@@ -17,6 +17,7 @@ type Client struct {
 	userpass       userPass
 	versionChecked bool
 	compatible     error
+	authChecked    bool
 }
 
 func NewClient(host string, insecure bool) *Client {

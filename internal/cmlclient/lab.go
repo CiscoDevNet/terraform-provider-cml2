@@ -87,10 +87,6 @@ type LabImport struct {
 }
 
 func (c *Client) ImportLab(ctx context.Context, topo string) (*Lab, error) {
-	// need to trigger auth, if needed, before the POST request is used below
-	if err := c.jsonGet(ctx, "authok", nil); err != nil {
-		return nil, err
-	}
 	topoReader := strings.NewReader(topo)
 	labImport := &LabImport{}
 	err := c.jsonPost(ctx, "import", topoReader, labImport)

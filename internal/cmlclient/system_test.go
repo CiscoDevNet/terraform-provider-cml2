@@ -11,9 +11,8 @@ func TestClient_VersionCheck(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
 	mclient, ctx := mc.NewMockClient()
 	c.httpClient = mclient
-	c.SetToken("blabla")
-	// need to prevent the client from checking before the test does
 	c.versionChecked = true
+	c.authChecked = true
 
 	tests := []struct {
 		name       string

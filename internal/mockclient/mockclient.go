@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -36,6 +37,7 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 	if !ok {
 		panic("returned value is not a MockClient!")
 	}
+	log.Printf("mock request url %s", req.URL)
 	if mc == nil {
 		panic("no data")
 	}
