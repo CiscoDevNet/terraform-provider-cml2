@@ -1,5 +1,7 @@
 # Terraform Provider for Cisco CML2
 
+[![CodeQL](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml)
+
 _This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://www.terraform.io/docs/plugin/which-sdk.html) in the Terraform documentation for additional information._
 
 This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "work-in-progress".  The current implementation provides:
