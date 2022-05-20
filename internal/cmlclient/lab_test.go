@@ -1,59 +1,129 @@
 package cmlclient
 
 import (
-	"bytes"
-	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
-	mc "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockclient"
+	mr "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
 	"github.com/stretchr/testify/assert"
 )
 
-var shallowLab = []byte(`{
-	"state": "DEFINED_ON_CORE",
-	"created": "2022-04-29T14:17:24+00:00",
-	"modified": "2022-05-04T16:43:48+00:00",
-	"lab_title": "demobla",
+var (
+	demoLab = []byte(`{
+	"state": "STOPPED",
+	"created": "2022-05-11T20:36:15+00:00",
+	"modified": "2022-05-11T21:23:28+00:00",
+	"lab_title": "vlandrop",
 	"lab_description": "",
 	"lab_notes": "",
 	"owner": "00000000-0000-4000-a000-000000000000",
 	"owner_username": "admin",
 	"node_count": 2,
 	"link_count": 1,
-	"id": "52d5c824-e10c-450a-b9c5-b700bd3bc17a",
+	"id": "labuuid",
 	"groups": []
-  }`)
+	}`)
+	ownerUser = []byte(`{
+    "id": "00000000-0000-4000-a000-000000000000",
+    "created": "2022-04-29T13:44:46+00:00",
+    "modified": "2022-05-20T10:57:42+00:00",
+    "username": "admin",
+    "fullname": "",
+    "email": "",
+    "description": "",
+    "admin": true,
+    "directory_dn": "",
+    "groups": [],
+    "labs": ["lab1"]
+	}`)
+	links = []byte(`["link1"]`)
+	nodes = []byte(`["node1","node2"]`)
+	node1 = []byte(`{
+		"id": "node1",
+		"lab_id": "lab1",
+		"label": "alpine-0",
+		"node_definition": "alpine",
+		"state": "STOPPED"
+	}`)
+	node2 = []byte(`{
+		"id": "node2",
+		"lab_id": "lab1",
+		"label": "alpine-1",
+		"node_definition": "alpine",
+		"state": "STOPPED"
+	}`)
+	ifacesn1  = []byte(`["n1i1"]`)
+	ifacesn2  = []byte(`["n2i1"]`)
+	ifacen1i1 = []byte(`{
+		"id": "n1i1",
+		"lab_id": "lab1",
+		"node": "node1",
+		"label": "eth0",
+		"slot": 0,
+		"type": "physical",
+		"mac_address": "52:54:00:0c:e0:69",
+		"is_connected": true,
+		"state": "STOPPED"
+	}`)
+	ifacen2i1 = []byte(`{
+		"id": "n2i1",
+		"lab_id": "lab1",
+		"node": "node2",
+		"label": "eth0",
+		"slot": 0,
+		"type": "physical",
+		"mac_address": "52:54:00:0c:e0:70",
+		"is_connected": true,
+		"state": "STOPPED"
+	}`)
+	linkn1n2 = []byte(`{
+		"id": "link1",
+		"interface_a": "n1i1",
+		"interface_b": "n2i1",
+		"lab_id": "lab1",
+		"label": "alpine-0-eth0<->alpine-1-eth0",
+		"link_capture_key": "",
+		"node_a": "node1",
+		"node_b": "node2",
+		"state": "DEFINED_ON_CORE"
+	}`)
+)
 
 func TestClient_GetLab(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
-	mclient, ctx := mc.NewMockClient()
+	mclient, ctx := mr.NewMockResponder()
 	c.httpClient = mclient
 	c.authChecked = true
 
 	tests := []struct {
 		name      string
-		responses mc.MockRespList
+		responses mr.MockRespList
 		wantErr   bool
 	}{
 		{
 			"lab1",
-			mc.MockRespList{
-				mc.MockResp{
-					Data: []byte(`{"version": "2.4.1","ready": true}`),
-					Code: 200,
-				},
-				mc.MockResp{Data: shallowLab, Code: 200},
+			mr.MockRespList{
+				mr.MockResp{Data: []byte(`{"version": "2.4.1","ready": true}`)},
+				mr.MockResp{Data: demoLab},
+				mr.MockResp{Data: links, URL: `/links$`},
+				mr.MockResp{Data: []byte(`{}`), URL: `/layer3_addresses$`},
+				mr.MockResp{Data: ownerUser, URL: `/users/.+$`},
+				mr.MockResp{Data: nodes, URL: `/nodes$`},
+				mr.MockResp{Data: node1, URL: `/nodes/node1$`},
+				mr.MockResp{Data: node2, URL: `/nodes/node2$`},
+				mr.MockResp{Data: ifacesn1, URL: `/node1/interfaces$`},
+				mr.MockResp{Data: ifacesn2, URL: `/node2/interfaces$`},
+				mr.MockResp{Data: ifacen1i1, URL: `/interfaces/n1i1$`},
+				mr.MockResp{Data: ifacen2i1, URL: `/interfaces/n2i1$`},
+				mr.MockResp{Data: linkn1n2, URL: `/links/link1$`},
 			},
 			false,
 		},
 		{
 			"incompatible controller",
-			mc.MockRespList{
-				mc.MockResp{
+			mr.MockRespList{
+				mr.MockResp{
 					Data: []byte(`{"version": "2.5.1","ready": true}`),
-					Code: 200,
 				},
 			},
 			true,
@@ -64,25 +134,16 @@ func TestClient_GetLab(t *testing.T) {
 		c.versionChecked = false
 		mclient.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
-			lab, err := c.GetLab(ctx, "qwe", true)
+			lab, err := c.GetLab(ctx, "qweaa", false)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				return
 			}
-
-			expected := &labAlias{}
-			b := bytes.NewReader([]byte(shallowLab))
-			err = json.NewDecoder(b).Decode(expected)
-			if err != nil {
-				t.Errorf("bad test data %s", err)
-				return
-			}
-			if !reflect.DeepEqual(lab, &(expected.Lab)) {
-				t.Errorf("Client.GetLab() = %+v, want %+v", lab, expected.Lab)
-			}
-
+			assert.NotNil(t, lab)
+			assert.Len(t, lab.Links, 1)
+			assert.Len(t, lab.Nodes, 2)
 		})
 		if !mclient.Empty() {
 			t.Error("not all data in mock client consumed")
@@ -92,16 +153,10 @@ func TestClient_GetLab(t *testing.T) {
 
 func TestClient_ImportLab(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
-	mclient, ctx := mc.NewMockClient()
+	mclient, ctx := mr.NewMockResponder()
 	c.httpClient = mclient
 	c.authChecked = true
 	c.versionChecked = true
-
-	// additional data read for the lab import
-	labdetails, err := ioutil.ReadFile("testdata/labimport/labs-lab-id-uuid.json")
-	if err != nil {
-		t.Errorf("Client.ImportLab() can't read testfile %s", labdetails)
-	}
 
 	testfile := "testdata/labimport/twonodes.yaml"
 	labyaml, err := ioutil.ReadFile(testfile)
@@ -112,29 +167,23 @@ func TestClient_ImportLab(t *testing.T) {
 	tests := []struct {
 		name      string
 		labyaml   string
-		responses mc.MockRespList
+		responses mr.MockRespList
 		wantErr   bool
 	}{
 		{
 			"good import",
 			string(labyaml),
-			mc.MockRespList{
-				mc.MockResp{
-					Data: []byte(`{"id": "lab-id-uuid", "warnings": [] }`),
-					Code: 200,
-				},
-				mc.MockResp{
-					Data: labdetails,
-					Code: 200,
-				},
+			mr.MockRespList{
+				mr.MockResp{Data: []byte(`{"id": "lab-id-uuid", "warnings": [] }`)},
+				mr.MockResp{Data: demoLab},
 			},
 			false,
 		},
 		{
 			"bad import",
 			",,,", // invalid YAML
-			mc.MockRespList{
-				mc.MockResp{
+			mr.MockRespList{
+				mr.MockResp{
 					Data: []byte(`{
 					"description": "Bad request: while parsing a block node\nexpected the node content, but found ','\n  in \"<unicode string>\", line 1, column 1:\n    ,,,\n    ^.",
 					"code": 400}
@@ -170,13 +219,13 @@ func TestClient_ImportLab(t *testing.T) {
 
 func TestClient_ImportLabBadAuth(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
-	mclient, ctx := mc.NewMockClient()
+	mclient, ctx := mr.NewMockResponder()
 	c.httpClient = mclient
 	c.apiToken = "expiredbadtoken"
 	c.userpass = userPass{} // no password provided
 
-	data := mc.MockRespList{
-		mc.MockResp{
+	data := mr.MockRespList{
+		mr.MockResp{
 			Data: []byte(`{
 				"description": "description": "401: Unauthorized",
 				"code":        401

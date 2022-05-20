@@ -6,27 +6,27 @@ import (
 	"reflect"
 	"testing"
 
-	mc "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockclient"
+	mr "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
 )
 
 func TestClient_GetImageDefs(t *testing.T) {
 
 	c := NewClient("https://bla.bla", true)
 
-	mclient, ctx := mc.NewMockClient()
-	c.httpClient = mclient
+	mresp, ctx := mr.NewMockResponder()
+	c.httpClient = mresp
 	c.authChecked = true
 	c.versionChecked = true
 
 	tests := []struct {
 		name      string
-		responses mc.MockRespList
+		responses mr.MockRespList
 		wantErr   bool
 	}{
 		{
 			"good",
-			mc.MockRespList{
-				mc.MockResp{
+			mr.MockRespList{
+				mr.MockResp{
 					Data: []byte(
 						`[{
 							"id": "alpine-3-10-base",
@@ -43,7 +43,6 @@ func TestClient_GetImageDefs(t *testing.T) {
 							"disk_subfolder": "alpine-3-10-base",
 							"schema_version": "0.0.1"
 						}]`),
-					Code: 200,
 				},
 			},
 			false,
@@ -51,7 +50,7 @@ func TestClient_GetImageDefs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		mclient.SetData(tt.responses)
+		mresp.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := c.GetImageDefs(ctx)
 			if (err != nil) != tt.wantErr {
@@ -59,7 +58,7 @@ func TestClient_GetImageDefs(t *testing.T) {
 				return
 			}
 			expected := []ImageDefinition{}
-			b := bytes.NewReader(mclient.LastData())
+			b := bytes.NewReader(mresp.LastData())
 			err = json.NewDecoder(b).Decode(&expected)
 			if err != nil {
 				t.Error("bad test data")
@@ -69,7 +68,7 @@ func TestClient_GetImageDefs(t *testing.T) {
 				t.Errorf("Client.GetImageDefs() = %v, want %v", got, expected)
 			}
 		})
-		if !mclient.Empty() {
+		if !mresp.Empty() {
 			t.Error("not all data in mock client consumed")
 		}
 	}

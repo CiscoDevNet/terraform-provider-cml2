@@ -54,12 +54,11 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request) ([]byte, error) {
 	}
 	if c.compatibilityErr != nil {
 		return nil, c.compatibilityErr
-	} else {
-		if !c.authChecked {
-			c.authChecked = true
-			if err := c.jsonGet(ctx, authokAPI, nil); err != nil {
-				return nil, err
-			}
+	}
+	if !c.authChecked {
+		c.authChecked = true
+		if err := c.jsonGet(ctx, authokAPI, nil); err != nil {
+			return nil, err
 		}
 	}
 
@@ -78,7 +77,7 @@ retry:
 	}
 	// no authorization and not retrying already
 	if res.StatusCode == http.StatusUnauthorized {
-		log.Println("need to authenticate", req.URL)
+		log.Println("need to authenticate")
 		if !c.userpass.valid() {
 			return nil, errors.New("no username or password provided")
 		}

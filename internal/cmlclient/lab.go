@@ -186,6 +186,10 @@ func (c *Client) GetLab(ctx context.Context, id string, shallow bool) (*Lab, err
 	})
 
 	lab := &la.Lab
+	if lab.ID != id {
+		log.Printf("[WARN] requested ID does not match actual ID!")
+	}
+	id = lab.ID
 
 	// need to ensure that this block finishes before the others run
 	ch := make(chan struct{})
@@ -233,6 +237,7 @@ func (c *Client) GetLab(ctx context.Context, id string, shallow bool) (*Lab, err
 				}
 			}
 		}
+		log.Printf("loops done")
 		return nil
 	})
 
@@ -240,6 +245,7 @@ func (c *Client) GetLab(ctx context.Context, id string, shallow bool) (*Lab, err
 		defer log.Printf("links done")
 		idlist, err := c.getLinkIDsForLab(ctx, lab)
 		if err != nil {
+			log.Println("ugh", err)
 			return err
 		}
 		log.Printf("linkidlist read")

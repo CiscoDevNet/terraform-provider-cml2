@@ -75,13 +75,6 @@ func (c *Client) getLinkIDsForLab(ctx context.Context, lab *Lab) (IDlist, error)
 }
 
 func (c *Client) getLinksForLab(ctx context.Context, lab *Lab, linkIDlist IDlist) error {
-	// api := fmt.Sprintf("labs/%s/links", lab.ID)
-	// linkIDlist := &IDlist{}
-	// err := c.jsonGet(ctx, api, linkIDlist)
-	// if err != nil {
-	// 	return err
-	// }
-
 	linkList := linkList{}
 	for _, linkID := range linkIDlist {
 		api := fmt.Sprintf("labs/%s/links/%s", lab.ID, linkID)
