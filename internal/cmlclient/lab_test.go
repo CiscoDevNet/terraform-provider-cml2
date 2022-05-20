@@ -10,31 +10,31 @@ import (
 
 var (
 	demoLab = []byte(`{
-	"state": "STOPPED",
-	"created": "2022-05-11T20:36:15+00:00",
-	"modified": "2022-05-11T21:23:28+00:00",
-	"lab_title": "vlandrop",
-	"lab_description": "",
-	"lab_notes": "",
-	"owner": "00000000-0000-4000-a000-000000000000",
-	"owner_username": "admin",
-	"node_count": 2,
-	"link_count": 1,
-	"id": "labuuid",
-	"groups": []
+		"state": "STOPPED",
+		"created": "2022-05-11T20:36:15+00:00",
+		"modified": "2022-05-11T21:23:28+00:00",
+		"lab_title": "vlandrop",
+		"lab_description": "",
+		"lab_notes": "",
+		"owner": "00000000-0000-4000-a000-000000000000",
+		"owner_username": "admin",
+		"node_count": 2,
+		"link_count": 1,
+		"id": "labuuid",
+		"groups": []
 	}`)
 	ownerUser = []byte(`{
-    "id": "00000000-0000-4000-a000-000000000000",
-    "created": "2022-04-29T13:44:46+00:00",
-    "modified": "2022-05-20T10:57:42+00:00",
-    "username": "admin",
-    "fullname": "",
-    "email": "",
-    "description": "",
-    "admin": true,
-    "directory_dn": "",
-    "groups": [],
-    "labs": ["lab1"]
+		"id": "00000000-0000-4000-a000-000000000000",
+		"created": "2022-04-29T13:44:46+00:00",
+		"modified": "2022-05-20T10:57:42+00:00",
+		"username": "admin",
+		"fullname": "",
+		"email": "",
+		"description": "",
+		"admin": true,
+		"directory_dn": "",
+		"groups": [],
+		"labs": ["lab1"]
 	}`)
 	links = []byte(`["link1"]`)
 	nodes = []byte(`["node1","node2"]`)
