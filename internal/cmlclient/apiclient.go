@@ -15,8 +15,8 @@ const (
 	contentType   string = "application/json"
 	apiBase       string = "/api/v0/"
 	authAPI       string = "auth_extended"
-	authOK        string = "authok"
-	systemInfoAPI string = "system_information"
+	authokAPI     string = "authok"
+	systeminfoAPI string = "system_information"
 )
 
 func setTokenHeader(req *http.Request, token string) {
@@ -50,14 +50,14 @@ func (c *Client) doAPI(ctx context.Context, req *http.Request) ([]byte, error) {
 
 	if !c.versionChecked {
 		c.versionChecked = true
-		c.compatible = c.versionCheck(ctx)
+		c.compatibilityErr = c.versionCheck(ctx)
 	}
-	if c.compatible != nil {
-		return nil, c.compatible
+	if c.compatibilityErr != nil {
+		return nil, c.compatibilityErr
 	} else {
 		if !c.authChecked {
 			c.authChecked = true
-			if err := c.jsonGet(ctx, "authok", nil); err != nil {
+			if err := c.jsonGet(ctx, authokAPI, nil); err != nil {
 				return nil, err
 			}
 		}

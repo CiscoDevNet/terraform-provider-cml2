@@ -94,7 +94,6 @@ func TestClient_ImportLab(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
 	mclient, ctx := mc.NewMockClient()
 	c.httpClient = mclient
-	// c.userpass = userPass{"admin", "bbb"}
 	c.authChecked = true
 	c.versionChecked = true
 
@@ -104,56 +103,89 @@ func TestClient_ImportLab(t *testing.T) {
 		t.Errorf("Client.ImportLab() can't read testfile %s", labdetails)
 	}
 
-	data := mc.MockRespList{
-		mc.MockResp{
-			Data: []byte(`{"id": "lab-id-uuid", "warnings": [] }`),
-			Code: 200,
-		},
-		mc.MockResp{
-			Data: labdetails,
-			Code: 200,
-		},
-	}
-
-	mclient.SetData(data)
 	testfile := "testdata/labimport/twonodes.yaml"
 	labyaml, err := ioutil.ReadFile(testfile)
 	if err != nil {
 		t.Errorf("Client.ImportLab() can't read testfile %s", testfile)
 	}
-	lab, err := c.ImportLab(ctx, string(labyaml))
-	if err != nil {
-		t.Errorf("Client.ImportLab() unexpected error = %v", err)
-		return
+
+	tests := []struct {
+		name      string
+		labyaml   string
+		responses mc.MockRespList
+		wantErr   bool
+	}{
+		{
+			"good import",
+			string(labyaml),
+			mc.MockRespList{
+				mc.MockResp{
+					Data: []byte(`{"id": "lab-id-uuid", "warnings": [] }`),
+					Code: 200,
+				},
+				mc.MockResp{
+					Data: labdetails,
+					Code: 200,
+				},
+			},
+			false,
+		},
+		{
+			"bad import",
+			",,,", // invalid YAML
+			mc.MockRespList{
+				mc.MockResp{
+					Data: []byte(`{
+					"description": "Bad request: while parsing a block node\nexpected the node content, but found ','\n  in \"<unicode string>\", line 1, column 1:\n    ,,,\n    ^.",
+					"code": 400}
+					`),
+					Code: 400,
+				},
+			},
+			true,
+		},
 	}
 
-	if !mclient.Empty() {
-		t.Error("not all data in mock client consumed")
+	for _, tt := range tests {
+		mclient.SetData(tt.responses)
+		t.Run(tt.name, func(t *testing.T) {
+			lab, err := c.ImportLab(ctx, tt.labyaml)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
+				}
+				return
+			}
+			assert.NotNil(t, lab)
+			// TODO: when adding more tests, the node/link count needs to be
+			// parametrized!!
+			assert.Equal(t, lab.NodeCount, 2)
+			assert.Equal(t, lab.LinkCount, 1)
+		})
+		if !mclient.Empty() {
+			t.Error("not all data in mock client consumed")
+		}
 	}
-
-	assert.NotNil(t, lab)
-	assert.Equal(t, lab.NodeCount, 2)
-	assert.Equal(t, lab.LinkCount, 1)
 }
 
 func TestClient_ImportLabBadAuth(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
 	mclient, ctx := mc.NewMockClient()
 	c.httpClient = mclient
-	c.apiToken = "badtoken"
+	c.apiToken = "expiredbadtoken"
 	c.userpass = userPass{} // no password provided
 
 	data := mc.MockRespList{
 		mc.MockResp{
 			Data: []byte(`{
-				"description": "Not authenticated: 401 Unauthorized: No authorization token provided.",
+				"description": "description": "401: Unauthorized",
 				"code":        401
 			}`),
 			Code: 401,
 		},
 	}
 	mclient.SetData(data)
-	lab, err := c.GetLab(ctx, "thisid", true)
+	lab, err := c.ImportLab(ctx, `{}`)
 
 	if !mclient.Empty() {
 		t.Error("not all data in mock client consumed")

@@ -28,7 +28,7 @@ func versionError(got string) error {
 func (c *Client) versionCheck(ctx context.Context) error {
 
 	sv := systemVersion{}
-	if err := c.jsonGet(ctx, "system_information", &sv); err != nil {
+	if err := c.jsonGet(ctx, systeminfoAPI, &sv); err != nil {
 		return err
 	}
 	constraint, err := semver.NewConstraint(versionConstraint)

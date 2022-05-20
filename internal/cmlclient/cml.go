@@ -11,13 +11,13 @@ type apiClient interface {
 }
 
 type Client struct {
-	httpClient     apiClient
-	apiToken       string
-	host           string
-	userpass       userPass
-	versionChecked bool
-	compatible     error
-	authChecked    bool
+	host             string
+	apiToken         string
+	userpass         userPass
+	httpClient       apiClient
+	authChecked      bool
+	versionChecked   bool
+	compatibilityErr error
 }
 
 func NewClient(host string, insecure bool) *Client {
@@ -34,6 +34,8 @@ func NewClient(host string, insecure bool) *Client {
 			Timeout:   15 * time.Second,
 			Transport: tr,
 		},
-		versionChecked: false,
+		authChecked:      false,
+		versionChecked:   false,
+		compatibilityErr: nil,
 	}
 }
