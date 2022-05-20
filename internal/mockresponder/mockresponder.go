@@ -25,7 +25,7 @@ const (
 	contextMockClient = contextKey("mockclient")
 )
 
-// MockResponder is serves mock responses
+// MockResponder serves mock responses
 type MockResponder struct {
 	doFunc     func(req *http.Request) (*http.Response, error)
 	mockData   MockRespList
