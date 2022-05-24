@@ -138,45 +138,133 @@ type cmlLabResourceData struct {
 }
 
 type cml2Node struct {
-	Id         types.String    `tfsdk:"id"`
-	Label      types.String    `tfsdk:"label"`
-	State      types.String    `tfsdk:"state"`
-	NodeType   types.String    `tfsdk:"nodetype"`
-	Interfaces []cml2Interface `tfsdk:"interfaces"`
+	Id         types.String `tfsdk:"id"`
+	Label      types.String `tfsdk:"label"`
+	State      types.String `tfsdk:"state"`
+	NodeType   types.String `tfsdk:"nodetype"`
+	Interfaces types.List   `tfsdk:"interfaces"`
 }
+
+var (
+	ifaceObject = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":           types.StringType,
+			"label":        types.StringType,
+			"state":        types.StringType,
+			"mac_address":  types.StringType,
+			"is_connected": types.BoolType,
+			"ip4":          types.ListType{ElemType: types.StringType},
+			"ip6":          types.ListType{ElemType: types.StringType},
+		},
+	}
+	nodeObject = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":         types.StringType,
+			"label":      types.StringType,
+			"state":      types.StringType,
+			"nodetype":   types.StringType,
+			"interfaces": types.ListType{ElemType: ifaceObject},
+		},
+	}
+)
 
 func newCML2node(node *cmlclient.Node) cml2Node {
-	return cml2Node{
-		Id:       types.String{Value: node.ID},
-		Label:    types.String{Value: node.Label},
-		State:    types.String{Value: node.State},
-		NodeType: types.String{Value: node.NodeDefinition},
-	}
-}
 
-type cml2Interface struct {
-	Id          types.String   `tfsdk:"id"`
-	Label       types.String   `tfsdk:"label"`
-	State       types.String   `tfsdk:"state"`
-	MACaddress  types.String   `tfsdk:"mac_address"`
-	IsConnected types.Bool     `tfsdk:"is_connected"`
-	IP4         []types.String `tfsdk:"ip4"`
-	IP6         []types.String `tfsdk:"ip6"`
+	// we want this as a stable sort by interface UUID
+	ilist := []*cmlclient.Interface{}
+	for _, iface := range node.Interfaces {
+		ilist = append(ilist, iface)
+	}
+	sort.Slice(ilist, func(i, j int) bool {
+		return ilist[i].ID < ilist[j].ID
+	})
+
+	ifaces := types.List{ElemType: ifaceObject}
+	for _, iface := range ilist {
+		ifaces.Elems = append(ifaces.Elems, newCML2iface(iface).toObject())
+	}
+
+	return cml2Node{
+		Id:         types.String{Value: node.ID},
+		Label:      types.String{Value: node.Label},
+		State:      types.String{Value: node.State},
+		NodeType:   types.String{Value: node.NodeDefinition},
+		Interfaces: ifaces,
+	}
 }
 
 func (n cml2Node) toObject() types.Object {
 	return types.Object{
 		AttrTypes: nodeObject.AttrTypes,
 		Attrs: map[string]attr.Value{
-			"id":       types.String{Value: n.Id.Value},
-			"label":    types.String{Value: n.Label.Value},
-			"state":    types.String{Value: n.State.Value},
-			"nodetype": types.String{Value: n.NodeType.Value},
-			"interfaces": types.List{
-				ElemType: ifaceObject,
-				// Elems:    ifaces,
-				Null: true,
-			},
+			"id":         n.Id,
+			"label":      n.Label,
+			"state":      n.State,
+			"nodetype":   n.NodeType,
+			"interfaces": n.Interfaces,
+		},
+	}
+}
+
+type cml2Interface struct {
+	Id          types.String `tfsdk:"id"`
+	Label       types.String `tfsdk:"label"`
+	State       types.String `tfsdk:"state"`
+	MACaddress  types.String `tfsdk:"mac_address"`
+	IsConnected types.Bool   `tfsdk:"is_connected"`
+	IP4         types.List   `tfsdk:"ip4"`
+	IP6         types.List   `tfsdk:"ip6"`
+}
+
+func newCML2iface(iface *cmlclient.Interface) cml2Interface {
+
+	ip4List := types.List{ElemType: types.StringType, Null: true}
+	ip6List := types.List{ElemType: types.StringType, Null: true}
+	macAddress := types.String{Null: true}
+
+	if iface.Runs() {
+		// IPv4 addresses
+		list := make([]attr.Value, 0)
+		for _, ip := range iface.IP4 {
+			list = append(list, types.String{Value: ip})
+		}
+		ip4List.Elems = list
+		ip4List.Null = false
+		// IPv6 addresses
+		list = make([]attr.Value, 0)
+		for _, ip := range iface.IP6 {
+			list = append(list, types.String{Value: ip})
+		}
+		ip6List.Elems = list
+		ip6List.Null = false
+	}
+	if iface.Exists() {
+		macAddress.Value = iface.MACaddress
+		macAddress.Null = false
+	}
+
+	return cml2Interface{
+		Id:          types.String{Value: iface.ID},
+		Label:       types.String{Value: iface.Label},
+		State:       types.String{Value: iface.State},
+		IsConnected: types.Bool{Value: iface.IsConnected},
+		MACaddress:  macAddress,
+		IP4:         ip4List,
+		IP6:         ip6List,
+	}
+}
+
+func (n cml2Interface) toObject() types.Object {
+	return types.Object{
+		AttrTypes: ifaceObject.AttrTypes,
+		Attrs: map[string]attr.Value{
+			"id":           n.Id,
+			"label":        n.Label,
+			"state":        n.State,
+			"is_connected": n.IsConnected,
+			"mac_address":  n.MACaddress,
+			"ip4":          n.IP4,
+			"ip6":          n.IP6,
 		},
 	}
 }
@@ -271,7 +359,16 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 
 		for _, node := range nodes {
 			newInterfaceList := types.List{ElemType: ifaceObject}
-			for _, iface := range node.Interfaces {
+			for _, ifaceElem := range node.Interfaces.Elems {
+
+				iface := cml2Interface{}
+				diags = ifaceElem.(types.Object).As(ctx, &iface, types.ObjectAsOptions{})
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					tflog.Error(ctx, "ModifyPlan: that didn't work")
+					return
+				}
+
 				macAddress := types.String{}
 				ip4List := types.List{ElemType: types.StringType}
 				ip6List := types.List{ElemType: types.StringType}
@@ -287,38 +384,24 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 					} else {
 						macAddress.Value = iface.MACaddress.Value
 					}
-					ip4List.Null = true
-					ip6List.Null = true
+					ip4List.Unknown = true
+					ip6List.Unknown = true
 				case cmlclient.LabStateStopped:
 					macAddress.Value = iface.MACaddress.Value
 					ip4List.Null = true
 					ip6List.Null = true
 				}
-				newIfaceElem := types.Object{
-					AttrTypes: ifaceObject.AttrTypes,
-					Attrs: map[string]attr.Value{
-						"id":           types.String{Value: iface.Id.Value},
-						"label":        types.String{Value: iface.Label.Value},
-						"state":        types.String{Unknown: true},
-						"is_connected": types.Bool{Value: iface.IsConnected.Value},
-
-						"mac_address": macAddress,
-						"ip4":         ip4List,
-						"ip6":         ip6List,
-					},
-				}
+				iface.State.Unknown = true
+				iface.MACaddress = macAddress
+				iface.IP4 = ip4List
+				iface.IP6 = ip6List
+				newIfaceElem := iface.toObject()
 				newInterfaceList.Elems = append(newInterfaceList.Elems, newIfaceElem)
 			}
-			newNodeElem := types.Object{
-				AttrTypes: nodeObject.AttrTypes,
-				Attrs: map[string]attr.Value{
-					"id":         types.String{Value: node.Id.Value},
-					"label":      types.String{Value: node.Label.Value},
-					"state":      types.String{Unknown: true},
-					"nodetype":   types.String{Value: node.NodeType.Value},
-					"interfaces": newInterfaceList,
-				},
-			}
+
+			node.State.Unknown = true
+			node.Interfaces = newInterfaceList
+			newNodeElem := node.toObject()
 			newNodeList.Elems = append(newNodeList.Elems, newNodeElem)
 		}
 
@@ -411,44 +494,14 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	data.Nodes.Elems = populateNodes(ctx, lab)
-	data.Nodes.Null = false
+	data.Nodes = populateNodes(ctx, lab)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
 	tflog.Info(ctx, "Create: done")
 }
 
-var (
-	ifaceObject = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"id":           types.StringType,
-			"label":        types.StringType,
-			"state":        types.StringType,
-			"mac_address":  types.StringType,
-			"is_connected": types.BoolType,
-			"ip4": types.ListType{
-				ElemType: types.StringType,
-			},
-			"ip6": types.ListType{
-				ElemType: types.StringType,
-			},
-		},
-	}
-	nodeObject = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"id":       types.StringType,
-			"label":    types.StringType,
-			"state":    types.StringType,
-			"nodetype": types.StringType,
-			"interfaces": types.ListType{
-				ElemType: ifaceObject,
-			},
-		},
-	}
-)
-
-func populateNodes(ctx context.Context, lab *cmlclient.Lab) []attr.Value {
+func populateNodes(ctx context.Context, lab *cmlclient.Lab) types.List {
 	// we want this as a stable sort by node UUID
 	nodeList := []*cmlclient.Node{}
 	for _, node := range lab.Nodes {
@@ -457,80 +510,10 @@ func populateNodes(ctx context.Context, lab *cmlclient.Lab) []attr.Value {
 	sort.Slice(nodeList, func(i, j int) bool {
 		return nodeList[i].ID < nodeList[j].ID
 	})
-
-	nodes := make([]attr.Value, 0)
+	nodes := types.List{ElemType: nodeObject}
 	for _, node := range nodeList {
-
-		// we want this as a stable sort by interface UUID
-		ilist := []*cmlclient.Interface{}
-		for _, iface := range node.Interfaces {
-			ilist = append(ilist, iface)
-		}
-		sort.Slice(ilist, func(i, j int) bool {
-			return ilist[i].ID < ilist[j].ID
-		})
-
-		ifaces := make([]attr.Value, 0)
-		for _, iface := range ilist {
-
-			ip4List := types.List{ElemType: types.StringType, Null: true}
-			ip6List := types.List{ElemType: types.StringType, Null: true}
-			macAddress := types.String{Null: true}
-
-			if iface.Runs() {
-				// IPv4 addresses
-				list := make([]attr.Value, 0)
-				for _, ip := range iface.IP4 {
-					list = append(list, types.String{Value: ip})
-				}
-				ip4List.Elems = list
-				ip4List.Null = false
-				// IPv6 addresses
-				list = make([]attr.Value, 0)
-				for _, ip := range iface.IP6 {
-					list = append(list, types.String{Value: ip})
-				}
-				ip6List.Elems = list
-				ip6List.Null = false
-			}
-			if iface.Exists() {
-				macAddress.Value = iface.MACaddress
-				macAddress.Null = false
-			}
-
-			ifaceElem := types.Object{
-				AttrTypes: ifaceObject.AttrTypes,
-				Attrs: map[string]attr.Value{
-					"id":           types.String{Value: iface.ID},
-					"label":        types.String{Value: iface.Label},
-					"state":        types.String{Value: iface.State},
-					"is_connected": types.Bool{Value: iface.IsConnected},
-					"mac_address":  macAddress,
-					"ip4":          ip4List,
-					"ip6":          ip6List,
-				},
-			}
-			ifaces = append(ifaces, ifaceElem)
-		}
-
-		o := types.Object{
-			AttrTypes: nodeObject.AttrTypes,
-			Attrs: map[string]attr.Value{
-				"id":       types.String{Value: node.ID},
-				"label":    types.String{Value: node.Label},
-				"state":    types.String{Value: node.State},
-				"nodetype": types.String{Value: node.NodeDefinition},
-				"interfaces": types.List{
-					ElemType: ifaceObject,
-					Elems:    ifaces,
-					Null:     false,
-				},
-			},
-		}
-		// tflog.Info(ctx, "node add", map[string]interface{}{
-		// 	"object": o,
-		// })
-		nodes = append(nodes, o)
+		o := newCML2node(node).toObject()
+		nodes.Elems = append(nodes.Elems, o)
 	}
 	return nodes
 }
@@ -561,8 +544,7 @@ func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	data.Nodes.Elems = populateNodes(ctx, lab)
-	data.Nodes.Null = false
+	data.Nodes = populateNodes(ctx, lab)
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -639,9 +621,7 @@ func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		}
 		tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
 		data.State = types.String{Value: lab.State}
-		data.Nodes.Elems = populateNodes(ctx, lab)
-		data.Nodes.Null = false
-		data.Nodes.Unknown = false
+		data.Nodes = populateNodes(ctx, lab)
 	}
 
 	diags = resp.State.Set(ctx, data)
