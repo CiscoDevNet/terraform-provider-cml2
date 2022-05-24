@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 )
@@ -36,7 +37,7 @@ func (c *Client) versionCheck(ctx context.Context) error {
 		panic("unparsable semver version constant")
 	}
 
-	re, err := regexp.Compile(`^(\d\.\d\.\d)(.*$)`)
+	re, err := regexp.Compile(`^(\d\.\d\.\d)(\+build.*|\.dev.*)?$`)
 	if err != nil {
 		panic("can't compile regex")
 	}
@@ -45,7 +46,7 @@ func (c *Client) versionCheck(ctx context.Context) error {
 		return versionError(sv.Version)
 	}
 	log.Printf("controller version: %s", sv.Version)
-	if len(m[2]) > 0 {
+	if len(m[2]) > 0 && strings.Contains(m[2], "dev") {
 		log.Printf("Warning, this is a DEV version %s", sv.Version)
 	}
 	stem := m[1]

@@ -137,6 +137,50 @@ type cmlLabResourceData struct {
 	Nodes    types.List   `tfsdk:"nodes"`
 }
 
+type cml2Node struct {
+	Id         types.String    `tfsdk:"id"`
+	Label      types.String    `tfsdk:"label"`
+	State      types.String    `tfsdk:"state"`
+	NodeType   types.String    `tfsdk:"nodetype"`
+	Interfaces []cml2Interface `tfsdk:"interfaces"`
+}
+
+func newCML2node(node *cmlclient.Node) cml2Node {
+	return cml2Node{
+		Id:       types.String{Value: node.ID},
+		Label:    types.String{Value: node.Label},
+		State:    types.String{Value: node.State},
+		NodeType: types.String{Value: node.NodeDefinition},
+	}
+}
+
+type cml2Interface struct {
+	Id          types.String   `tfsdk:"id"`
+	Label       types.String   `tfsdk:"label"`
+	State       types.String   `tfsdk:"state"`
+	MACaddress  types.String   `tfsdk:"mac_address"`
+	IsConnected types.Bool     `tfsdk:"is_connected"`
+	IP4         []types.String `tfsdk:"ip4"`
+	IP6         []types.String `tfsdk:"ip6"`
+}
+
+func (n cml2Node) toObject() types.Object {
+	return types.Object{
+		AttrTypes: nodeObject.AttrTypes,
+		Attrs: map[string]attr.Value{
+			"id":       types.String{Value: n.Id.Value},
+			"label":    types.String{Value: n.Label.Value},
+			"state":    types.String{Value: n.State.Value},
+			"nodetype": types.String{Value: n.NodeType.Value},
+			"interfaces": types.List{
+				ElemType: ifaceObject,
+				// Elems:    ifaces,
+				Null: true,
+			},
+		},
+	}
+}
+
 type cmlLabResource struct {
 	provider cml2
 }
@@ -216,32 +260,77 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 	if !noState && planData.State.Value != stateData.State.Value {
 		tflog.Info(ctx, "ModifyPlan: state change")
 
-		// this doesn't work as I'm not changing the actual data :(
-		// for _, nodeElem := range planData.Nodes.Elems {
-		// 	node := resultNode{}
-		// 	nodeElem.(types.Object).As(ctx, node, types.ObjectAsOptions{})
-		// 	node.State.Unknown = true
-		// 	for _, ifaceElem := range node.Interfaces.Elems {
-		// 		iface := resultInterface{}
-		// 		ifaceElem.(types.Object).As(ctx, iface, types.ObjectAsOptions{})
-		// 		iface.State.Unknown = true
-		// 		iface.MACaddress.Unknown = true
-		// 		iface.IP4 = nil
-		// 	}
-		// }
-		// mark everything "nodes" as unknown
-		planData.Nodes.Unknown = true
-		diags = resp.Plan.Set(ctx, planData)
+		newNodeList := types.List{ElemType: nodeObject}
+		nodes := []cml2Node{}
+		diags := planData.Nodes.ElementsAs(ctx, &nodes, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			tflog.Error(ctx, "ModifyPlan: that didn't work")
+			return
+		}
+
+		for _, node := range nodes {
+			newInterfaceList := types.List{ElemType: ifaceObject}
+			for _, iface := range node.Interfaces {
+				macAddress := types.String{}
+				ip4List := types.List{ElemType: types.StringType}
+				ip6List := types.List{ElemType: types.StringType}
+
+				switch planData.State.Value {
+				case cmlclient.LabStateDefined:
+					macAddress.Null = true
+					ip4List.Null = true
+					ip6List.Null = true
+				case cmlclient.LabStateStarted:
+					if stateData.State.Value == cmlclient.LabStateDefined {
+						macAddress.Unknown = true
+					} else {
+						macAddress.Value = iface.MACaddress.Value
+					}
+					ip4List.Null = true
+					ip6List.Null = true
+				case cmlclient.LabStateStopped:
+					macAddress.Value = iface.MACaddress.Value
+					ip4List.Null = true
+					ip6List.Null = true
+				}
+				newIfaceElem := types.Object{
+					AttrTypes: ifaceObject.AttrTypes,
+					Attrs: map[string]attr.Value{
+						"id":           types.String{Value: iface.Id.Value},
+						"label":        types.String{Value: iface.Label.Value},
+						"state":        types.String{Unknown: true},
+						"is_connected": types.Bool{Value: iface.IsConnected.Value},
+
+						"mac_address": macAddress,
+						"ip4":         ip4List,
+						"ip6":         ip6List,
+					},
+				}
+				newInterfaceList.Elems = append(newInterfaceList.Elems, newIfaceElem)
+			}
+			newNodeElem := types.Object{
+				AttrTypes: nodeObject.AttrTypes,
+				Attrs: map[string]attr.Value{
+					"id":         types.String{Value: node.Id.Value},
+					"label":      types.String{Value: node.Label.Value},
+					"state":      types.String{Unknown: true},
+					"nodetype":   types.String{Value: node.NodeType.Value},
+					"interfaces": newInterfaceList,
+				},
+			}
+			newNodeList.Elems = append(newNodeList.Elems, newNodeElem)
+		}
+
+		ap := tftypes.NewAttributePath().WithAttributeName("nodes")
+		diags = resp.Plan.SetAttribute(ctx, ap, newNodeList)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			tflog.Error(ctx, "ModifyPlan: plan has errors")
 			return
 		}
 	}
-
-	// tflog.Info(ctx, "ModifyPlan: done", map[string]interface{}{
-	// 	"nodes": planData.Nodes,
-	// })
+	tflog.Info(ctx, "ModifyPlan: done")
 }
 
 func (r cmlLabResource) stop(ctx context.Context, diag diag.Diagnostics, id string) {
@@ -346,7 +435,7 @@ var (
 			},
 		},
 	}
-	nodeObject = types.Object{
+	nodeObject = types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"id":       types.StringType,
 			"label":    types.StringType,
@@ -384,13 +473,29 @@ func populateNodes(ctx context.Context, lab *cmlclient.Lab) []attr.Value {
 		ifaces := make([]attr.Value, 0)
 		for _, iface := range ilist {
 
-			ip4list := make([]attr.Value, 0)
-			for _, ip := range iface.IP4 {
-				ip4list = append(ip4list, types.String{Value: ip})
+			ip4List := types.List{ElemType: types.StringType, Null: true}
+			ip6List := types.List{ElemType: types.StringType, Null: true}
+			macAddress := types.String{Null: true}
+
+			if iface.Runs() {
+				// IPv4 addresses
+				list := make([]attr.Value, 0)
+				for _, ip := range iface.IP4 {
+					list = append(list, types.String{Value: ip})
+				}
+				ip4List.Elems = list
+				ip4List.Null = false
+				// IPv6 addresses
+				list = make([]attr.Value, 0)
+				for _, ip := range iface.IP6 {
+					list = append(list, types.String{Value: ip})
+				}
+				ip6List.Elems = list
+				ip6List.Null = false
 			}
-			ip6list := make([]attr.Value, 0)
-			for _, ip := range iface.IP6 {
-				ip6list = append(ip6list, types.String{Value: ip})
+			if iface.Exists() {
+				macAddress.Value = iface.MACaddress
+				macAddress.Null = false
 			}
 
 			ifaceElem := types.Object{
@@ -399,18 +504,10 @@ func populateNodes(ctx context.Context, lab *cmlclient.Lab) []attr.Value {
 					"id":           types.String{Value: iface.ID},
 					"label":        types.String{Value: iface.Label},
 					"state":        types.String{Value: iface.State},
-					"mac_address":  types.String{Value: iface.MACaddress},
 					"is_connected": types.Bool{Value: iface.IsConnected},
-					"ip4": types.List{
-						ElemType: types.StringType,
-						Elems:    ip4list,
-						Null:     false,
-					},
-					"ip6": types.List{
-						ElemType: types.StringType,
-						Elems:    ip6list,
-						Null:     false,
-					},
+					"mac_address":  macAddress,
+					"ip4":          ip4List,
+					"ip6":          ip6List,
 				},
 			}
 			ifaces = append(ifaces, ifaceElem)

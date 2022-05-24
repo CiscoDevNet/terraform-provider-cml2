@@ -181,30 +181,30 @@ func (t cmlNodeDefDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Pr
 	}, diags
 }
 
-type cml2Node struct {
-	Id         types.String    `tfsdk:"id"`
-	Label      types.String    `tfsdk:"label"`
-	State      types.String    `tfsdk:"state"`
-	NodeType   types.String    `tfsdk:"nodetype"`
-	Interfaces []cml2Interface `tfsdk:"interfaces"`
-}
+// type cml2Node struct {
+// 	Id         types.String    `tfsdk:"id"`
+// 	Label      types.String    `tfsdk:"label"`
+// 	State      types.String    `tfsdk:"state"`
+// 	NodeType   types.String    `tfsdk:"nodetype"`
+// 	Interfaces []cml2Interface `tfsdk:"interfaces"`
+// }
 
-type cml2Interface struct {
-	Id          types.String   `tfsdk:"id"`
-	Label       types.String   `tfsdk:"label"`
-	State       types.String   `tfsdk:"state"`
-	MACaddress  types.String   `tfsdk:"mac_address"`
-	IsConnected types.Bool     `tfsdk:"is_connected"`
-	IP4         []types.String `tfsdk:"ip4"`
-	IP6         []types.String `tfsdk:"ip6"`
-}
+// type cml2Interface struct {
+// 	Id          types.String   `tfsdk:"id"`
+// 	Label       types.String   `tfsdk:"label"`
+// 	State       types.String   `tfsdk:"state"`
+// 	MACaddress  types.String   `tfsdk:"mac_address"`
+// 	IsConnected types.Bool     `tfsdk:"is_connected"`
+// 	IP4         []types.String `tfsdk:"ip4"`
+// 	IP6         []types.String `tfsdk:"ip6"`
+// }
 
 type cml2NodeDefDataSourceData struct {
 	Id         types.String `tfsdk:"id"`
 	State      types.String `tfsdk:"state"`
 	Filter     types.String `tfsdk:"filter"`
 	OnlyWithIP types.Bool   `tfsdk:"only_with_ip"`
-	Nodes      []cml2Node   `tfsdk:"nodes"`
+	// Nodes      []cml2Node   `tfsdk:"nodes"`
 }
 
 type cml2NodeDefDataSource struct {
@@ -261,6 +261,7 @@ func (d cml2NodeDefDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourc
 			State:    types.String{Value: node.State},
 			NodeType: types.String{Value: node.NodeDefinition},
 		}
+		_ = rnode
 		// hasIP := false
 
 		// we want this as a stable sort by interface UUID
@@ -316,7 +317,7 @@ func (d cml2NodeDefDataSource) Read(ctx context.Context, req tfsdk.ReadDataSourc
 		// if needsIP && !hasIP {
 		// 	continue
 		// }
-		data.Nodes = append(data.Nodes, rnode)
+		// data.Nodes = append(data.Nodes, rnode)
 	}
 
 	// tflog.Info(ctx, "$$$", map[string]interface{}{"id": data.Id.Value})

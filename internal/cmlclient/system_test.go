@@ -23,6 +23,7 @@ func TestClient_VersionCheck(t *testing.T) {
 		{"garbage", `{"version": "garbage","ready": true}`, true},
 		{"too new", `{"version": "2.35.0","ready": true}`, true},
 		{"perfect", `{"version": "2.4.0","ready": true}`, false},
+		{"actual", `{"version": "2.4.0+build.1","ready": true}`, false},
 		{"newer", `{"version": "2.4.1","ready": true}`, false},
 		{"devbuild", `{"version": "2.4.0.dev0","ready": true}`, false},
 	}

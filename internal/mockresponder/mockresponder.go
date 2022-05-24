@@ -75,7 +75,7 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 	// default to 200/OK
 	statusCode := data.Code
 	if statusCode == 0 {
-		statusCode = 200
+		statusCode = http.StatusOK
 	}
 
 	resp := &http.Response{
@@ -101,6 +101,7 @@ func (m *MockResponder) Reset() {
 	for _, d := range m.mockData {
 		d.served = false
 	}
+	m.lastServed = 0
 }
 
 func (m *MockResponder) SetData(data MockRespList) {
@@ -130,5 +131,5 @@ func NewMockResponder() (*MockResponder, context.Context) {
 		doFunc:   defaultDoFunc,
 		mockData: nil,
 	}
-	return mc, context.WithValue(context.Background(), contextMockClient, mc)
+	return mc, context.WithValue(context.TODO(), contextMockClient, mc)
 }

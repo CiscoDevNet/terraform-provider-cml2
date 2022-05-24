@@ -60,11 +60,11 @@ func main() {
 	// }
 	// l, err := client.ImportLab(ctx, string(topo))
 
-	// l, err := client.GetLab(ctx, labID, false)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
+	l, err := client.GetLab(ctx, labID, false)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	// nd, err := client.GetNodeDefs(ctx)
 	// if err != nil {
@@ -77,13 +77,13 @@ func main() {
 	// 	log.Println(a)
 	// }
 
-	nd, err := client.GetImageDefs(ctx)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	// nd, err := client.GetImageDefs(ctx)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
 
-	je, err := json.Marshal(nd)
+	je, err := json.Marshal(l)
 	if err != nil {
 		log.Println(err)
 	}

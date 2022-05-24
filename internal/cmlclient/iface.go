@@ -22,6 +22,12 @@ import (
 // 	"state": "STARTED"
 // }
 
+const (
+	IfaceStateDefined = "DEFINED_ON_CORE"
+	IfaceStateStopped = "STOPPED"
+	IfaceStateStarted = "STARTED"
+)
+
 type Interface struct {
 	ID          string `json:"id"`
 	Label       string `json:"label"`
@@ -36,6 +42,14 @@ type Interface struct {
 	IP4  []string `json:"ip4"`
 	IP6  []string `json:"ip6"`
 	node *Node
+}
+
+func (iface Interface) Exists() bool {
+	return iface.State != IfaceStateDefined
+}
+
+func (iface Interface) Runs() bool {
+	return iface.State == IfaceStateStarted
 }
 
 func (imap interfaceMap) MarshalJSON() ([]byte, error) {
