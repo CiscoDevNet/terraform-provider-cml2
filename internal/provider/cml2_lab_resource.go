@@ -94,6 +94,14 @@ func (t cml2LabResourceType) GetSchema(ctx context.Context) (tfsdk.Schema, diag.
 				},
 				Type: types.StringType,
 			},
+			"converged": {
+				Computed:            true,
+				MarkdownDescription: "CML lab has converged (e.g. BOOTED)",
+				Type:                types.BoolType,
+				PlanModifiers: tfsdk.AttributePlanModifiers{
+					tfsdk.UseStateForUnknown(),
+				},
+			},
 			"state": {
 				Computed:            true,
 				Optional:            true,
@@ -130,11 +138,12 @@ func (t cml2LabResourceType) NewResource(ctx context.Context, in tfsdk.Provider)
 }
 
 type cmlLabResourceData struct {
-	Topology types.String `tfsdk:"topology"`
-	Wait     types.Bool   `tfsdk:"wait"`
-	Id       types.String `tfsdk:"id"`
-	State    types.String `tfsdk:"state"`
-	Nodes    types.List   `tfsdk:"nodes"`
+	Topology  types.String `tfsdk:"topology"`
+	Wait      types.Bool   `tfsdk:"wait"`
+	Id        types.String `tfsdk:"id"`
+	State     types.String `tfsdk:"state"`
+	Nodes     types.List   `tfsdk:"nodes"`
+	Converged types.Bool   `tfsdk:"converged"`
 }
 
 type cml2Node struct {
@@ -335,11 +344,18 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 	}
 
 	// check if we can transition to specified state
-	if !noState && planData.State.Value == cmlclient.LabStateStopped {
-		if stateData.State.Value == cmlclient.LabStateDefined {
+	if planData.State.Value == cmlclient.LabStateStopped {
+		if !noState && stateData.State.Value == cmlclient.LabStateDefined {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
 				"can't transition from DEFINED_ON_CORE to STOPPED",
+			)
+			return
+		}
+		if noState && planData.State.Value == cmlclient.LabStateStopped {
+			resp.Diagnostics.AddError(
+				CML2ErrorLabel,
+				"can't transition from no state to STOPPED",
 			)
 			return
 		}
@@ -405,11 +421,20 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 			newNodeList.Elems = append(newNodeList.Elems, newNodeElem)
 		}
 
+		// modify node state
 		ap := tftypes.NewAttributePath().WithAttributeName("nodes")
 		diags = resp.Plan.SetAttribute(ctx, ap, newNodeList)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
-			tflog.Error(ctx, "ModifyPlan: plan has errors")
+			tflog.Error(ctx, "ModifyPlan: nodes plan has errors")
+			return
+		}
+		// modify converged state
+		ap = tftypes.NewAttributePath().WithAttributeName("converged")
+		diags = resp.Plan.SetAttribute(ctx, ap, types.Bool{Unknown: true})
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			tflog.Error(ctx, "ModifyPlan: converged plan has errors")
 			return
 		}
 	}
@@ -495,6 +520,7 @@ func (r cmlLabResource) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
 	data.Nodes = populateNodes(ctx, lab)
+	data.Converged = types.Bool{Value: lab.Booted()}
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -545,6 +571,7 @@ func (r cmlLabResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
 	data.Nodes = populateNodes(ctx, lab)
+	data.Converged = types.Bool{Value: lab.Booted()}
 
 	diags = resp.State.Set(ctx, data)
 	resp.Diagnostics.Append(diags...)
@@ -622,6 +649,7 @@ func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
 		data.State = types.String{Value: lab.State}
 		data.Nodes = populateNodes(ctx, lab)
+		data.Converged = types.Bool{Value: lab.Booted()}
 	}
 
 	diags = resp.State.Set(ctx, data)

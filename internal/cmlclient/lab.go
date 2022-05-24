@@ -33,6 +33,7 @@ const (
 	LabStateDefined = "DEFINED_ON_CORE"
 	LabStateStopped = "STOPPED"
 	LabStateStarted = "STARTED"
+	LabStateBooted  = "BOOTED"
 )
 
 type IDlist []string
@@ -65,7 +66,7 @@ func (l *Lab) CanBeWiped() bool {
 		return l.State != LabStateDefined
 	}
 	for _, node := range l.Nodes {
-		if node.State != LabStateDefined {
+		if node.State != NodeStateDefined {
 			return true
 		}
 	}
@@ -74,11 +75,20 @@ func (l *Lab) CanBeWiped() bool {
 
 func (l *Lab) Running() bool {
 	for _, node := range l.Nodes {
-		if node.State != LabStateDefined {
+		if node.State != NodeStateDefined {
 			return true
 		}
 	}
 	return false
+}
+
+func (l *Lab) Booted() bool {
+	for _, node := range l.Nodes {
+		if node.State != NodeStateBooted {
+			return false
+		}
+	}
+	return true
 }
 
 type LabImport struct {

@@ -50,6 +50,13 @@ import (
 // 	"boot_progress": "Booted"
 //   }
 
+const (
+	NodeStateDefined = "DEFINED_ON_CORE"
+	NodeStateStopped = "STOPPED"
+	NodeStateStarted = "STARTED"
+	NodeStateBooted  = "BOOTED"
+)
+
 type Node struct {
 	ID              string       `json:"id"`
 	Label           string       `json:"label"`
