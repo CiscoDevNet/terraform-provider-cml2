@@ -34,6 +34,29 @@ go install
 
 ## Using the provider
 
+### Environment
+
+The provider is using environment variables for configuration.  Heres an example:
+
+```shell
+# for testing purposes, suggest to use direnv
+
+# this is used by the cmlclient test command, ctest, not needed for the provider
+# CML_LABID="ba35782a-06ee-4234-9de4-473ffe3c09e8"
+
+CML_HOST="https://cml-controller.cml.lab"
+CML_TOKEN=" valid-cmd-jwt "
+CML_USERNAME=""
+CML_PASSWORD=""
+TF_VAR_token=$CML_TOKEN
+
+export CML_HOST CML_USERNAME CML_PASSWORD TF_VAR_token
+```
+
+### HCL
+
+> _NOTE:_ this is mostly outdated... Need to update!!
+
 Here's a simple example that shows how to use the provider. It will import a
 lab as defined in `topology.yml`, then start it and wait for it to converge
 (e.g. all nodes report that they are BOOTED).  Then it will read the lab data
@@ -114,7 +137,7 @@ provider_installation {
 
 Sample filesystem mirror layout:
 
-```
+```plain
 /tmp/terraform/
 └── registry.terraform.io
     └── ciscodevnet
@@ -147,7 +170,7 @@ To generate or update documentation, run `go generate`.
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
+_Note:_ Acceptance tests create real resources, and often cost money to run.
 
 ```shell
 make testacc

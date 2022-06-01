@@ -1,3 +1,7 @@
+.envrc
+.github
+.vscode
+
 *.dll
 *.exe
 .DS_Store

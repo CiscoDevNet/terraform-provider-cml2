@@ -103,7 +103,7 @@ func (c *Client) ImportLab(ctx context.Context, topo string) (*Lab, error) {
 	if err != nil {
 		return nil, err
 	}
-	lab, err := c.GetLab(ctx, labImport.ID, true)
+	lab, err := c.GetLab(ctx, labImport.ID, false)
 	if err != nil {
 		return nil, err
 	}

@@ -33,11 +33,13 @@ resource "cml2_lab" "bananas" {
 
 ### Optional
 
+- `configurations` (Map of String) List of node configurations to store into nodes
 - `state` (String) CML lab state
 - `wait` (Boolean) wait until topology is BOOTED if true
 
 ### Read-Only
 
+- `converged` (Boolean) CML lab has converged (e.g. BOOTED)
 - `id` (String) CML lab identifier, a UUID
 - `nodes` (Attributes List) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
 
@@ -46,6 +48,7 @@ resource "cml2_lab" "bananas" {
 
 Read-Only:
 
+- `configuration` (String, Sensitive) configuration
 - `id` (String) Node ID (UUID)
 - `interfaces` (Attributes List) interfaces on the node (see [below for nested schema](#nestedatt--nodes--interfaces))
 - `label` (String) label

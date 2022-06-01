@@ -45,132 +45,19 @@ func (t cmlNodeDefDataSourceType) GetSchema(ctx context.Context) (tfsdk.Schema, 
 				Optional:            true,
 				Type:                types.BoolType,
 			},
-			"nodes": {
-				MarkdownDescription: "List of nodes and their interfaces with IP addresses",
-				Computed:            true,
-				// Type: types.ListType{
-				// 	ElemType: resultNode{},
-				// },
-				Attributes: tfsdk.ListNestedAttributes(
-					nodeSchema(),
-					tfsdk.ListNestedAttributesOptions{},
-				),
-			},
+			// "nodes": {
+			// 	MarkdownDescription: "List of nodes and their interfaces with IP addresses",
+			// 	Computed:            true,
+			// 	// Type: types.ListType{
+			// 	// 	ElemType: resultNode{},
+			// 	// },
+			// 	Attributes: tfsdk.ListNestedAttributes(
+			// 		nodeSchema(),
+			// 		tfsdk.ListNestedAttributesOptions{},
+			// 	),
+			// },
 		},
 	}, nil
-}
-
-func interfaceSchema() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
-			MarkdownDescription: "Interface ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"mac_address": {
-			MarkdownDescription: "MAC address",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"is_connected": {
-			MarkdownDescription: "connection status",
-			Type:                types.BoolType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"ip4": {
-			MarkdownDescription: "IPv4 address list",
-			Computed:            true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"ip6": {
-			MarkdownDescription: "IPv6 address list",
-			Computed:            true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-	}
-}
-
-func nodeSchema() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
-			MarkdownDescription: "Node ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"nodetype": {
-			MarkdownDescription: "Node Type / Definition",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-		"interfaces": {
-			MarkdownDescription: "interfaces on the node",
-			Computed:            true,
-			Attributes: tfsdk.ListNestedAttributes(
-				interfaceSchema(),
-				tfsdk.ListNestedAttributesOptions{},
-			),
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				tfsdk.UseStateForUnknown(),
-			},
-		},
-	}
 }
 
 func (t cmlNodeDefDataSourceType) NewDataSource(ctx context.Context, in tfsdk.Provider) (tfsdk.DataSource, diag.Diagnostics) {

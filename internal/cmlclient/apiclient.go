@@ -103,6 +103,10 @@ func (c *Client) jsonPost(ctx context.Context, api string, data io.Reader, resul
 	return c.jsonReq(ctx, http.MethodPost, api, data, result)
 }
 
+func (c *Client) jsonPatch(ctx context.Context, api string, data io.Reader, result interface{}) error {
+	return c.jsonReq(ctx, http.MethodPatch, api, data, result)
+}
+
 func (c *Client) jsonReq(ctx context.Context, method, api string, data io.Reader, result interface{}) error {
 	req, err := c.apiRequest(ctx, method, api, data)
 	if err != nil {

@@ -1,6 +1,7 @@
 package cmlclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -113,5 +114,27 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 		nodeMap[nodeID] = node
 	}
 	lab.Nodes = nodeMap
+	return nil
+}
+
+func (c *Client) SetNodeConfig(ctx context.Context, labID, nodeID, configuration string) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s", labID, nodeID)
+
+	type nodeConfig struct {
+		Configuration string `json:"configuration"`
+	}
+
+	buf := &bytes.Buffer{}
+	nodeCfg := nodeConfig{Configuration: configuration}
+	err := json.NewEncoder(buf).Encode(nodeCfg)
+	if err != nil {
+		return err
+	}
+
+	node := Node{}
+	err = c.jsonPatch(ctx, api, buf, &node)
+	if err != nil {
+		return err
+	}
 	return nil
 }
