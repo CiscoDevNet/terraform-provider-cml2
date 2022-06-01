@@ -150,6 +150,45 @@ func TestClient_GetLab(t *testing.T) {
 		}
 	}
 }
+func TestClient_GetLab_shallow(t *testing.T) {
+	c := NewClient("https://bla.bla", true)
+	mclient, ctx := mr.NewMockResponder()
+	c.httpClient = mclient
+	c.authChecked = true
+
+	tests := []struct {
+		name      string
+		responses mr.MockRespList
+		wantErr   bool
+	}{
+		{
+			"good",
+			mr.MockRespList{
+				mr.MockResp{Data: []byte(`{"version": "2.4.1","ready": true}`)},
+				mr.MockResp{Data: demoLab},
+			},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		// enforce version check
+		c.versionChecked = false
+		mclient.SetData(tt.responses)
+		t.Run(tt.name, func(t *testing.T) {
+			lab, err := c.GetLab(ctx, "qweaa", true)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
+				}
+				return
+			}
+			assert.NotNil(t, lab)
+		})
+		if !mclient.Empty() {
+			t.Error("not all data in mock client consumed")
+		}
+	}
+}
 
 func TestClient_ImportLab(t *testing.T) {
 	c := NewClient("https://bla.bla", true)
@@ -173,9 +212,22 @@ func TestClient_ImportLab(t *testing.T) {
 		{
 			"good import",
 			string(labyaml),
+			// the import will also fetch the entire lab (not shallow!)
 			mr.MockRespList{
 				mr.MockResp{Data: []byte(`{"id": "lab-id-uuid", "warnings": [] }`)},
 				mr.MockResp{Data: demoLab},
+				// these responses are needed for not shallow...
+				mr.MockResp{Data: links, URL: `/links$`},
+				mr.MockResp{Data: []byte(`{}`), URL: `/layer3_addresses$`},
+				mr.MockResp{Data: ownerUser, URL: `/users/.+$`},
+				mr.MockResp{Data: nodes, URL: `/nodes$`},
+				mr.MockResp{Data: node1, URL: `/nodes/node1$`},
+				mr.MockResp{Data: node2, URL: `/nodes/node2$`},
+				mr.MockResp{Data: ifacesn1, URL: `/node1/interfaces$`},
+				mr.MockResp{Data: ifacesn2, URL: `/node2/interfaces$`},
+				mr.MockResp{Data: ifacen1i1, URL: `/interfaces/n1i1$`},
+				mr.MockResp{Data: ifacen2i1, URL: `/interfaces/n2i1$`},
+				mr.MockResp{Data: linkn1n2, URL: `/links/link1$`},
 			},
 			false,
 		},

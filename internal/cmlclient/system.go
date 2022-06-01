@@ -37,10 +37,7 @@ func (c *Client) versionCheck(ctx context.Context) error {
 		panic("unparsable semver version constant")
 	}
 
-	re, err := regexp.Compile(`^(\d\.\d\.\d)(\+build.*|\.dev.*)?$`)
-	if err != nil {
-		panic("can't compile regex")
-	}
+	re := regexp.MustCompile(`^(\d\.\d\.\d)(\+build.*|\.dev.*)?$`)
 	m := re.FindStringSubmatch(sv.Version)
 	if m == nil {
 		return versionError(sv.Version)

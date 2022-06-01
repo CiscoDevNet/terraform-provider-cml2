@@ -3,6 +3,7 @@ package mockclient
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -47,19 +48,18 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 		panic("no data")
 	}
 
-	var data MockResp
-	length := len(mc.mockData)
-	for idx := 0; idx <= length; idx++ {
-		if idx == length {
-			panic("ran out of data")
-		}
-		data = mc.mockData[idx]
-		if mc.mockData[idx].served {
+	var (
+		idx  int
+		data MockResp
+	)
+
+	found := false
+	for idx, data = range mc.mockData {
+		if data.served {
 			continue
 		}
-
-		if len(mc.mockData[idx].URL) > 0 {
-			m, err := regexp.MatchString(mc.mockData[idx].URL, req.URL.String())
+		if len(data.URL) > 0 {
+			m, err := regexp.MatchString(data.URL, req.URL.String())
 			if err != nil {
 				panic("regex pattern issue")
 			}
@@ -67,9 +67,18 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 				continue
 			}
 		}
+		// need to change the array element, not the copy in "data"
 		mc.mockData[idx].served = true
 		mc.lastServed = idx
+		found = true
 		break
+	}
+
+	if !found {
+		for k, v := range mc.mockData {
+			fmt.Printf("%d: %v/%v/%v/%v\n", k, v.served, v.URL, v.Code, string(v.Data))
+		}
+		panic("ran out of data")
 	}
 
 	// default to 200/OK

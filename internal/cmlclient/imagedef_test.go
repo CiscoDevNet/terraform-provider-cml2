@@ -3,6 +3,7 @@ package cmlclient
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -47,14 +48,26 @@ func TestClient_GetImageDefs(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"bad",
+			mr.MockRespList{
+				mr.MockResp{
+					Data: []byte(`"something failed!`),
+					Code: http.StatusInternalServerError,
+				},
+			},
+			true,
+		},
 	}
 
 	for _, tt := range tests {
 		mresp.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := c.GetImageDefs(ctx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Client.GetImageDefs() error = %v, wantErr %v", err, tt.wantErr)
+			if err != nil {
+				if !tt.wantErr {
+					t.Errorf("Client.GetImageDefs() error = %v, wantErr %v", err, tt.wantErr)
+				}
 				return
 			}
 			expected := []ImageDefinition{}
