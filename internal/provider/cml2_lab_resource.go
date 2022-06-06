@@ -493,8 +493,14 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 		}
 	}
 
-	if !noState && planData.State.Value != stateData.State.Value {
-		tflog.Info(ctx, "ModifyPlan: state change")
+	changeNeeded := false
+	if !noState {
+		changeNeeded = planData.State.Value != stateData.State.Value ||
+			!planData.Configurations.Equal(stateData.Configurations)
+	}
+
+	if changeNeeded {
+		tflog.Info(ctx, "ModifyPlan: change detected")
 
 		newNodeList := types.List{ElemType: nodeObject}
 		nodes := []cml2Node{}
@@ -507,8 +513,6 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 
 		for _, node := range nodes {
 
-			// check if configs should be changed
-			// if
 			newInterfaceList := types.List{ElemType: ifaceObject}
 			for _, ifaceElem := range node.Interfaces.Elems {
 
@@ -559,9 +563,18 @@ func (r cmlLabResource) ModifyPlan(ctx context.Context, req tfsdk.ModifyResource
 				newInterfaceList.Elems = append(newInterfaceList.Elems, newIfaceElem)
 			}
 
+			node.Configuration.Unknown = true
 			node.State.Unknown = true
 			node.Interfaces = newInterfaceList
 			newNodeElem := node.toObject()
+
+			// newNodeElem := types.Object{}
+			// diags := tfsdk.ValueFrom(ctx, node, nodeObject, &newNodeElem)
+			// resp.Diagnostics.Append(diags...)
+			// if resp.Diagnostics.HasError() {
+			// 	return
+			// }
+
 			newNodeList.Elems = append(newNodeList.Elems, newNodeElem)
 		}
 
@@ -625,28 +638,6 @@ func (r cmlLabResource) start(ctx context.Context, diag diag.Diagnostics, id str
 
 func (r cmlLabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data cmlLabResourceData) diag.Diagnostics {
 	tflog.Info(ctx, "injectConfigs")
-
-	// nodes := []cml2Node{}
-	// diags := data.Nodes.ElementsAs(ctx, &nodes, false)
-	// if diags.HasError() {
-	// 	return diags
-	// }
-
-	// for _, node := range nodes {
-	// 	tflog.Info(ctx, fmt.Sprintf("node: %+v", node))
-	// 	if !node.Configuration.Null {
-	// 		if actualNode, ok := lab.Nodes[node.Id.Value]; ok {
-	// 			if actualNode.Configuration != node.Configuration.Value {
-	// 				err := r.provider.client.SetNodeConfig(ctx, lab.ID, node.Id.Value, node.Configuration.Value)
-	// 				if err != nil {
-	// 					diags.AddError("set node config failed",
-	// 						fmt.Sprintf("setting the new node configuration for %s failed: %s", node.Label.Value, err),
-	// 					)
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	var diags diag.Diagnostics
 	for _, node := range lab.Nodes {
@@ -848,22 +839,22 @@ func (r cmlLabResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequ
 		if planData.Wait.Null || planData.Wait.Value {
 			r.converge(ctx, resp.Diagnostics, planData.Id.Value)
 		}
-
-		// since we have changed lab state, we need to re-read all the node
-		// state...
-		lab, err := r.provider.client.GetLab(ctx, planData.Id.Value, false)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
-				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
-			)
-			return
-		}
-		tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
-		planData.State = types.String{Value: lab.State}
-		planData.Nodes = populateNodes(ctx, lab)
-		planData.Converged = types.Bool{Value: lab.Booted()}
 	}
+
+	// since we have changed lab state, we need to re-read all the node
+	// state...
+	lab, err := r.provider.client.GetLab(ctx, planData.Id.Value, false)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			CML2ErrorLabel,
+			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
+		)
+		return
+	}
+	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
+	planData.State = types.String{Value: lab.State}
+	planData.Nodes = populateNodes(ctx, lab)
+	planData.Converged = types.Bool{Value: lab.Booted()}
 
 	diags = resp.State.Set(ctx, planData)
 	resp.Diagnostics.Append(diags...)
