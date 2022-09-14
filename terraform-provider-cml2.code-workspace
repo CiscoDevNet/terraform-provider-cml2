@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "terraform-provider-cml2",
+			"path": "."
+		},
+		{
+			"name": "tftest",
+			"path": "../../tftest"
+		}
+	],
+	"settings": {}
+}

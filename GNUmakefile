@@ -5,7 +5,7 @@ ORG := registry.terraform.io/ciscodevnet
 NAME := cml2
 ARCH := linux_amd64
 
-VERSION := $(shell git describe --match 'v*' --always --long --abbrev=16 | sed -re 's/^v(.*)$$/\1/')
+VERSION := $(shell git describe --long | sed -re 's/^v(.*)$$/\1/')
 DEST := ~/.terraform.d/plugins/$(ORG)/$(NAME)/$(VERSION)/$(ARCH)
 
 MIRROR := /tmp/terraform/$(ORG)/$(NAME)

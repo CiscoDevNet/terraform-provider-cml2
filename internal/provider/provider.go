@@ -5,37 +5,26 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.Provider = &cml2{}
+var _ provider.Provider = &CML2Provider{}
+var _ provider.ProviderWithMetadata = &CML2Provider{}
 
-// cml2 satisfies the tfsdk.Provider interface and usually is included
-// with all Resource and DataSource implementations.
-type cml2 struct {
-	// client can contain the upstream provider SDK or HTTP client used to
-	// communicate with the upstream service. Resource and DataSource
-	// implementations can then make calls using this client.
-	//
-	client *cmlclient.Client
-
-	// configured is set to true at the end of the Configure method.
-	// This can be used in Resource and DataSource implementations to verify
-	// that the provider was previously configured.
-	configured bool
-
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+// CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
+type CML2Provider struct {
 	version string
 }
 
-// providerData can be used to store data from the Terraform configuration.
-type providerData struct {
+// CML2ProviderModel describes the provider data model.
+type CML2ProviderModel struct {
 	Address    types.String `tfsdk:"address"`
 	Username   types.String `tfsdk:"username"`
 	Password   types.String `tfsdk:"password"`
@@ -44,10 +33,15 @@ type providerData struct {
 	SkipVerify types.Bool   `tfsdk:"skip_verify"`
 }
 
-func (p *cml2) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
-	var data providerData
-	diags := req.Config.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "cml2"
+	resp.Version = p.version
+}
+
+func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data CML2ProviderModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -89,19 +83,19 @@ func (p *cml2) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest
 	}
 
 	// create a new CML2 client
-	p.client = cmlclient.NewClient(
+	client := cmlclient.NewClient(
 		data.Address.Value,
 		data.SkipVerify.Value,
 	)
 	if len(data.Username.Value) > 0 {
-		p.client.SetUsernamePassword(data.Username.Value, data.Password.Value)
+		client.SetUsernamePassword(data.Username.Value, data.Password.Value)
 	}
 	if len(data.Token.Value) > 0 {
-		p.client.SetToken(data.Token.Value)
+		client.SetToken(data.Token.Value)
 	}
 
 	if len(data.CAcert.Value) > 0 {
-		err := p.client.SetCACert([]byte(data.CAcert.Value))
+		err := client.SetCACert([]byte(data.CAcert.Value))
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Configuration issue",
@@ -109,25 +103,11 @@ func (p *cml2) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest
 			)
 		}
 	}
-	p.configured = true
+	resp.DataSourceData = client
+	resp.ResourceData = client
 }
 
-func (p *cml2) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	return map[string]tfsdk.ResourceType{
-		"cml2_lab": cml2LabResourceType{},
-		// "cml2_node": cmlNodeResourceType{},
-		// "cml2_link":      cmlLinkResourceType{},
-		// "cml2_interface": cmlInterfaceResourceType{},
-	}, nil
-}
-
-func (p *cml2) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{
-		// "cml2_lab_details": cmlLabDetailDataSourceType{},
-	}, nil
-}
-
-func (p *cml2) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (p *CML2Provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"address": {
@@ -166,39 +146,22 @@ func (p *cml2) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	}, nil
 }
 
-func New(version string) func() tfsdk.Provider {
-	return func() tfsdk.Provider {
-		return &cml2{
-			version: version,
-		}
+func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewLabResource,
 	}
 }
 
-// convertProviderType is a helper function for NewResource and NewDataSource
-// implementations to associate the concrete provider type. Alternatively,
-// this helper can be skipped and the provider type can be directly type
-// asserted (e.g. provider: in.(*provider)), however using this can prevent
-// potential panics.
-func convertProviderType(in tfsdk.Provider) (cml2, diag.Diagnostics) {
-	var diags diag.Diagnostics
+// func (p *cml2) GetDataSources(ctx context.Context) []func() datasource.DataSource {
+// 	return []func() datasource.DataSource{
+// 		NewExampleDataSource,
+// 	}
+// }
 
-	p, ok := in.(*cml2)
-
-	if !ok {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
-		)
-		return cml2{}, diags
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &CML2Provider{
+			version: version,
+		}
 	}
-
-	if p == nil {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
-		)
-		return cml2{}, diags
-	}
-
-	return *p, diags
 }

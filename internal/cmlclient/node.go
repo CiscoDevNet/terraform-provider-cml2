@@ -138,3 +138,27 @@ func (c *Client) SetNodeConfig(ctx context.Context, labID, nodeID, configuration
 	}
 	return nil
 }
+
+// SetNodeImageID sets the image ID / image definition id of the node to the one
+// provided in imageID.
+func (c *Client) SetNodeImageID(ctx context.Context, labID, nodeID, imageID string) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s", labID, nodeID)
+
+	type nodeConfig struct {
+		ImageID string `json:"image_definition"`
+	}
+
+	buf := &bytes.Buffer{}
+	nodeCfg := nodeConfig{ImageID: imageID}
+	err := json.NewEncoder(buf).Encode(nodeCfg)
+	if err != nil {
+		return err
+	}
+
+	node := Node{}
+	err = c.jsonPatch(ctx, api, buf, &node)
+	if err != nil {
+		return err
+	}
+	return nil
+}
