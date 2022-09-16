@@ -92,8 +92,8 @@ nodes:
         label: port15
         type: physical
   - id: n2
-    label: alpine-0
-    node_definition: alpine
+    label: server-0
+    node_definition: server
     x: -650
     y: 50
     configuration: |-
@@ -103,7 +103,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group1
     interfaces:
@@ -112,8 +111,8 @@ nodes:
         label: eth0
         type: physical
   - id: n3
-    label: alpine-1
-    node_definition: alpine
+    label: server-1
+    node_definition: server
     x: -500
     y: 50
     configuration: |-
@@ -123,7 +122,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group1
     interfaces:
@@ -132,8 +130,8 @@ nodes:
         label: eth0
         type: physical
   - id: n4
-    label: alpine-2
-    node_definition: alpine
+    label: server-2
+    node_definition: server
     x: -350
     y: 50
     configuration: |-
@@ -143,7 +141,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group1
     interfaces:
@@ -152,8 +149,8 @@ nodes:
         label: eth0
         type: physical
   - id: n5
-    label: alpine-3
-    node_definition: alpine
+    label: server-3
+    node_definition: server
     x: -200
     y: 50
     configuration: |-
@@ -163,7 +160,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group2
     interfaces:
@@ -172,8 +168,8 @@ nodes:
         label: eth0
         type: physical
   - id: n6
-    label: alpine-4
-    node_definition: alpine
+    label: server-4
+    node_definition: server
     x: -50
     y: 50
     configuration: |-
@@ -183,7 +179,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group2
     interfaces:
@@ -192,8 +187,8 @@ nodes:
         label: eth0
         type: physical
   - id: n7
-    label: alpine-5
-    node_definition: alpine
+    label: server-5
+    node_definition: server
     x: 100
     y: 50
     configuration: |-
@@ -203,7 +198,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group2
     interfaces:
@@ -216,8 +210,8 @@ nodes:
         label: eth1
         type: physical
   - id: n8
-    label: alpine-6
-    node_definition: alpine
+    label: server-6
+    node_definition: server
     x: 250
     y: 50
     configuration: |-
@@ -227,7 +221,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - group2
     interfaces:
@@ -236,8 +229,8 @@ nodes:
         label: eth0
         type: physical
   - id: n9
-    label: alpine-7
-    node_definition: alpine
+    label: server-7
+    node_definition: server
     x: 400
     y: 50
     configuration: |-
@@ -247,7 +240,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    image_definition: alpine-3-10-base
     tags:
       - infra
       - group2

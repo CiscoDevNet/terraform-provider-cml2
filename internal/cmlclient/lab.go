@@ -37,8 +37,8 @@ const (
 )
 
 type IDlist []string
-type nodeMap map[string]*Node
-type interfaceMap map[string]*Interface
+type NodeMap map[string]*Node
+type InterfaceMap map[string]*Interface
 type linkList []*Link
 
 type labAlias struct {
@@ -57,7 +57,7 @@ type Lab struct {
 	Owner       *User    `json:"owner"`
 	NodeCount   int      `json:"node_count"`
 	LinkCount   int      `json:"link_count"`
-	Nodes       nodeMap  `json:"nodes"`
+	Nodes       NodeMap  `json:"nodes"`
 	Links       linkList `json:"links"`
 }
 

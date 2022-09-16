@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -152,11 +153,11 @@ func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
-// func (p *cml2) GetDataSources(ctx context.Context) []func() datasource.DataSource {
-// 	return []func() datasource.DataSource{
-// 		NewExampleDataSource,
-// 	}
-// }
+func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewNodeDataSource,
+	}
+}
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {

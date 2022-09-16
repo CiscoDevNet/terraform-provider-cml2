@@ -9,6 +9,12 @@ VERSION := $(shell git describe --long | sed -re 's/^v(.*)$$/\1/')
 DEST := ~/.terraform.d/plugins/$(ORG)/$(NAME)/$(VERSION)/$(ARCH)
 
 MIRROR := /tmp/terraform/$(ORG)/$(NAME)
+TESTARGS := -cover -v
+
+# Run tests
+.PHONY: tests
+tests:
+	go test ./... -v $(TESTARGS) -timeout 120m
 
 # Run acceptance tests
 .PHONY: testacc

@@ -3,8 +3,10 @@ package provider
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -25,50 +27,9 @@ type LabResource struct {
 	client *cmlclient.Client
 }
 
-type LabResourceModel struct {
-	Topology types.String `tfsdk:"topology"`
-	Wait     types.Bool   `tfsdk:"wait"`
-	Id       types.String `tfsdk:"id"`
-	State    types.String `tfsdk:"state"`
-	Booted   types.Bool   `tfsdk:"booted"`
-	// Nodes    types.Map    `tfsdk:"nodes"`
-
-	// nodeAttrs      map[string]attr.Type
-	// interfaceAttrs map[string]attr.Type
-
-	// Configurations types.Map    `tfsdk:"configurations"`
-	// Special types.Map `tfsdk:"special"`
-}
-
 func NewLabResource() resource.Resource {
 	return &LabResource{}
 }
-
-// func NewCML2LabResource() resource.Resource {
-// 	interfaceAttr := map[string]attr.Type{
-// 		"id":           types.StringType,
-// 		"label":        types.StringType,
-// 		"state":        types.StringType,
-// 		"mac_address":  types.StringType,
-// 		"is_connected": types.BoolType,
-// 		"ip4":          types.ListType{ElemType: types.StringType},
-// 		"ip6":          types.ListType{ElemType: types.StringType},
-// 	}
-// 	nodeAttr := map[string]attr.Type{
-// 		"id":            types.StringType,
-// 		"label":         types.StringType,
-// 		"state":         types.StringType,
-// 		"nodetype":      types.StringType,
-// 		"configuration": types.StringType,
-// 		"interfaces": types.MapType{
-// 			ElemType: types.ObjectType{
-// 				AttrTypes: interfaceAttr,
-// 			},
-// 		},
-// 		"tags": types.ListType{ElemType: types.StringType},
-// 	}
-// 	return LabResource{nodeAttrs: nodeAttr}
-// }
 
 func (r *LabResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lab"
@@ -112,252 +73,6 @@ func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 	}
 }
 
-func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "CML Lab resource",
-
-		Attributes: map[string]tfsdk.Attribute{
-			// topology is marked as sensitive mostly b/c lengthy topology
-			// YAML clutters the output.
-			"topology": {
-				MarkdownDescription: "topology to start",
-				Required:            true,
-				Type:                types.StringType,
-				Sensitive:           true,
-				PlanModifiers: []tfsdk.AttributePlanModifier{
-					resource.RequiresReplace(),
-				},
-			},
-			"wait": {
-				MarkdownDescription: "wait until topology is BOOTED if true",
-				Optional:            true,
-				Type:                types.BoolType,
-			},
-			"id": {
-				Computed:            true,
-				MarkdownDescription: "CML lab identifier, a UUID",
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					resource.UseStateForUnknown(),
-				},
-				Type: types.StringType,
-			},
-			"booted": {
-				Computed:            true,
-				MarkdownDescription: "All nodes in the lab have booted",
-				Type:                types.BoolType,
-			},
-			"state": {
-				Computed:            true,
-				Optional:            true,
-				MarkdownDescription: "CML lab state",
-				PlanModifiers: tfsdk.AttributePlanModifiers{
-					resource.UseStateForUnknown(),
-				},
-				Type: types.StringType,
-				Validators: []tfsdk.AttributeValidator{
-					labStateValidator{},
-				},
-			},
-			// "nodes": {
-			// 	MarkdownDescription: "List of nodes and their interfaces with IP addresses",
-			// 	Computed:            true,
-			// 	Attributes: tfsdk.MapNestedAttributes(
-			// 		nodeSchema(),
-			// 	),
-			// 	PlanModifiers: tfsdk.AttributePlanModifiers{
-			// 		resource.UseStateForUnknown(),
-			// 	},
-			// },
-			// "configurations": {
-			// 	MarkdownDescription: "List of node configurations to store into nodes",
-			// 	Optional:            true,
-			// 	Type: types.MapType{
-			// 		ElemType: types.StringType,
-			// 	},
-			// },
-			// "special": {
-			// 	MarkdownDescription: "State of specific nodes. The key is either the node name or the name of a tag.  In both cases, a regular expression can be used. If the result is ambiguous, the node name takes preference.",
-			// 	Optional:            true,
-			// 	// Attributes: tfsdk.MapNestedAttributes(
-			// 	// 	specialSchema(),
-			// 	// ),
-			// 	Type: types.MapType{
-			// 		ElemType: types.ObjectType{
-			// 			AttrTypes: map[string]attr.Type{
-			// 				"configuration": types.StringType,
-			// 				"state":         types.StringType,
-			// 				"image_id":      types.StringType,
-			// 			},
-			// 		},
-			// 	},
-			// },
-		},
-	}, nil
-}
-
-// func specialSchema() map[string]tfsdk.Attribute {
-// 	return map[string]tfsdk.Attribute{
-// 		"configuration": {
-// 			MarkdownDescription: "the configuration of the node",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 		"state": {
-// 			MarkdownDescription: "the desired state of the node",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 		"image_id": {
-// 			MarkdownDescription: "the image_id the node should use",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 	}
-// }
-
-func interfaceSchema() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
-			MarkdownDescription: "Interface ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"mac_address": {
-			MarkdownDescription: "MAC address",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"is_connected": {
-			MarkdownDescription: "connection status",
-			Type:                types.BoolType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"ip4": {
-			MarkdownDescription: "IPv4 address list",
-			Computed:            true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"ip6": {
-			MarkdownDescription: "IPv6 address list",
-			Computed:            true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-	}
-}
-
-func nodeSchema() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
-			MarkdownDescription: "Node ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"configuration": {
-			MarkdownDescription: "configuration",
-			Type:                types.StringType,
-			Computed:            true,
-			Sensitive:           true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"nodetype": {
-			MarkdownDescription: "Node Type / Definition",
-			Type:                types.StringType,
-			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"interfaces": {
-			MarkdownDescription: "interfaces on the node",
-			Computed:            true,
-			Attributes: tfsdk.ListNestedAttributes(
-				interfaceSchema(),
-			),
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-		"tags": {
-			MarkdownDescription: "Tags of the node",
-			Computed:            true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-			},
-		},
-	}
-}
-
-// type cml2Node struct {
-// 	Id            types.String `tfsdk:"id"`
-// 	Label         types.String `tfsdk:"label"`
-// 	State         types.String `tfsdk:"state"`
-// 	NodeType      types.String `tfsdk:"nodetype"`
-// 	Tags          types.List   `tfsdk:"tags"`
-// 	Interfaces    types.List   `tfsdk:"interfaces"`
-// 	Configuration types.String `tfsdk:"configuration"`
-// }
-
 // type cml2Special struct {
 // 	Configuration types.String `tfsdk:"configuration"`
 // 	State         types.String `tfsdk:"state"`
@@ -365,124 +80,6 @@ func nodeSchema() map[string]tfsdk.Attribute {
 // }
 
 // type cml2SpecialMap map[string]cml2Special
-
-// var (
-// 	ifaceObject = types.ObjectType{
-// 		AttrTypes: map[string]attr.Type{
-// 			"id":           types.StringType,
-// 			"label":        types.StringType,
-// 			"state":        types.StringType,
-// 			"mac_address":  types.StringType,
-// 			"is_connected": types.BoolType,
-// 			"ip4":          types.ListType{ElemType: types.StringType},
-// 			"ip6":          types.ListType{ElemType: types.StringType},
-// 		},
-// 	}
-// 	nodeObject = types.ObjectType{
-// 		AttrTypes: map[string]attr.Type{
-// 			"id":            types.StringType,
-// 			"label":         types.StringType,
-// 			"state":         types.StringType,
-// 			"nodetype":      types.StringType,
-// 			"configuration": types.StringType,
-// 			"interfaces":    types.ListType{ElemType: ifaceObject},
-// 			"tags":          types.ListType{ElemType: types.StringType},
-// 		},
-// 	}
-// )
-
-// func (r *LabResource) newCML2node(ctx context.Context, node *cmlclient.Node) cml2Node {
-
-// 	// we want this as a stable sort by interface UUID
-// 	ilist := []*cmlclient.Interface{}
-// 	for _, iface := range node.Interfaces {
-// 		ilist = append(ilist, iface)
-// 	}
-// 	sort.Slice(ilist, func(i, j int) bool {
-// 		return ilist[i].ID < ilist[j].ID
-// 	})
-
-// 	ifaces := types.List{ElemType: types.ObjectType{
-// 		AttrTypes: r.interfaceAttrs,
-// 	}}
-// 	for _, iface := range ilist {
-
-// 		newIfaceElem := types.Object{}
-// 		diags := tfsdk.ValueFrom(
-// 			ctx, iface, types.ObjectType{
-// 				AttrTypes: r.interfaceAttrs,
-// 			}, &newIfaceElem)
-// 		diags.Append(diags...)
-// 		if diags.HasError() {
-// 			panic("uh-oh")
-// 		}
-
-// 		ifaces.Elems = append(ifaces.Elems, newIfaceElem)
-// 	}
-
-// 	tags := types.List{ElemType: types.StringType}
-// 	for _, tag := range node.Tags {
-// 		tags.Elems = append(tags.Elems, types.String{Value: tag})
-// 	}
-
-// 	return cml2Node{
-// 		Id:            types.String{Value: node.ID},
-// 		Label:         types.String{Value: node.Label},
-// 		State:         types.String{Value: node.State},
-// 		NodeType:      types.String{Value: node.NodeDefinition},
-// 		Configuration: types.String{Value: node.Configuration},
-// 		Interfaces:    ifaces,
-// 		Tags:          tags,
-// 	}
-// }
-
-type cml2Interface struct {
-	Id          types.String `tfsdk:"id"`
-	Label       types.String `tfsdk:"label"`
-	State       types.String `tfsdk:"state"`
-	MACaddress  types.String `tfsdk:"mac_address"`
-	IsConnected types.Bool   `tfsdk:"is_connected"`
-	IP4         types.List   `tfsdk:"ip4"`
-	IP6         types.List   `tfsdk:"ip6"`
-}
-
-// func (r *LabResource) newCML2iface(iface *cmlclient.Interface) cml2Interface {
-
-// 	ip4List := types.List{ElemType: types.StringType, Null: true}
-// 	ip6List := types.List{ElemType: types.StringType, Null: true}
-// 	macAddress := types.String{Null: true}
-
-// 	if iface.Runs() {
-// 		// IPv4 addresses
-// 		list := make([]attr.Value, 0)
-// 		for _, ip := range iface.IP4 {
-// 			list = append(list, types.String{Value: ip})
-// 		}
-// 		ip4List.Elems = list
-// 		ip4List.Null = false
-// 		// IPv6 addresses
-// 		list = make([]attr.Value, 0)
-// 		for _, ip := range iface.IP6 {
-// 			list = append(list, types.String{Value: ip})
-// 		}
-// 		ip6List.Elems = list
-// 		ip6List.Null = false
-// 	}
-// 	if iface.Exists() {
-// 		macAddress.Value = iface.MACaddress
-// 		macAddress.Null = false
-// 	}
-
-// 	return cml2Interface{
-// 		Id:          types.String{Value: iface.ID},
-// 		Label:       types.String{Value: iface.Label},
-// 		State:       types.String{Value: iface.State},
-// 		IsConnected: types.Bool{Value: iface.IsConnected},
-// 		MACaddress:  macAddress,
-// 		IP4:         ip4List,
-// 		IP6:         ip6List,
-// 	}
-// }
 
 // func (r *LabResource) matchSpecial(ctx context.Context, diag *diag.Diagnostics, specials cml2SpecialMap, node cml2Node) *cml2Special {
 // 	for key, special := range specials {
@@ -880,48 +477,38 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	// data.Nodes = r.populateNodes(ctx, lab)
+	data.Nodes = r.populateNodes(ctx, lab, resp.Diagnostics)
 	data.Booted = types.Bool{Value: lab.Booted()}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 	tflog.Info(ctx, "Create: done")
 }
 
-// func (r *LabResource) populateNodes(ctx context.Context, lab *cmlclient.Lab) types.List {
-// 	// we want this as a stable sort by node UUID
-// 	nodeList := []*cmlclient.Node{}
-// 	for _, node := range lab.Nodes {
-// 		nodeList = append(nodeList, node)
-// 	}
-// 	sort.Slice(nodeList, func(i, j int) bool {
-// 		return nodeList[i].ID < nodeList[j].ID
-// 	})
-// 	nodes := types.List{ElemType: types.ObjectType{
-// 		AttrTypes: r.nodeAttrs,
-// 	}}
-// 	for _, node := range nodeList {
-
-// 		newNodeElem := types.Object{}
-// 		diags := tfsdk.ValueFrom(
-// 			ctx, node, types.ObjectType{
-// 				AttrTypes: r.nodeAttrs,
-// 			}, &newNodeElem)
-// 		diags.Append(diags...)
-// 		if diags.HasError() {
-// 			panic("uh-oh")
-// 		}
-
-// 		nodes.Elems = append(nodes.Elems, newNodeElem)
-// 	}
-// 	return nodes
-// }
+func (r *LabResource) populateNodes(ctx context.Context, lab *cmlclient.Lab, diags diag.Diagnostics) types.Map {
+	// we want this as a stable sort by node UUID
+	nodeList := []*cmlclient.Node{}
+	for _, node := range lab.Nodes {
+		nodeList = append(nodeList, node)
+	}
+	sort.Slice(nodeList, func(i, j int) bool {
+		return nodeList[i].ID < nodeList[j].ID
+	})
+	nodes := types.Map{
+		ElemType: types.ObjectType{AttrTypes: nodeAttrType},
+		Elems:    make(map[string]attr.Value),
+	}
+	for _, node := range nodeList {
+		nodes.Elems[node.ID] = newNode(ctx, node, diags)
+	}
+	return nodes
+}
 
 func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data *LabResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 
-	tflog.Info(ctx, "state:", map[string]interface{}{"data": data})
+	// tflog.Info(ctx, "state:", map[string]interface{}{"data": data})
 
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, "Read: errors!")

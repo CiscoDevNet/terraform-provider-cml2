@@ -73,7 +73,7 @@ type Node struct {
 	DataVolume      int          `json:"data_volume"`
 	BootDiskSize    int          `json:"boot_disk_size"`
 	HideLinks       bool         `json:"hide_links"`
-	Interfaces      interfaceMap `json:"interfaces"`
+	Interfaces      InterfaceMap `json:"interfaces"`
 	Tags            []string     `json:"tags"`
 	BootProgress    string       `json:"boot_progress"`
 
@@ -81,7 +81,7 @@ type Node struct {
 	lab *Lab
 }
 
-func (nmap nodeMap) MarshalJSON() ([]byte, error) {
+func (nmap NodeMap) MarshalJSON() ([]byte, error) {
 	nodeList := []*Node{}
 	for _, node := range nmap {
 		nodeList = append(nodeList, node)
@@ -103,7 +103,7 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 		return err
 	}
 
-	nodeMap := make(nodeMap)
+	nodeMap := make(NodeMap)
 	for _, nodeID := range *nodeIDlist {
 		api = fmt.Sprintf("labs/%s/nodes/%s", lab.ID, nodeID)
 		node := &Node{lab: lab}
