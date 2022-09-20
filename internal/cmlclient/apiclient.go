@@ -77,9 +77,16 @@ retry:
 	}
 	// no authorization and not retrying already
 	if res.StatusCode == http.StatusUnauthorized {
+		invalid_token := len(c.apiToken) > 0
+		// unconditionally remove API token
+		c.apiToken = ""
 		log.Println("need to authenticate")
 		if !c.userpass.valid() {
-			return nil, errors.New("no username or password provided")
+			errmsg := "no credentials provided"
+			if invalid_token {
+				errmsg = "invalid token but " + errmsg
+			}
+			return nil, errors.New(errmsg)
 		}
 		err = c.authenticate(ctx, c.userpass)
 		if err != nil {

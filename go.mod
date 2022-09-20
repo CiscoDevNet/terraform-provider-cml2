@@ -71,8 +71,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
-	golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41 // indirect
-	google.golang.org/genproto v0.0.0-20220915135415-7fd63a7952de // indirect
+	golang.org/x/net v0.0.0-20220919232410-f2f64ebce3c1 // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	google.golang.org/genproto v0.0.0-20220919141832-68c03719ef51 // indirect
 	google.golang.org/grpc v1.49.0 // indirect
 )

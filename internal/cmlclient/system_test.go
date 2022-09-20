@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	mc "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_VersionCheck(t *testing.T) {
@@ -37,5 +38,25 @@ func TestClient_VersionCheck(t *testing.T) {
 		if !mclient.Empty() {
 			t.Error("not all data in mock client consumed")
 		}
+	}
+}
+
+func TestClient_NotReady(t *testing.T) {
+
+	c := NewClient("https://bla.bla", true)
+	mclient, ctx := mc.NewMockResponder()
+	c.httpClient = mclient
+	c.versionChecked = false
+	c.authChecked = true
+
+	mclient.SetData(mc.MockRespList{
+		{Data: []byte(`{"version": "2.4.0.dev0","false": true}`)},
+	})
+
+	err := c.versionCheck(ctx)
+	assert.Error(t, err)
+
+	if !mclient.Empty() {
+		t.Error("not all data in mock client consumed")
 	}
 }

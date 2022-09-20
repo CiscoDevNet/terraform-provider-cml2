@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     cml2 = {
-      version = "0.1.0-alpha-20-ge944c3e"
+      version = "0.1.0-alpha-21-g9fc79ab"
       source  = "registry.terraform.io/ciscodevnet/cml2"
     }
   }
@@ -68,8 +68,8 @@ variable "configs" {
 # }
 
 provider "cml2" {
-  address = var.address
-  # token   = var.token
+  address  = var.address
+  token    = var.token
   username = var.username
   password = var.password
   # username = "qwe"

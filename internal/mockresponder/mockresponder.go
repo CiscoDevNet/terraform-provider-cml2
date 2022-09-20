@@ -15,6 +15,7 @@ type MockResp struct {
 	Data   []byte
 	Code   int
 	URL    string
+	Err    error
 	served bool
 }
 
@@ -79,6 +80,10 @@ func defaultDoFunc(req *http.Request) (*http.Response, error) {
 			fmt.Printf("%d: %v/%v/%v/%v\n", k, v.served, v.URL, v.Code, string(v.Data))
 		}
 		panic("ran out of data")
+	}
+
+	if data.Err != nil {
+		return nil, data.Err
 	}
 
 	// default to 200/OK

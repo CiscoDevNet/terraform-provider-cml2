@@ -279,7 +279,7 @@ func TestClient_ImportLabBadAuth(t *testing.T) {
 	data := mr.MockRespList{
 		mr.MockResp{
 			Data: []byte(`{
-				"description": "description": "401: Unauthorized",
+				"description": "401: Unauthorized",
 				"code":        401
 			}`),
 			Code: 401,
@@ -294,4 +294,5 @@ func TestClient_ImportLabBadAuth(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Nil(t, lab)
+	assert.EqualError(t, err, "invalid token but no credentials provided")
 }

@@ -530,7 +530,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	// data.Nodes = r.populateNodes(ctx, lab)
+	data.Nodes = r.populateNodes(ctx, lab, resp.Diagnostics)
 	data.Booted = types.Bool{Value: lab.Booted()}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)

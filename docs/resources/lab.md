@@ -29,31 +29,31 @@ resource "cml2_lab" "bananas" {
 
 ### Required
 
-- `topology` (String, Sensitive) topology to start
+- `topology` (String) topology to start
 
 ### Optional
 
-- `configurations` (Map of String) List of node configurations to store into nodes
 - `state` (String) CML lab state
 - `wait` (Boolean) wait until topology is BOOTED if true
 
 ### Read-Only
 
-- `converged` (Boolean) CML lab has converged (e.g. BOOTED)
+- `booted` (Boolean) All nodes in the lab have booted
 - `id` (String) CML lab identifier, a UUID
-- `nodes` (Attributes List) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
+- `nodes` (Attributes Map) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
 
 <a id="nestedatt--nodes"></a>
 ### Nested Schema for `nodes`
 
 Read-Only:
 
-- `configuration` (String, Sensitive) configuration
+- `configuration` (String) device configuration
 - `id` (String) Node ID (UUID)
 - `interfaces` (Attributes List) interfaces on the node (see [below for nested schema](#nestedatt--nodes--interfaces))
 - `label` (String) label
-- `nodetype` (String) Node Type / Definition
+- `nodedefinition` (String) Node Definition
 - `state` (String) state
+- `tags` (List of String) Tags of the node
 
 <a id="nestedatt--nodes--interfaces"></a>
 ### Nested Schema for `nodes.interfaces`

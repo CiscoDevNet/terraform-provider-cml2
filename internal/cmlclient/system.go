@@ -2,6 +2,7 @@ package cmlclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -32,6 +33,11 @@ func (c *Client) versionCheck(ctx context.Context) error {
 	if err := c.jsonGet(ctx, systeminfoAPI, &sv); err != nil {
 		return err
 	}
+
+	if !sv.Ready {
+		return errors.New("system not ready")
+	}
+
 	constraint, err := semver.NewConstraint(versionConstraint)
 	if err != nil {
 		panic("unparsable semver version constant")

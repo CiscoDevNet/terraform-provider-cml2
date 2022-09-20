@@ -1,8 +1,8 @@
 
 resource "cml2_lab" "this" {
   topology = templatefile("topology.yaml", { toponame = var.toponame })
-  wait  = true
-  state = "DEFINED_ON_CORE"
+  wait     = true
+  state    = "STARTED"
   # state = "STARTED"
   # state = "STOPPED"
   # configurations = var.configs
@@ -20,9 +20,13 @@ resource "cml2_lab" "this" {
 # }
 
 output "bla" {
-  sensitive = false
+  # sensitive = false
   # value = [cml2_lab.this.state, cml2_lab.this.booted, cml2_lab.this.nodes]
-  value = [ for n in cml2_lab.this.nodes : "${n.id} = ${n.label}" ]
+  value = [for n in cml2_lab.this.nodes : "${n.id} = ${n.label}"]
+}
+
+output "nodes" {
+  value = cml2_lab.this.nodes
 }
 
 # resource {

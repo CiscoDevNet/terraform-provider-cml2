@@ -22,7 +22,7 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				MarkdownDescription: "topology to start",
 				Required:            true,
 				Type:                types.StringType,
-				// Sensitive:           true,
+				Sensitive:           true,
 				PlanModifiers: []tfsdk.AttributePlanModifier{
 					resource.RequiresReplace(),
 				},
