@@ -2,7 +2,13 @@
 resource "cml2_lab" "this" {
   topology = templatefile("topology.yaml", { toponame = var.toponame })
   wait     = true
-  state    = "STARTED"
+  state    = "STOPPED"
+  lifecycle {
+    # ignore_changes = [compute_resources[0].desired_vcpus]
+    # ignore_changes = [nodes]
+    ignore_changes = [state]
+  }
+
   # state = "STARTED"
   # state = "STOPPED"
   # configurations = var.configs
