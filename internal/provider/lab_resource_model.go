@@ -18,8 +18,16 @@ type LabResourceModel struct {
 	State    types.String `tfsdk:"state"`
 	Booted   types.Bool   `tfsdk:"booted"`
 	Nodes    types.Map    `tfsdk:"nodes"`
+	Configs  types.Map    `tfsdk:"configs"`
+	Stages   types.List   `tfsdk:"stages"`
+	Timeouts types.Object `tfsdk:"timeouts"`
 }
 
+type LabResourceTimeouts struct {
+	Create types.String `tfsdk:"create"`
+	Update types.String `tfsdk:"update"`
+	Delete types.String `tfsdk:"delete"`
+}
 type NodeResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Label          types.String `tfsdk:"label"`
@@ -64,7 +72,7 @@ var nodeAttrType = map[string]attr.Type{
 	"tags": types.ListType{ElemType: types.StringType},
 }
 
-func newNode(ctx context.Context, node *cmlclient.Node, diags diag.Diagnostics) attr.Value {
+func newNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
 
 	// we want this as a stable sort by interface UUID
 	ilist := []*cmlclient.Interface{}
@@ -110,7 +118,7 @@ func newNode(ctx context.Context, node *cmlclient.Node, diags diag.Diagnostics) 
 	return value
 }
 
-func newInterface(ctx context.Context, iface *cmlclient.Interface, diags diag.Diagnostics) attr.Value {
+func newInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
 
 	ip4List := types.List{ElemType: types.StringType, Null: true}
 	ip6List := types.List{ElemType: types.StringType, Null: true}
@@ -135,6 +143,10 @@ func newInterface(ctx context.Context, iface *cmlclient.Interface, diags diag.Di
 	if iface.Exists() {
 		macAddress.Value = iface.MACaddress
 		macAddress.Null = false
+		macAddress.Unknown = false
+	} else {
+		macAddress.Unknown = true
+		macAddress.Null = true
 	}
 
 	newIface := InterfaceResourceModel{

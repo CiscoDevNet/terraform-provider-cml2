@@ -91,6 +91,15 @@ func (l *Lab) Booted() bool {
 	return true
 }
 
+func (l *Lab) NodeByLabel(ctx context.Context, label string) (*Node, error) {
+	for _, node := range l.Nodes {
+		if node.Label == label {
+			return node, nil
+		}
+	}
+	return nil, ErrElementNotFound
+}
+
 type LabImport struct {
 	ID       string   `json:"id"`
 	Warnings []string `json:"warnings"`

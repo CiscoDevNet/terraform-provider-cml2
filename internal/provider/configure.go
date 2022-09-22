@@ -14,9 +14,7 @@ func (r *LabResource) Configure(ctx context.Context, req resource.ConfigureReque
 	if req.ProviderData == nil {
 		return
 	}
-
 	client, ok := req.ProviderData.(*cmlclient.Client)
-
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -25,7 +23,6 @@ func (r *LabResource) Configure(ctx context.Context, req resource.ConfigureReque
 
 		return
 	}
-
 	r.client = client
 }
 
@@ -34,9 +31,7 @@ func (d *NodeDataSource) Configure(ctx context.Context, req datasource.Configure
 	if req.ProviderData == nil {
 		return
 	}
-
 	client, ok := req.ProviderData.(*cmlclient.Client)
-
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -45,6 +40,5 @@ func (d *NodeDataSource) Configure(ctx context.Context, req datasource.Configure
 
 		return
 	}
-
 	d.client = client
 }

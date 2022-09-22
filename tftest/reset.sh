@@ -4,7 +4,9 @@
 shopt -s extglob
 
 rm -f .terraform.lock.hcl
-rm -f terraform.tfstate?(.backup)
+if [ -n "$1" ]; then
+    rm -f terraform.tfstate?(.backup)
+fi
 
 terraform init
 terraform plan

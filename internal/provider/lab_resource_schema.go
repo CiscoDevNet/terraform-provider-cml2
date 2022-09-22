@@ -15,6 +15,38 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "CML Lab resource",
 
+		Blocks: map[string]tfsdk.Block{
+			"timeouts": {
+				Attributes: map[string]tfsdk.Attribute{
+					"create": {
+						Optional:            true,
+						MarkdownDescription: "create timeout",
+						Type:                types.StringType,
+						Validators: []tfsdk.AttributeValidator{
+							durationValidator{},
+						},
+					},
+					"update": {
+						Optional:            true,
+						MarkdownDescription: "update timeout",
+						Type:                types.StringType,
+						Validators: []tfsdk.AttributeValidator{
+							durationValidator{},
+						},
+					},
+					"delete": {
+						Optional:            true,
+						MarkdownDescription: "delete timeout",
+						Type:                types.StringType,
+						Validators: []tfsdk.AttributeValidator{
+							durationValidator{},
+						},
+					},
+				},
+				NestingMode: tfsdk.BlockNestingModeSingle,
+			},
+		},
+
 		Attributes: map[string]tfsdk.Attribute{
 			// topology is marked as sensitive mostly b/c lengthy topology
 			// YAML clutters the output.
@@ -67,52 +99,29 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 					resource.UseStateForUnknown(),
 				},
 			},
-			// "configurations": {
-			// 	MarkdownDescription: "List of node configurations to store into nodes",
-			// 	Optional:            true,
-			// 	Type: types.MapType{
-			// 		ElemType: types.StringType,
-			// 	},
-			// },
-			// "special": {
-			// 	MarkdownDescription: "State of specific nodes. The key is either the node name or the name of a tag.  In both cases, a regular expression can be used. If the result is ambiguous, the node name takes preference.",
-			// 	Optional:            true,
-			// 	// Attributes: tfsdk.MapNestedAttributes(
-			// 	// 	specialSchema(),
-			// 	// ),
-			// 	Type: types.MapType{
-			// 		ElemType: types.ObjectType{
-			// 			AttrTypes: map[string]attr.Type{
-			// 				"configuration": types.StringType,
-			// 				"state":         types.StringType,
-			// 				"image_id":      types.StringType,
-			// 			},
-			// 		},
-			// 	},
-			// },
+			"configs": {
+				MarkdownDescription: "Map of node configurations to store into nodes",
+				Optional:            true,
+				Type: types.MapType{
+					ElemType: types.StringType,
+				},
+				PlanModifiers: []tfsdk.AttributePlanModifier{
+					resource.RequiresReplace(),
+				},
+			},
+			"stages": {
+				MarkdownDescription: "Ordered list of tags, controls node launch",
+				Optional:            true,
+				Type: types.ListType{
+					ElemType: types.StringType,
+				},
+				PlanModifiers: []tfsdk.AttributePlanModifier{
+					resource.RequiresReplace(),
+				},
+			},
 		},
 	}, nil
 }
-
-// func specialSchema() map[string]tfsdk.Attribute {
-// 	return map[string]tfsdk.Attribute{
-// 		"configuration": {
-// 			MarkdownDescription: "the configuration of the node",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 		"state": {
-// 			MarkdownDescription: "the desired state of the node",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 		"image_id": {
-// 			MarkdownDescription: "the image_id the node should use",
-// 			Type:                types.StringType,
-// 			Optional:            true,
-// 		},
-// 	}
-// }
 
 func interfaceSchema() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{

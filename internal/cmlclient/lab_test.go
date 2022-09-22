@@ -1,6 +1,7 @@
 package cmlclient
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 
@@ -295,4 +296,22 @@ func TestClient_ImportLabBadAuth(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, lab)
 	assert.EqualError(t, err, "invalid token but no credentials provided")
+}
+
+func TestClient_NodeByLabel(t *testing.T) {
+
+	l := Lab{
+		Nodes: NodeMap{
+			"bla": &Node{
+				Label: "test",
+			},
+		},
+	}
+	n, err := l.NodeByLabel(context.Background(), "test")
+	assert.Nil(t, err)
+	assert.Equal(t, "test", n.Label)
+
+	n, err = l.NodeByLabel(context.Background(), "doesntexist")
+	assert.ErrorIs(t, err, ErrElementNotFound)
+	assert.Nil(t, n)
 }

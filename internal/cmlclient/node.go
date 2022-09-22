@@ -117,8 +117,9 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 	return nil
 }
 
-func (c *Client) SetNodeConfig(ctx context.Context, labID, nodeID, configuration string) error {
-	api := fmt.Sprintf("labs/%s/nodes/%s", labID, nodeID)
+func (c *Client) SetNodeConfig(ctx context.Context, node *Node, configuration string) error {
+
+	api := fmt.Sprintf("labs/%s/nodes/%s", node.lab.ID, node.ID)
 
 	type nodeConfig struct {
 		Configuration string `json:"configuration"`
@@ -131,8 +132,9 @@ func (c *Client) SetNodeConfig(ctx context.Context, labID, nodeID, configuration
 		return err
 	}
 
-	node := Node{}
-	err = c.jsonPatch(ctx, api, buf, &node)
+	// API returns the node ID of the updated node
+	nodeID := ""
+	err = c.jsonPatch(ctx, api, buf, &nodeID)
 	if err != nil {
 		return err
 	}

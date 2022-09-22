@@ -1,18 +1,32 @@
 
 resource "cml2_lab" "this" {
-  topology = templatefile("topology.yaml", { toponame = var.toponame })
-  wait     = true
-  state    = "STOPPED"
-  lifecycle {
-    # ignore_changes = [compute_resources[0].desired_vcpus]
-    # ignore_changes = [nodes]
-    ignore_changes = [state]
-  }
 
-  # state = "STARTED"
+  topology = templatefile("topology.yaml", { toponame = var.toponame })
+
+  # stages have no effect if wait is false
+  wait = true
+
+  # labs are always started with create
+  # labs are always stopped / wiped / removed with delete
   # state = "STOPPED"
-  # configurations = var.configs
+
+  # lifecycle {
+  #   # ignore_changes = [compute_resources[0].desired_vcpus]
+  #   # ignore_changes = [nodes]
+  #   ignore_changes = [state]
+  # }
+
+  state = "STARTED"
+  # state = "STOPPED"
   # special        = var.special
+  configs = var.configs
+  stages  = var.stages
+
+  timeouts {
+    create = "20h"
+    update = "1h30m"
+    delete = "20m"
+  }
 }
 
 

@@ -44,7 +44,7 @@ func TestNewInterface(t *testing.T) {
 	// r := NewLabResource().(*LabResource)
 	t.Run("simple", func(t *testing.T) {
 		// t.Parallel()
-		diag := diag.Diagnostics{}
+		diag := &diag.Diagnostics{}
 		value := newInterface(context.Background(), iface, diag)
 		t.Logf("value: %+v", value)
 
@@ -59,7 +59,7 @@ func TestNewNode(t *testing.T) {
 	// r := NewLabResource().(*LabResource)
 	t.Run("simple", func(t *testing.T) {
 		// t.Parallel()
-		diag := diag.Diagnostics{}
+		diag := &diag.Diagnostics{}
 		value := newNode(context.Background(), node, diag)
 		t.Logf("value: %+v", value)
 

@@ -35,86 +35,7 @@ func (r *LabResource) Metadata(ctx context.Context, req resource.MetadataRequest
 	resp.TypeName = req.ProviderTypeName + "_lab"
 }
 
-type labStateValidator struct{}
-
-func (v labStateValidator) Description(ctx context.Context) string {
-	return "valid states are DEFINED_ON_CORE, STOPPED and STARTED"
-}
-
-// MarkdownDescription returns a markdown formatted description of the
-// validator's behavior, suitable for a practitioner to understand its impact.
-func (v labStateValidator) MarkdownDescription(ctx context.Context) string {
-	return "valid states are `DEFINED_ON_CORE`, `STOPPED` and `STARTED`"
-}
-
-// Validate runs the main validation logic of the validator, reading
-// configuration data out of `req` and updating `resp` with diagnostics.
-func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
-	var labState types.String
-	diags := tfsdk.ValueAs(ctx, req.AttributeConfig, &labState)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
-		return
-	}
-
-	if labState.Unknown || labState.Null {
-		return
-	}
-
-	if labState.Value != cmlclient.LabStateDefined &&
-		labState.Value != cmlclient.LabStateStopped &&
-		labState.Value != cmlclient.LabStateStarted {
-		resp.Diagnostics.AddAttributeError(
-			req.AttributePath,
-			"Invalid lab state",
-			"valid states are DEFINED_ON_CORE, STOPPED and STARTED.",
-		)
-		return
-	}
-}
-
-// type cml2Special struct {
-// 	Configuration types.String `tfsdk:"configuration"`
-// 	State         types.String `tfsdk:"state"`
-// 	ImageID       types.String `tfsdk:"image_id"`
-// }
-
-// type cml2SpecialMap map[string]cml2Special
-
-// func (r *LabResource) matchSpecial(ctx context.Context, diag *diag.Diagnostics, specials cml2SpecialMap, node cml2Node) *cml2Special {
-// 	for key, special := range specials {
-// 		// check the node label first
-// 		matched, err := regexp.Match(key, []byte(node.Label.Value))
-// 		if err != nil {
-// 			diag.AddError(
-// 				CML2ErrorLabel,
-// 				fmt.Sprintf("not a valid regex: %s, got %s", key, err),
-// 			)
-// 			return nil
-// 		}
-// 		if matched {
-// 			return &special
-// 		}
-// 		// if no match, check all the node tags
-// 		for _, tag := range node.Tags.Elems {
-// 			matched, err := regexp.Match(key, []byte(tag.(types.String).Value))
-// 			if err != nil {
-// 				diag.AddError(
-// 					CML2ErrorLabel,
-// 					fmt.Sprintf("not a valid regex: %s, got %s", key, err),
-// 				)
-// 				return nil
-// 			}
-// 			if matched {
-// 				return &special
-// 			}
-// 		}
-
-// 	}
-// 	return nil
-// }
-
-func (r *LabResource) converge(ctx context.Context, diag diag.Diagnostics, id string) {
+func (r *LabResource) converge(ctx context.Context, diags *diag.Diagnostics, id string, timeout types.String) {
 	booted := false
 	waited := 0
 	snoozeFor := 5 // seconds
@@ -122,17 +43,32 @@ func (r *LabResource) converge(ctx context.Context, diag diag.Diagnostics, id st
 
 	tflog.Info(ctx, "waiting for convergence")
 
+	tov, err := time.ParseDuration(timeout.Value)
+	if err != nil {
+		panic("can't parse timeout -- should be validated")
+	}
+	endTime := time.Now().Add(tov)
+
 	for !booted {
 
 		booted, err = r.client.ConvergedLab(ctx, id)
 		if err != nil {
-			diag.AddError(
+			diags.AddError(
 				CML2ErrorLabel,
 				fmt.Sprintf("Wait for convergence of lab, got error: %s", err),
 			)
 			return
 		}
-		time.Sleep(time.Second * time.Duration(snoozeFor))
+
+		select {
+		case <-time.After(time.Second * time.Duration(snoozeFor)):
+		case <-ctx.Done():
+			return
+		}
+		if time.Now().After(endTime) {
+			diags.AddError(CML2ErrorLabel, fmt.Sprintf("ran into timeout (max %s)", timeout.Value))
+			return
+		}
 		waited++
 		tflog.Info(
 			ctx, "converging",
@@ -147,7 +83,6 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -175,16 +110,10 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		return
 	}
 
-	// special := cml2SpecialMap{}
-	// if !configData.Special.IsNull() {
-	// 	diags = configData.Special.ElementsAs(ctx, &special, false)
-	// 	resp.Diagnostics.Append(diags...)
-	// 	if resp.Diagnostics.HasError() {
-	// 		tflog.Error(ctx, "ModifyPlan: that didn't work")
-	// 		return
-	// 	}
-	// 	tflog.Info(ctx, fmt.Sprintf("SPECIAL: %+v\n", special))
-	// }
+	if planData == nil {
+		tflog.Error(ctx, "ModifyPlan: no plan exists...")
+		return
+	}
 
 	// check if we can transition to specified state
 	if planData.State.Value == cmlclient.LabStateStopped {
@@ -204,148 +133,91 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 	}
 
-	// changeNeeded := false
-	// if !noState {
-	// 	changeNeeded = planData.State.Value != stateData.State.Value ||
-	// 		!planData.Special.Equal(stateData.Special)
-	// }
+	changeNeeded := false
+	if !noState {
+		changeNeeded = planData.State.Value != stateData.State.Value
+	}
 
-	// if changeNeeded {
-	// 	tflog.Info(ctx, "ModifyPlan: change detected")
+	if changeNeeded {
+		tflog.Info(ctx, "ModifyPlan: change detected")
 
-	// 	newNodeList := types.List{
-	// 		ElemType: types.ObjectType{
-	// 			AttrTypes: data.nodeAttrs,
-	// 		},
-	// 	}
-	// 	nodes := []cml2Node{}
-	// 	diags := planData.Nodes.ElementsAs(ctx, &nodes, false)
-	// 	resp.Diagnostics.Append(diags...)
-	// 	if resp.Diagnostics.HasError() {
-	// 		tflog.Error(ctx, "ModifyPlan: that didn't work")
-	// 		return
-	// 	}
+		var nodes map[string]NodeResourceModel
 
-	// 	for _, node := range nodes {
+		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, planData.Nodes, &nodes)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-	// 		sp := r.matchSpecial(ctx, &diags, special, node)
-	// 		if diags.HasError() {
-	// 			tflog.Error(ctx, "ModifyPlan: specials issue")
-	// 			return
-	// 		}
-	// 		if sp != nil && planData.State.Value == cmlclient.LabStateDefined {
-	// 			_ = 1
-	// 			if !sp.Configuration.IsNull() {
-	// 				node.Configuration.Value = sp.Configuration.Value
-	// 			}
-	// 			if !sp.State.IsNull() {
-	// 				node.State.Value = sp.State.Value
-	// 			}
-	// 			if !sp.ImageID.IsNull() {
-	// 				node.State.Value = sp.ImageID.Value
-	// 			}
-	// 		}
+		for id, node := range nodes {
+			node.State.Unknown = true
 
-	// 		newInterfaceList := types.List{
-	// 			ElemType: types.ObjectType{
-	// 				AttrTypes: data.interfaceAttrs,
-	// 			},
-	// 		}
-	// 		for _, ifaceElem := range node.Interfaces.Elems {
+			// This is a bit of a hack since the node def name is hard coded
+			// here.  what happens is that UMS nodes get the bridge name as the
+			// configuration so, we start with no configuration and after start,
+			// the configuration is set to the name of the bridge, like
+			// ums-b843d547-54.
+			// As an alternative, all configurations could be set to "Unknown"
+			if node.NodeDefinition.Value == "unmanaged_switch" {
+				node.Configuration.Unknown = true
+			}
 
-	// 			iface := cml2Interface{}
-	// 			diags = ifaceElem.(types.Object).As(ctx, &iface, types.ObjectAsOptions{})
-	// 			resp.Diagnostics.Append(diags...)
-	// 			if resp.Diagnostics.HasError() {
-	// 				tflog.Error(ctx, "ModifyPlan: that didn't work")
-	// 				return
-	// 			}
+			var ifaces []InterfaceResourceModel
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, node.Interfaces, &ifaces)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
-	// 			macAddress := types.String{}
-	// 			ip4List := types.List{ElemType: types.StringType}
-	// 			ip6List := types.List{ElemType: types.StringType}
+			for idx := range ifaces {
+				ifaces[idx].IP4.Unknown = true
+				ifaces[idx].IP6.Unknown = true
+				ifaces[idx].MACaddress.Unknown = true
+				ifaces[idx].MACaddress.Null = false // why? oh, why!
+				ifaces[idx].State.Unknown = true
 
-	// 			switch planData.State.Value {
-	// 			case cmlclient.LabStateDefined:
-	// 				macAddress.Null = true
-	// 				ip4List.Null = true
-	// 				ip6List.Null = true
-	// 			case cmlclient.LabStateStarted:
-	// 				if stateData.State.Value == cmlclient.LabStateDefined {
-	// 					macAddress.Unknown = true
-	// 				} else {
-	// 					macAddress.Value = iface.MACaddress.Value
-	// 				}
-	// 				ip4List.Unknown = true
-	// 				ip6List.Unknown = true
-	// 			case cmlclient.LabStateStopped:
-	// 				macAddress.Value = iface.MACaddress.Value
-	// 				ip4List.Null = true
-	// 				ip6List.Null = true
-	// 			}
-	// 			iface.State.Unknown = true
-	// 			iface.MACaddress = macAddress
-	// 			iface.IP4 = ip4List
-	// 			iface.IP6 = ip6List
+				// iface := ifaces[idx]
+				// tflog.Info(ctx, fmt.Sprintf("mac: %v/%v", iface.MACaddress.Null, iface.MACaddress.Unknown))
+				// tflog.Info(ctx, fmt.Sprintf("ip4: %v/%v", iface.IP4.Null, iface.IP4.Unknown))
+			}
 
-	// 			newIfaceElem := types.Object{}
-	// 			diags := tfsdk.ValueFrom(
-	// 				ctx, node, types.ObjectType{
-	// 					AttrTypes: data.interfaceAttrs,
-	// 				}, &newIfaceElem)
-	// 			resp.Diagnostics.Append(diags...)
-	// 			if resp.Diagnostics.HasError() {
-	// 				return
-	// 			}
+			resp.Diagnostics.Append(
+				tfsdk.ValueFrom(
+					ctx,
+					ifaces,
+					types.ListType{ElemType: types.ObjectType{AttrTypes: interfaceAttrType}},
+					&node.Interfaces,
+				)...,
+			)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			nodes[id] = node
+		}
 
-	// 			newInterfaceList.Elems = append(newInterfaceList.Elems, newIfaceElem)
-	// 		}
+		resp.Diagnostics.Append(
+			tfsdk.ValueFrom(
+				ctx,
+				nodes,
+				types.MapType{ElemType: types.ObjectType{AttrTypes: nodeAttrType}},
+				&planData.Nodes,
+			)...,
+		)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-	// 		node.Configuration.Unknown = true
-	// node.State.Unknown = true
-	// 		node.Interfaces = newInterfaceList
-	// 		// newNodeElem := node.toObject()
+		// booted state of lab is unknown at this point
+		planData.Booted.Unknown = true
+	}
 
-	// 		newNodeElem := types.Object{}
-	// 		diags := tfsdk.ValueFrom(
-	// 			ctx, node, types.ObjectType{
-	// 				AttrTypes: data.nodeAttrs,
-	// 			}, &newNodeElem)
-	// 		resp.Diagnostics.Append(diags...)
-	// 		if resp.Diagnostics.HasError() {
-	// 			return
-	// 		}
-
-	// 		newNodeList.Elems = append(newNodeList.Elems, newNodeElem)
-	// 	}
-
-	// 	// modify node state
-	// 	// ap := tftypes.NewAttributePath().WithAttributeName("nodes")
-	// 	ap := path.Empty().AtName("root")
-	// 	diags = resp.Plan.SetAttribute(ctx, ap, newNodeList)
-	// 	resp.Diagnostics.Append(diags...)
-	// 	if resp.Diagnostics.HasError() {
-	// 		tflog.Error(ctx, "ModifyPlan: nodes plan has errors")
-	// 		return
-	// 	}
-	// 	// modify converged state
-	// 	// ap = tftypes.NewAttributePath().WithAttributeName("converged")
-	// 	ap = path.Empty().AtName("converged")
-	// 	diags = resp.Plan.SetAttribute(ctx, ap, types.Bool{Unknown: true})
-	// 	resp.Diagnostics.Append(diags...)
-	// 	if resp.Diagnostics.HasError() {
-	// 		tflog.Error(ctx, "ModifyPlan: converged plan has errors")
-	// 		return
-	// 	}
-	// }
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
 	tflog.Info(ctx, "ModifyPlan: done")
 }
 
-func (r *LabResource) stop(ctx context.Context, diag diag.Diagnostics, id string) {
+func (r *LabResource) stop(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab stop")
 	err := r.client.StopLab(ctx, id)
 	if err != nil {
-		diag.AddError(
+		diags.AddError(
 			CML2ErrorLabel,
 			fmt.Sprintf("Unable to stop CML2 lab, got error: %s", err),
 		)
@@ -354,11 +226,11 @@ func (r *LabResource) stop(ctx context.Context, diag diag.Diagnostics, id string
 	tflog.Info(ctx, "lab stop done")
 }
 
-func (r *LabResource) wipe(ctx context.Context, diag diag.Diagnostics, id string) {
+func (r *LabResource) wipe(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab wipe")
 	err := r.client.WipeLab(ctx, id)
 	if err != nil {
-		diag.AddError(
+		diags.AddError(
 			CML2ErrorLabel,
 			fmt.Sprintf("Unable to destroy CML2 lab, got error: %s", err),
 		)
@@ -367,11 +239,11 @@ func (r *LabResource) wipe(ctx context.Context, diag diag.Diagnostics, id string
 	tflog.Info(ctx, "lab wipe done")
 }
 
-func (r *LabResource) start(ctx context.Context, diag diag.Diagnostics, id string) {
+func (r *LabResource) start(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab start")
 	err := r.client.StartLab(ctx, id)
 	if err != nil {
-		diag.AddError(
+		diags.AddError(
 			CML2ErrorLabel,
 			fmt.Sprintf("Unable to start lab, got error: %s", err),
 		)
@@ -379,61 +251,50 @@ func (r *LabResource) start(ctx context.Context, diag diag.Diagnostics, id strin
 	tflog.Info(ctx, "lab start done")
 }
 
-// func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data cmlLabResourceData) diag.Diagnostics {
-// 	tflog.Info(ctx, "injectConfigs")
+func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *LabResourceModel, diags *diag.Diagnostics) {
+	tflog.Info(ctx, "injectConfigs")
 
-// 	var diags diag.Diagnostics
+	// special := cml2SpecialMap{}
+	// if !data.Special.IsNull() {
+	// 	diags.Append(data.Special.ElementsAs(ctx, &special, false)...)
+	// 	if diags.HasError() {
+	// 		tflog.Error(ctx, "injectConfigs: that didn't work (1)")
+	// 		return diags
+	// 	}
+	// 	tflog.Info(ctx, fmt.Sprintf("SPECIAL: %+v\n", special))
+	// }
 
-// 	special := cml2SpecialMap{}
-// 	if !data.Special.IsNull() {
-// 		diags = data.Special.ElementsAs(ctx, &special, false)
-// 		diags.Append(diags...)
-// 		if diags.HasError() {
-// 			tflog.Error(ctx, "injectConfigs: that didn't work (1)")
-// 			return diags
-// 		}
-// 		tflog.Info(ctx, fmt.Sprintf("SPECIAL: %+v\n", special))
-// 	}
+	if data.Configs.IsNull() {
+		tflog.Info(ctx, "injectConfigs: no configs")
+		return
+	}
 
-// 	for _, node := range lab.Nodes {
-// 		// set the configuration IF the node is not yet started
-// 		tflog.Info(ctx, fmt.Sprintf("injectConfigs: node state, %+v", node.State))
-// 		if node.State == cmlclient.NodeStateDefined {
-// 			tflog.Info(ctx, fmt.Sprintf("injectConfigs: defined, %+v", node))
+	for nodeID, config := range data.Configs.Elems {
+		node, err := lab.NodeByLabel(ctx, nodeID)
+		if err == cmlclient.ErrElementNotFound {
+			node = lab.Nodes[nodeID]
+		}
+		if node == nil {
+			diags.AddError(CML2ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
+			continue
+		}
+		if node.State != cmlclient.NodeStateDefined {
+			diags.AddError(CML2ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
+			continue
+		}
+		config_string := config.(types.String).Value
+		bla := config.String()
+		_ = bla
+		err = r.client.SetNodeConfig(ctx, node, config_string)
+		if err != nil {
+			diags.AddError("set node config failed",
+				fmt.Sprintf("setting the new node configuration failed: %s", err),
+			)
+		}
+	}
 
-// 			o := cml2Node{}
-// 			diags = tfsdk.ValueFrom(ctx, node, types.ObjectType{
-// 				AttrTypes: data.nodeAttrs,
-// 			}, &o)
-// 			if diags.HasError() {
-// 				return diags
-// 			}
-
-// 			sp := r.matchSpecial(ctx, &diags, special, o)
-// 			if diags.HasError() {
-// 				tflog.Error(ctx, "ModifyPlan: specials issue")
-// 				return diags
-// 			}
-
-// 			if sp != nil && !sp.Configuration.IsNull() {
-// 				configuration := sp.Configuration.Value
-// 				tflog.Info(ctx, fmt.Sprintf("injectConfigs: %s, %s", configuration, node.Configuration))
-// 				if configuration == node.Configuration {
-// 					continue
-// 				}
-// 				err := r.client.SetNodeConfig(ctx, lab.ID, node.ID, configuration)
-// 				if err != nil {
-// 					diags.AddError("set node config failed",
-// 						fmt.Sprintf("setting the new node configuration failed: %s", err),
-// 					)
-// 				}
-// 			}
-// 		}
-// 	}
-// 	tflog.Info(ctx, "injectConfigs: done")
-
-// 	return diags
-// }
+	tflog.Info(ctx, "injectConfigs: done")
+}
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data *LabResourceModel
@@ -455,14 +316,22 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	// if unspecified, start the lab...
-	// r.injectConfigs(ctx, lab, data)
+	r.injectConfigs(ctx, lab, data, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if data.State.Null || data.State.Value == cmlclient.LabStateStarted {
 		r.start(ctx, resp.Diagnostics, lab.ID)
 	}
 
-	// if unspecified, wait for it converge
+	// if unspecified, wait for it to converge
 	if data.Wait.Null || data.Wait.Value {
-		r.converge(ctx, resp.Diagnostics, lab.ID)
+
+		timeouts := LabResourceTimeouts{}
+		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
+		tflog.Info(ctx, fmt.Sprintf("timeouts: %+v", timeouts))
+
+		r.converge(ctx, &resp.Diagnostics, lab.ID, timeouts.Create)
 	}
 
 	// fetch lab again, with nodes and interfaces
@@ -477,14 +346,14 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	data.Nodes = r.populateNodes(ctx, lab, resp.Diagnostics)
+	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.Bool{Value: lab.Booted()}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 	tflog.Info(ctx, "Create: done")
 }
 
-func (r *LabResource) populateNodes(ctx context.Context, lab *cmlclient.Lab, diags diag.Diagnostics) types.Map {
+func (r *LabResource) populateNodes(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) types.Map {
 	// we want this as a stable sort by node UUID
 	nodeList := []*cmlclient.Node{}
 	for _, node := range lab.Nodes {
@@ -530,7 +399,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	data.Id = types.String{Value: lab.ID}
 	data.State = types.String{Value: lab.State}
-	data.Nodes = r.populateNodes(ctx, lab, resp.Diagnostics)
+	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.Bool{Value: lab.Booted()}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -562,79 +431,6 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	// special := cml2SpecialMap{}
-	// if !configData.Special.IsNull() {
-	// 	diags = configData.Special.ElementsAs(ctx, &special, false)
-	// 	resp.Diagnostics.Append(diags...)
-	// 	if resp.Diagnostics.HasError() {
-	// 		tflog.Error(ctx, "Update: that didn't work (1)")
-	// 		return
-	// 	}
-	// 	tflog.Info(ctx, fmt.Sprintf("SPECIAL: %+v\n", special))
-	// }
-
-	// nodes := []cml2Node{}
-	// diags = stateData.Nodes.ElementsAs(ctx, &nodes, false)
-	// resp.Diagnostics.Append(diags...)
-	// if resp.Diagnostics.HasError() {
-	// 	tflog.Error(ctx, "Update: that didn't work (2)")
-	// 	return
-	// }
-
-	// for idx, node := range nodes {
-	// 	sp := r.matchSpecial(ctx, &diags, special, node)
-	// 	if diags.HasError() {
-	// 		tflog.Error(ctx, "Update: that didn't work (3)")
-	// 		return
-	// 	}
-	// 	if sp != nil {
-	// 		switch node.State.Value {
-	// 		case cmlclient.NodeStateDefined:
-	// 			if !sp.State.IsNull() {
-	// 				if sp.State.Value == cmlclient.NodeStateStarted {
-
-	// 					// modify node configuration state
-	// 					ap := tftypes.NewAttributePath().
-	// 						WithAttributeName("nodes").
-	// 						WithElementKeyInt(idx).
-	// 						WithAttributeName("configuration")
-	// 					diags = resp.State.SetAttribute(ctx, ap, types.String{
-	// 						Unknown: true},
-	// 					)
-	// 					resp.Diagnostics.Append(diags...)
-	// 					if resp.Diagnostics.HasError() {
-	// 						tflog.Error(ctx, "ModifyPlan: converged plan has errors")
-	// 						return
-	// 					}
-	// 				}
-
-	// 			}
-	// 		}
-	// 		if !sp.Configuration.IsNull() {
-	// 			node.Configuration.Value = sp.Configuration.Value
-	// 		}
-	// 		if !sp.State.IsNull() {
-	// 			node.State.Value = sp.State.Value
-	// 		}
-	// 		if !sp.ImageID.IsNull() {
-	// 			node.State.Value = sp.ImageID.Value
-	// 		}
-	// 	}
-
-	// }
-
-	// if !stateData.Special.Equal(planData.Special) {
-	// 	lab, err := r.client.GetLab(ctx, planData.Id.Value, false)
-	// 	if err != nil {
-	// 		resp.Diagnostics.AddError(
-	// 			CML2ErrorLabel,
-	// 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
-	// 		)
-	// 		return
-	// 	}
-	// 	r.injectConfigs(ctx, lab, planData)
-	// }
-
 	if stateData.State.Value != planData.State.Value {
 		tflog.Info(ctx, "state changed")
 
@@ -645,7 +441,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 			}
 			if planData.State.Value == cmlclient.LabStateDefined {
 				r.stop(ctx, resp.Diagnostics, planData.Id.Value)
-				r.converge(ctx, resp.Diagnostics, planData.Id.Value)
+				r.converge(ctx, &resp.Diagnostics, planData.Id.Value, types.String{Value: "1h"})
 				r.wipe(ctx, resp.Diagnostics, planData.Id.Value)
 			}
 		}
@@ -669,7 +465,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		// level between "STARTED" and "BOOTED" (e.g. converged).  It's always
 		// started...
 		if planData.Wait.Null || planData.Wait.Value {
-			r.converge(ctx, resp.Diagnostics, planData.Id.Value)
+			r.converge(ctx, &resp.Diagnostics, planData.Id.Value, types.String{Value: "1h"})
 		}
 	}
 
@@ -685,7 +481,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
 	planData.State = types.String{Value: lab.State}
-	// planData.Nodes = r.populateNodes(ctx, lab)
+	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	planData.Booted = types.Bool{Value: lab.Booted()}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)

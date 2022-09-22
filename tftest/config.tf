@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     cml2 = {
-      version = "0.1.0-alpha-21-g9fc79ab"
+      version = "0.1.0-alpha-23-ga512741"
       source  = "registry.terraform.io/ciscodevnet/cml2"
     }
   }
@@ -42,11 +42,22 @@ variable "configs" {
   description = "configuration for nodes"
   type        = map(string)
   default = {
-    "alpine-0" : "hostname duedelfirstofhername",
-    "alpine-1" : "hostname ralph",
-    "alpine-2" : "hostname ohmygod"
-    "alpine-3" : "hostname karlheinz",
+    "server-0" : "hostname duedelfirstofhername",
+    "server-1" : "hostname ralph",
+    "server-2" : "hostname ohmygod"
+    "server-3" : "hostname karlheinz",
   }
+}
+variable "stages" {
+  description = "staging of node starts, the names are node-tags"
+  type        = list(string)
+  default = [
+    "infrastructure",
+    "underlay",
+    "red-team",
+    "blue-team"
+    # all non-tagged nodes are started at the end
+  ]
 }
 
 # variable "special" {
@@ -68,8 +79,8 @@ variable "configs" {
 # }
 
 provider "cml2" {
-  address  = var.address
-  token    = var.token
+  address = var.address
+  # token    = var.token
   username = var.username
   password = var.password
   # username = "qwe"

@@ -93,7 +93,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			newNode(ctx, node, resp.Diagnostics),
+			newNode(ctx, node, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: nodeAttrType},
 			&data.Node,
 		)...,

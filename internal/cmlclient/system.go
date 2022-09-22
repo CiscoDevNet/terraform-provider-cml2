@@ -2,7 +2,6 @@ package cmlclient
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -35,7 +34,7 @@ func (c *Client) versionCheck(ctx context.Context) error {
 	}
 
 	if !sv.Ready {
-		return errors.New("system not ready")
+		return ErrSystemNotReady
 	}
 
 	constraint, err := semver.NewConstraint(versionConstraint)

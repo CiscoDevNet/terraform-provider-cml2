@@ -65,14 +65,14 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/hashicorp/go-hclog v1.3.0 // indirect
+	github.com/hashicorp/go-hclog v1.3.1 // indirect
 	github.com/hashicorp/go-plugin v1.4.5 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
-	golang.org/x/net v0.0.0-20220919232410-f2f64ebce3c1 // indirect
+	golang.org/x/net v0.0.0-20220921203646-d300de134e69 // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
-	google.golang.org/genproto v0.0.0-20220919141832-68c03719ef51 // indirect
+	google.golang.org/genproto v0.0.0-20220921223823-23cae91e6737 // indirect
 	google.golang.org/grpc v1.49.0 // indirect
 )
