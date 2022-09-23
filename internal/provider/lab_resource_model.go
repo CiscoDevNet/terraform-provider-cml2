@@ -23,7 +23,7 @@ type LabResourceModel struct {
 	Timeouts types.Object `tfsdk:"timeouts"`
 }
 
-type LabResourceTimeouts struct {
+type ResourceTimeouts struct {
 	Create types.String `tfsdk:"create"`
 	Update types.String `tfsdk:"update"`
 	Delete types.String `tfsdk:"delete"`

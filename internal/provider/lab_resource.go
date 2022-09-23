@@ -153,8 +153,8 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 			// This is a bit of a hack since the node def name is hard coded
 			// here.  what happens is that UMS nodes get the bridge name as the
-			// configuration so, we start with no configuration and after start,
-			// the configuration is set to the name of the bridge, like
+			// configuration.  So, we start with no configuration and after
+			// start, the configuration is set to the name of the bridge, like
 			// ums-b843d547-54.
 			// As an alternative, all configurations could be set to "Unknown"
 			if node.NodeDefinition.Value == "unmanaged_switch" {
@@ -170,8 +170,17 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			for idx := range ifaces {
 				ifaces[idx].IP4.Unknown = true
 				ifaces[idx].IP6.Unknown = true
-				ifaces[idx].MACaddress.Unknown = true
-				ifaces[idx].MACaddress.Null = false // why? oh, why!
+				// we know that when we wipe, the MAC is going to be null
+				if planData.State.Value == "DEFINED_ON_CORE" {
+					ifaces[idx].MACaddress.Unknown = false
+					ifaces[idx].MACaddress.Null = true
+				} else {
+					// MACaddresses won't change at state change if one was assigned
+					if ifaces[idx].MACaddress.Null {
+						ifaces[idx].MACaddress.Unknown = true
+						ifaces[idx].MACaddress.Null = false // why? oh, why!
+					}
+				}
 				ifaces[idx].State.Unknown = true
 
 				// iface := ifaces[idx]
@@ -254,16 +263,6 @@ func (r *LabResource) start(ctx context.Context, diags diag.Diagnostics, id stri
 func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *LabResourceModel, diags *diag.Diagnostics) {
 	tflog.Info(ctx, "injectConfigs")
 
-	// special := cml2SpecialMap{}
-	// if !data.Special.IsNull() {
-	// 	diags.Append(data.Special.ElementsAs(ctx, &special, false)...)
-	// 	if diags.HasError() {
-	// 		tflog.Error(ctx, "injectConfigs: that didn't work (1)")
-	// 		return diags
-	// 	}
-	// 	tflog.Info(ctx, fmt.Sprintf("SPECIAL: %+v\n", special))
-	// }
-
 	if data.Configs.IsNull() {
 		tflog.Info(ctx, "injectConfigs: no configs")
 		return
@@ -283,8 +282,6 @@ func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, dat
 			continue
 		}
 		config_string := config.(types.String).Value
-		bla := config.String()
-		_ = bla
 		err = r.client.SetNodeConfig(ctx, node, config_string)
 		if err != nil {
 			diags.AddError("set node config failed",
@@ -292,7 +289,6 @@ func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, dat
 			)
 		}
 	}
-
 	tflog.Info(ctx, "injectConfigs: done")
 }
 
@@ -326,11 +322,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	// if unspecified, wait for it to converge
 	if data.Wait.Null || data.Wait.Value {
-
-		timeouts := LabResourceTimeouts{}
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
-		tflog.Info(ctx, fmt.Sprintf("timeouts: %+v", timeouts))
-
+		timeouts := getTimeouts(ctx, req.Config, &resp.Diagnostics)
 		r.converge(ctx, &resp.Diagnostics, lab.ID, timeouts.Create)
 	}
 
@@ -434,6 +426,8 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	if stateData.State.Value != planData.State.Value {
 		tflog.Info(ctx, "state changed")
 
+		timeouts := getTimeouts(ctx, req.Config, &resp.Diagnostics)
+
 		// this is very blunt ...
 		if stateData.State.Value == cmlclient.LabStateStarted {
 			if planData.State.Value == cmlclient.LabStateStopped {
@@ -441,7 +435,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 			}
 			if planData.State.Value == cmlclient.LabStateDefined {
 				r.stop(ctx, resp.Diagnostics, planData.Id.Value)
-				r.converge(ctx, &resp.Diagnostics, planData.Id.Value, types.String{Value: "1h"})
+				r.converge(ctx, &resp.Diagnostics, planData.Id.Value, timeouts.Update)
 				r.wipe(ctx, resp.Diagnostics, planData.Id.Value)
 			}
 		}
@@ -465,7 +459,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		// level between "STARTED" and "BOOTED" (e.g. converged).  It's always
 		// started...
 		if planData.Wait.Null || planData.Wait.Value {
-			r.converge(ctx, &resp.Diagnostics, planData.Id.Value, types.String{Value: "1h"})
+			r.converge(ctx, &resp.Diagnostics, planData.Id.Value, timeouts.Update)
 		}
 	}
 

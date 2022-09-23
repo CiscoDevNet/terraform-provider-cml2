@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     cml2 = {
-      version = "0.1.0-alpha-23-ga512741"
+      version = "0.1.0-alpha-24-g3e104fa"
       source  = "registry.terraform.io/ciscodevnet/cml2"
     }
   }

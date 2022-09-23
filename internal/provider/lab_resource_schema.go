@@ -19,25 +19,25 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 			"timeouts": {
 				Attributes: map[string]tfsdk.Attribute{
 					"create": {
-						Optional:            true,
-						MarkdownDescription: "create timeout",
-						Type:                types.StringType,
+						Optional:    true,
+						Description: "create timeout",
+						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							durationValidator{},
 						},
 					},
 					"update": {
-						Optional:            true,
-						MarkdownDescription: "update timeout",
-						Type:                types.StringType,
+						Optional:    true,
+						Description: "update timeout",
+						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							durationValidator{},
 						},
 					},
 					"delete": {
-						Optional:            true,
-						MarkdownDescription: "delete timeout",
-						Type:                types.StringType,
+						Optional:    true,
+						Description: "delete timeout (currently unused)",
+						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							durationValidator{},
 						},
@@ -80,7 +80,7 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 			"state": {
 				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "CML lab state",
+				MarkdownDescription: "CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`",
 				PlanModifiers: tfsdk.AttributePlanModifiers{
 					resource.UseStateForUnknown(),
 				},
@@ -90,8 +90,8 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				},
 			},
 			"nodes": {
-				MarkdownDescription: "List of nodes and their interfaces with IP addresses",
-				Computed:            true,
+				Description: "List of nodes and their interfaces with IP addresses",
+				Computed:    true,
 				Attributes: tfsdk.MapNestedAttributes(
 					nodeSchema(),
 				),
@@ -100,8 +100,8 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				},
 			},
 			"configs": {
-				MarkdownDescription: "Map of node configurations to store into nodes",
-				Optional:            true,
+				Description: "Map of node configurations to store into nodes, the key is the label of the node",
+				Optional:    true,
 				Type: types.MapType{
 					ElemType: types.StringType,
 				},

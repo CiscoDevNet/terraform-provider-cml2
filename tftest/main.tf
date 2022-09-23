@@ -16,8 +16,9 @@ resource "cml2_lab" "this" {
   #   ignore_changes = [state]
   # }
 
-  state = "STARTED"
+  # state = "DEFINED_ON_CORE"
   # state = "STOPPED"
+  # state = "STARTED"
   # special        = var.special
   configs = var.configs
   stages  = var.stages
