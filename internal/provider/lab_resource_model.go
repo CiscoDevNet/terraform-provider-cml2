@@ -19,7 +19,7 @@ type LabResourceModel struct {
 	Booted   types.Bool   `tfsdk:"booted"`
 	Nodes    types.Map    `tfsdk:"nodes"`
 	Configs  types.Map    `tfsdk:"configs"`
-	Stages   types.List   `tfsdk:"stages"`
+	Staging  types.Object `tfsdk:"staging"`
 	Timeouts types.Object `tfsdk:"timeouts"`
 }
 
@@ -28,6 +28,12 @@ type ResourceTimeouts struct {
 	Update types.String `tfsdk:"update"`
 	Delete types.String `tfsdk:"delete"`
 }
+
+type ResourceStaging struct {
+	Stages    types.List   `tfsdk:"stages"`
+	Unmatched types.String `tfsdk:"unmatched"`
+}
+
 type NodeResourceModel struct {
 	Id             types.String `tfsdk:"id"`
 	Label          types.String `tfsdk:"label"`

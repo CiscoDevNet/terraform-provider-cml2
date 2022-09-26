@@ -21,13 +21,17 @@ resource "cml2_lab" "this" {
   # state = "STARTED"
   # special        = var.special
   configs = var.configs
-  stages  = var.stages
 
-  timeouts {
-    create = "20h"
-    update = "1h30m"
-    delete = "20m"
+  staging {
+    stages    = var.stages
+    unmatched = "START"
   }
+
+  # timeouts {
+  #   create = "20h"
+  #   update = "1h30m"
+  #   delete = "20m"
+  # }
 }
 
 

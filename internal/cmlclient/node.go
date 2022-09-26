@@ -118,7 +118,6 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 }
 
 func (c *Client) SetNodeConfig(ctx context.Context, node *Node, configuration string) error {
-
 	api := fmt.Sprintf("labs/%s/nodes/%s", node.lab.ID, node.ID)
 
 	type nodeConfig struct {
@@ -159,6 +158,28 @@ func (c *Client) SetNodeImageID(ctx context.Context, labID, nodeID, imageID stri
 
 	node := Node{}
 	err = c.jsonPatch(ctx, api, buf, &node)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Start the given node
+func (c *Client) Start(ctx context.Context, node *Node) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s/state/start", node.lab.ID, node.ID)
+	response := ""
+	err := c.jsonPut(ctx, api, nil, &response)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Stop the given node
+func (c *Client) Stop(ctx context.Context, node *Node) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s/state/stop", node.lab.ID, node.ID)
+	response := ""
+	err := c.jsonPut(ctx, api, nil, &response)
 	if err != nil {
 		return err
 	}

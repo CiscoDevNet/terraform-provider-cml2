@@ -45,6 +45,29 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				},
 				NestingMode: tfsdk.BlockNestingModeSingle,
 			},
+			"staging": {
+				Attributes: map[string]tfsdk.Attribute{
+					"stages": {
+						Description: "Ordered list of tags, controls node launch",
+						Optional:    true,
+						Type: types.ListType{
+							ElemType: types.StringType,
+						},
+						PlanModifiers: []tfsdk.AttributePlanModifier{
+							resource.RequiresReplace(),
+						},
+					},
+					"unmatched": {
+						Optional:    true,
+						Description: "what to do with nodes which are not matched, values are START or IGNORE",
+						Type:        types.StringType,
+						Validators: []tfsdk.AttributeValidator{
+							stageModeValidator{},
+						},
+					},
+				},
+				NestingMode: tfsdk.BlockNestingModeSingle,
+			},
 		},
 
 		Attributes: map[string]tfsdk.Attribute{
@@ -103,16 +126,6 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				Description: "Map of node configurations to store into nodes, the key is the label of the node",
 				Optional:    true,
 				Type: types.MapType{
-					ElemType: types.StringType,
-				},
-				PlanModifiers: []tfsdk.AttributePlanModifier{
-					resource.RequiresReplace(),
-				},
-			},
-			"stages": {
-				MarkdownDescription: "Ordered list of tags, controls node launch",
-				Optional:            true,
-				Type: types.ListType{
 					ElemType: types.StringType,
 				},
 				PlanModifiers: []tfsdk.AttributePlanModifier{

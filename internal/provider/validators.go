@@ -69,12 +69,53 @@ func (v durationValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 		return
 	}
 
+	if duration.Unknown || duration.Null {
+		return
+	}
+
 	_, err := time.ParseDuration(duration.Value)
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			req.AttributePath,
 			"Invalid duration",
 			err.Error(),
+		)
+		return
+	}
+}
+
+type stageModeValidator struct{}
+
+func (v stageModeValidator) Description(ctx context.Context) string {
+	return "a mode for nodes not matched in the staging list"
+}
+
+// MarkdownDescription returns a markdown formatted description of the
+// validator's behavior, suitable for a practitioner to understand its impact.
+func (v stageModeValidator) MarkdownDescription(ctx context.Context) string {
+	return "a mode for nodes not matched in the staging list"
+}
+
+// Validate runs the main validation logic of the validator, reading
+// configuration data out of `req` and updating `resp` with diagnostics.
+func (v stageModeValidator) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
+
+	var stageMode types.String
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.AttributeConfig, &stageMode)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if stageMode.Unknown || stageMode.Null {
+		return
+	}
+
+	if stageMode.Value != "IGNORE" &&
+		stageMode.Value != "START" {
+		resp.Diagnostics.AddAttributeError(
+			req.AttributePath,
+			"Invalid stage mode",
+			"valid states are IGNORE or START.",
 		)
 		return
 	}

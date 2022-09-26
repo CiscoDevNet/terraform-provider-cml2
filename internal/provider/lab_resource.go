@@ -89,7 +89,7 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	tflog.Info(ctx, "ModifyPlan")
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, configData)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -97,14 +97,14 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// do we have state?
 	noState := req.State.Raw.IsNull()
 	if !noState {
-		resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+		resp.Diagnostics.Append(req.State.Get(ctx, stateData)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
 	// get the planned state
-	resp.Diagnostics.Append(resp.Plan.Get(ctx, &planData)...)
+	resp.Diagnostics.Append(resp.Plan.Get(ctx, planData)...)
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, "ModifyPlan: plan has errors")
 		return
@@ -295,6 +295,9 @@ func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, dat
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data *LabResourceModel
 
+	staging := getStaging(ctx, req.Config, &resp.Diagnostics)
+	_ = staging
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
@@ -322,7 +325,14 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	// if unspecified, wait for it to converge
 	if data.Wait.Null || data.Wait.Value {
-		timeouts := getTimeouts(ctx, req.Config, &resp.Diagnostics)
+		// defaults
+		timeouts := ResourceTimeouts{
+			Create: types.String{Value: "2h"},
+			Update: types.String{Value: "2h"},
+		}
+		if !data.Timeouts.IsNull() {
+			timeouts = getTimeouts(ctx, req.Config, &resp.Diagnostics)
+		}
 		r.converge(ctx, &resp.Diagnostics, lab.ID, timeouts.Create)
 	}
 
@@ -427,6 +437,8 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		tflog.Info(ctx, "state changed")
 
 		timeouts := getTimeouts(ctx, req.Config, &resp.Diagnostics)
+		staging := getStaging(ctx, req.Config, &resp.Diagnostics)
+		_ = staging
 
 		// this is very blunt ...
 		if stateData.State.Value == cmlclient.LabStateStarted {

@@ -106,6 +106,10 @@ func (c *Client) jsonGet(ctx context.Context, api string, result interface{}) er
 	return c.jsonReq(ctx, http.MethodGet, api, nil, result)
 }
 
+func (c *Client) jsonPut(ctx context.Context, api string, data io.Reader, result interface{}) error {
+	return c.jsonReq(ctx, http.MethodPut, api, data, result)
+}
+
 func (c *Client) jsonPost(ctx context.Context, api string, data io.Reader, result interface{}) error {
 	return c.jsonReq(ctx, http.MethodPost, api, data, result)
 }
