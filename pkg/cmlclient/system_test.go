@@ -3,7 +3,7 @@ package cmlclient
 import (
 	"testing"
 
-	mc "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
+	mc "github.com/rschmied/terraform-provider-cml2/m/v2/pkg/mockresponder"
 	"github.com/stretchr/testify/assert"
 )
 

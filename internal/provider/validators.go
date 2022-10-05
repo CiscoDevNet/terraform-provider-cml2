@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 type labStateValidator struct{}
@@ -50,13 +50,13 @@ func (v labStateValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 type durationValidator struct{}
 
 func (v durationValidator) Description(ctx context.Context) string {
-	return "a duration given as a parsable string as in 60m, 2h"
+	return "a duration given as a parsable string as in 60m or 2h"
 }
 
 // MarkdownDescription returns a markdown formatted description of the
 // validator's behavior, suitable for a practitioner to understand its impact.
 func (v durationValidator) MarkdownDescription(ctx context.Context) string {
-	return "a duration given as a parsable string as in 60m, 2h"
+	return "a duration given as a parsable string as in `60m` or `2h`"
 }
 
 // Validate runs the main validation logic of the validator, reading
@@ -79,43 +79,6 @@ func (v durationValidator) Validate(ctx context.Context, req tfsdk.ValidateAttri
 			req.AttributePath,
 			"Invalid duration",
 			err.Error(),
-		)
-		return
-	}
-}
-
-type stageModeValidator struct{}
-
-func (v stageModeValidator) Description(ctx context.Context) string {
-	return "a mode for nodes not matched in the staging list"
-}
-
-// MarkdownDescription returns a markdown formatted description of the
-// validator's behavior, suitable for a practitioner to understand its impact.
-func (v stageModeValidator) MarkdownDescription(ctx context.Context) string {
-	return "a mode for nodes not matched in the staging list"
-}
-
-// Validate runs the main validation logic of the validator, reading
-// configuration data out of `req` and updating `resp` with diagnostics.
-func (v stageModeValidator) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
-
-	var stageMode types.String
-	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.AttributeConfig, &stageMode)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if stageMode.Unknown || stageMode.Null {
-		return
-	}
-
-	if stageMode.Value != "IGNORE" &&
-		stageMode.Value != "START" {
-		resp.Diagnostics.AddAttributeError(
-			req.AttributePath,
-			"Invalid stage mode",
-			"valid states are IGNORE or START.",
 		)
 		return
 	}

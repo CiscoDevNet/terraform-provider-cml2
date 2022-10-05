@@ -67,15 +67,15 @@ func (l *Lab) CanBeWiped() bool {
 	}
 	for _, node := range l.Nodes {
 		if node.State != NodeStateDefined {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (l *Lab) Running() bool {
 	for _, node := range l.Nodes {
-		if node.State != NodeStateDefined {
+		if node.State != NodeStateDefined && node.State != NodeStateStopped {
 			return true
 		}
 	}
@@ -105,21 +105,21 @@ type LabImport struct {
 	Warnings []string `json:"warnings"`
 }
 
-func (c *Client) ImportLab(ctx context.Context, topo string) (*Lab, error) {
+func (c *Client) LabImport(ctx context.Context, topo string) (*Lab, error) {
 	topoReader := strings.NewReader(topo)
 	labImport := &LabImport{}
 	err := c.jsonPost(ctx, "import", topoReader, labImport)
 	if err != nil {
 		return nil, err
 	}
-	lab, err := c.GetLab(ctx, labImport.ID, false)
+	lab, err := c.LabGet(ctx, labImport.ID, false)
 	if err != nil {
 		return nil, err
 	}
 	return lab, nil
 }
 
-func (c *Client) StartLab(ctx context.Context, id string) error {
+func (c *Client) LabStart(ctx context.Context, id string) error {
 	api := fmt.Sprintf("labs/%s/start", id)
 	req, err := c.apiRequest(ctx, http.MethodPut, api, nil)
 	if err != nil {
@@ -132,7 +132,7 @@ func (c *Client) StartLab(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Client) ConvergedLab(ctx context.Context, id string) (bool, error) {
+func (c *Client) HasLabConverged(ctx context.Context, id string) (bool, error) {
 	api := fmt.Sprintf("labs/%s/check_if_converged", id)
 	converged := false
 	err := c.jsonGet(ctx, api, &converged)
@@ -142,7 +142,7 @@ func (c *Client) ConvergedLab(ctx context.Context, id string) (bool, error) {
 	return converged, nil
 }
 
-func (c *Client) StopLab(ctx context.Context, id string) error {
+func (c *Client) LabStop(ctx context.Context, id string) error {
 	api := fmt.Sprintf("labs/%s/stop", id)
 	req, err := c.apiRequest(ctx, http.MethodPut, api, nil)
 	if err != nil {
@@ -155,7 +155,7 @@ func (c *Client) StopLab(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Client) WipeLab(ctx context.Context, id string) error {
+func (c *Client) LabWipe(ctx context.Context, id string) error {
 	api := fmt.Sprintf("labs/%s/wipe", id)
 	req, err := c.apiRequest(ctx, http.MethodPut, api, nil)
 	if err != nil {
@@ -168,7 +168,7 @@ func (c *Client) WipeLab(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Client) DestroyLab(ctx context.Context, id string) error {
+func (c *Client) LabDestroy(ctx context.Context, id string) error {
 	api := fmt.Sprintf("labs/%s", id)
 	req, err := c.apiRequest(ctx, http.MethodDelete, api, nil)
 	if err != nil {
@@ -181,7 +181,7 @@ func (c *Client) DestroyLab(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Client) GetLab(ctx context.Context, id string, shallow bool) (*Lab, error) {
+func (c *Client) LabGet(ctx context.Context, id string, shallow bool) (*Lab, error) {
 	api := fmt.Sprintf("labs/%s", id)
 	la := &labAlias{}
 	err := c.jsonGet(ctx, api, la)

@@ -1,7 +1,9 @@
 terraform {
   required_providers {
     cml2 = {
-      version = "0.1.0-alpha-25-g8a9f13b"
+      # version = data.external.env.result["version"]
+      # version = "<=0.1.0-alpha"
+      version = "0.1.0-alpha-33-g2d890a6"
       source  = "registry.terraform.io/ciscodevnet/cml2"
     }
   }
@@ -26,6 +28,7 @@ variable "toponame" {
   type        = string
   default     = "absolute bananas"
 }
+
 variable "username" {
   description = "cml2 username"
   type        = string
@@ -52,31 +55,11 @@ variable "stages" {
   description = "staging of node starts, the names are node-tags"
   type        = list(string)
   default = [
-    "infrastructure",
-    "underlay",
-    "red-team",
-    "blue-team"
-    # all non-tagged nodes are started at the end
+    "infra",
+    "group1",
+    "group2",
   ]
 }
-
-# variable "special" {
-#   description = "configuration for nodes"
-#   type = map(object({
-#     configuration : optional(string),
-#     state : optional(string),
-#     image_id : optional(string)
-#   }))
-#   default = {
-#     "group[0-9" : {
-#       "configuration" : "hostname grumbl",
-#       # "state": null
-#       # "state": "STARTED"
-#       # "image_id": "alpine-3-10-base"
-#       # "image_id": null
-#     }
-#   }
-# }
 
 provider "cml2" {
   address = var.address

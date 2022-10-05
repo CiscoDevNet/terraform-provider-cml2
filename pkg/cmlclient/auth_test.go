@@ -2,9 +2,10 @@ package cmlclient
 
 import (
 	"errors"
+	"os"
 	"testing"
 
-	mr "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
+	mr "github.com/rschmied/terraform-provider-cml2/m/v2/pkg/mockresponder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -157,4 +158,28 @@ func TestClient_token_auth(t *testing.T) {
 			assert.EqualError(t, err, tt.errstr)
 		}
 	}
+}
+
+func TestClient_SetToken(t *testing.T) {
+	c := NewClient("https://bla.bla", true)
+	c.SetToken("qwe")
+	assert.Equal(t, "qwe", c.apiToken)
+}
+
+func TestClient_SetUsernamePassword(t *testing.T) {
+	c := NewClient("https://bla.bla", true)
+	c.SetUsernamePassword("user", "pass")
+	assert.Equal(t, "user", c.userpass.Username)
+	assert.Equal(t, "pass", c.userpass.Password)
+}
+
+func TestClient_SetCACert(t *testing.T) {
+	c := NewClient("https://bla.bla", true)
+	err := c.SetCACert([]byte("crapdata"))
+	assert.EqualError(t, err, "failed to parse root certificate")
+	testCA := "testdata/ca.pem"
+	certPEMBlock, err := os.ReadFile(testCA)
+	assert.NoError(t, err)
+	err = c.SetCACert(certPEMBlock)
+	assert.NoError(t, err)
 }

@@ -2,10 +2,10 @@ package cmlclient
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"testing"
 
-	mr "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
+	mr "github.com/rschmied/terraform-provider-cml2/m/v2/pkg/mockresponder"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +44,7 @@ var (
 		"lab_id": "lab1",
 		"label": "alpine-0",
 		"node_definition": "alpine",
-		"state": "STOPPED"
+		"state": "STARTED"
 	}`)
 	node2 = []byte(`{
 		"id": "node2",
@@ -53,6 +53,38 @@ var (
 		"node_definition": "alpine",
 		"state": "STOPPED"
 	}`)
+	lab_layer3 = []byte(`{
+		"node1": {
+		  "name": "alpine-0",
+		  "interfaces": {
+			"52:54:00:0c:e0:69": {
+			  "id": "n1i1",
+			  "label": "eth0",
+			  "ip4": [
+				"192.168.122.173"
+			  ],
+			  "ip6": [
+				"fe80::5054:ff:fe0c:be77"
+			  ]
+			}
+		  }
+		},
+		"node2": {
+		  "name": "alpine-1",
+		  "interfaces": {
+			"52:54:00:0c:e0:70": {
+			  "id": "n2i1",
+			  "label": "eth0",
+			  "ip4": [
+				"192.168.122.174"
+			  ],
+			  "ip6": [
+				"fe80::5054:ff:fe0c:be88"
+			  ]
+			}
+		  }
+		}
+	  }`)
 	ifacesn1  = []byte(`["n1i1"]`)
 	ifacesn2  = []byte(`["n2i1"]`)
 	ifacen1i1 = []byte(`{
@@ -64,7 +96,7 @@ var (
 		"type": "physical",
 		"mac_address": "52:54:00:0c:e0:69",
 		"is_connected": true,
-		"state": "STOPPED"
+		"state": "STARTED"
 	}`)
 	ifacen2i1 = []byte(`{
 		"id": "n2i1",
@@ -107,7 +139,8 @@ func TestClient_GetLab(t *testing.T) {
 				mr.MockResp{Data: []byte(`{"version": "2.4.1","ready": true}`)},
 				mr.MockResp{Data: demoLab},
 				mr.MockResp{Data: links, URL: `/links$`},
-				mr.MockResp{Data: []byte(`{}`), URL: `/layer3_addresses$`},
+				mr.MockResp{Data: lab_layer3, URL: `layer3_addresses$`},
+				// mr.MockResp{Data: []byte(`{}`), URL: `/nodes/node2/layer3_addresses$`},
 				mr.MockResp{Data: ownerUser, URL: `/users/.+$`},
 				mr.MockResp{Data: nodes, URL: `/nodes$`},
 				mr.MockResp{Data: node1, URL: `/nodes/node1$`},
@@ -135,7 +168,7 @@ func TestClient_GetLab(t *testing.T) {
 		c.versionChecked = false
 		mclient.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
-			lab, err := c.GetLab(ctx, "qweaa", false)
+			lab, err := c.LabGet(ctx, "qweaa", false)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
@@ -176,7 +209,7 @@ func TestClient_GetLab_shallow(t *testing.T) {
 		c.versionChecked = false
 		mclient.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
-			lab, err := c.GetLab(ctx, "qweaa", true)
+			lab, err := c.LabGet(ctx, "qweaa", true)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
@@ -199,7 +232,7 @@ func TestClient_ImportLab(t *testing.T) {
 	c.versionChecked = true
 
 	testfile := "testdata/labimport/twonodes.yaml"
-	labyaml, err := ioutil.ReadFile(testfile)
+	labyaml, err := os.ReadFile(testfile)
 	if err != nil {
 		t.Errorf("Client.ImportLab() can't read testfile %s", testfile)
 	}
@@ -219,7 +252,7 @@ func TestClient_ImportLab(t *testing.T) {
 				mr.MockResp{Data: demoLab},
 				// these responses are needed for not shallow...
 				mr.MockResp{Data: links, URL: `/links$`},
-				mr.MockResp{Data: []byte(`{}`), URL: `/layer3_addresses$`},
+				mr.MockResp{Data: lab_layer3, URL: `/layer3_addresses$`},
 				mr.MockResp{Data: ownerUser, URL: `/users/.+$`},
 				mr.MockResp{Data: nodes, URL: `/nodes$`},
 				mr.MockResp{Data: node1, URL: `/nodes/node1$`},
@@ -251,7 +284,7 @@ func TestClient_ImportLab(t *testing.T) {
 	for _, tt := range tests {
 		mclient.SetData(tt.responses)
 		t.Run(tt.name, func(t *testing.T) {
-			lab, err := c.ImportLab(ctx, tt.labyaml)
+			lab, err := c.LabImport(ctx, tt.labyaml)
 			if err != nil {
 				if !tt.wantErr {
 					t.Errorf("Client.GetLab() error = %v, wantErr %v", err, tt.wantErr)
@@ -287,7 +320,7 @@ func TestClient_ImportLabBadAuth(t *testing.T) {
 		},
 	}
 	mclient.SetData(data)
-	lab, err := c.ImportLab(ctx, `{}`)
+	lab, err := c.LabImport(ctx, `{}`)
 
 	if !mclient.Empty() {
 		t.Error("not all data in mock client consumed")
@@ -314,4 +347,200 @@ func TestClient_NodeByLabel(t *testing.T) {
 	n, err = l.NodeByLabel(context.Background(), "doesntexist")
 	assert.ErrorIs(t, err, ErrElementNotFound)
 	assert.Nil(t, n)
+}
+
+func TestLab_CanBeWiped(t *testing.T) {
+	tests := []struct {
+		name string
+		lab  Lab
+		want bool
+	}{
+		{"nonodes", Lab{}, true},
+		{"oktowipe", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateDefined,
+				},
+			},
+		}, true},
+		{"notoktowipe", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateBooted,
+				},
+			},
+		}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lab.CanBeWiped(); got != tt.want {
+				t.Errorf("Lab.CanBeWiped() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLab_Running(t *testing.T) {
+	tests := []struct {
+		name string
+		lab  Lab
+		want bool
+	}{
+		{"running", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateStarted,
+				},
+			},
+		}, true},
+		{"running 2", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateBooted,
+				},
+			},
+		}, true},
+		{"not running 1", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateStopped,
+				},
+			},
+		}, false},
+		{"not running 2", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateDefined,
+				},
+			},
+		}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lab.Running(); got != tt.want {
+				t.Errorf("Lab.Running() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLab_Booted(t *testing.T) {
+	tests := []struct {
+		name string
+		lab  Lab
+		want bool
+	}{
+		{"not booted", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateStarted,
+				},
+				"bla2": &Node{
+					Label: "test",
+					State: NodeStateBooted,
+				},
+			},
+		}, false},
+		{"booted", Lab{
+			Nodes: NodeMap{
+				"bla": &Node{
+					Label: "test",
+					State: NodeStateBooted,
+				},
+				"bla2": &Node{
+					Label: "test",
+					State: NodeStateBooted,
+				},
+			},
+		}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lab.Booted(); got != tt.want {
+				t.Errorf("Lab.Booted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClient_HasLabConverged(t *testing.T) {
+
+	c := NewClient("https://bla.bla", true)
+	mclient, ctx := mr.NewMockResponder()
+	c.httpClient = mclient
+	c.authChecked = true
+	c.versionChecked = true
+
+	data := mr.MockRespList{mr.MockResp{Data: []byte(`true`)}}
+	mclient.SetData(data)
+
+	got, _ := c.HasLabConverged(ctx, "dummy")
+	if got != true {
+		t.Errorf("Client.HasLabConverged() = %v, want %v", got, true)
+	}
+
+	data = mr.MockRespList{mr.MockResp{Data: []byte(`invalid`)}}
+	mclient.SetData(data)
+	_, err := c.HasLabConverged(ctx, "dummy")
+	assert.Error(t, err)
+}
+
+func TestClient_StartStopWipeDestroy(t *testing.T) {
+
+	c := NewClient("https://bla.bla", true)
+	mclient, ctx := mr.NewMockResponder()
+	c.httpClient = mclient
+	c.authChecked = true
+	c.versionChecked = true
+
+	goodData := mr.MockRespList{
+		mr.MockResp{Code: 200},
+		mr.MockResp{Code: 200},
+		mr.MockResp{Code: 200},
+		mr.MockResp{Code: 204},
+	}
+
+	badData := mr.MockRespList{
+		mr.MockResp{Code: 404},
+		mr.MockResp{Code: 404},
+		mr.MockResp{Code: 404},
+		mr.MockResp{Code: 404},
+	}
+
+	tests := []struct {
+		name string
+		data mr.MockRespList
+		want bool
+	}{
+		{"good", goodData, false},
+		{"bad", badData, true},
+	}
+
+	funcs := []func(context.Context, string) error{
+		c.LabStart,
+		c.LabStop,
+		c.LabWipe,
+		c.LabDestroy,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mclient.SetData(tt.data)
+			for _, f := range funcs {
+				err := f(ctx, "bla")
+				if tt.want {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+			}
+		})
+	}
 }

@@ -117,7 +117,7 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 	return nil
 }
 
-func (c *Client) SetNodeConfig(ctx context.Context, node *Node, configuration string) error {
+func (c *Client) NodeSetConfig(ctx context.Context, node *Node, configuration string) error {
 	api := fmt.Sprintf("labs/%s/nodes/%s", node.lab.ID, node.ID)
 
 	type nodeConfig struct {
@@ -140,9 +140,9 @@ func (c *Client) SetNodeConfig(ctx context.Context, node *Node, configuration st
 	return nil
 }
 
-// SetNodeImageID sets the image ID / image definition id of the node to the one
+// NodeSetImageID sets the image ID / image definition id of the node to the one
 // provided in imageID.
-func (c *Client) SetNodeImageID(ctx context.Context, labID, nodeID, imageID string) error {
+func (c *Client) NodeSetImageID(ctx context.Context, labID, nodeID, imageID string) error {
 	api := fmt.Sprintf("labs/%s/nodes/%s", labID, nodeID)
 
 	type nodeConfig struct {
@@ -164,22 +164,20 @@ func (c *Client) SetNodeImageID(ctx context.Context, labID, nodeID, imageID stri
 	return nil
 }
 
-// Start the given node
-func (c *Client) Start(ctx context.Context, node *Node) error {
+// NodeStart the given node
+func (c *Client) NodeStart(ctx context.Context, node *Node) error {
 	api := fmt.Sprintf("labs/%s/nodes/%s/state/start", node.lab.ID, node.ID)
-	response := ""
-	err := c.jsonPut(ctx, api, nil, &response)
+	err := c.jsonPut(ctx, api)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Stop the given node
-func (c *Client) Stop(ctx context.Context, node *Node) error {
+// NodeStop the given node
+func (c *Client) NodeStop(ctx context.Context, node *Node) error {
 	api := fmt.Sprintf("labs/%s/nodes/%s/state/stop", node.lab.ID, node.ID)
-	response := ""
-	err := c.jsonPut(ctx, api, nil, &response)
+	err := c.jsonPut(ctx, api)
 	if err != nil {
 		return err
 	}

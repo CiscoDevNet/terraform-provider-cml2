@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 type LabResourceModel struct {
@@ -30,8 +30,8 @@ type ResourceTimeouts struct {
 }
 
 type ResourceStaging struct {
-	Stages    types.List   `tfsdk:"stages"`
-	Unmatched types.String `tfsdk:"unmatched"`
+	Stages         types.List `tfsdk:"stages"`
+	StartRemaining types.Bool `tfsdk:"start_remaining"`
 }
 
 type NodeResourceModel struct {

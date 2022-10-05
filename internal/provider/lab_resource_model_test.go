@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 var iface *cmlclient.Interface = &cmlclient.Interface{

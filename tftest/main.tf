@@ -4,7 +4,7 @@ resource "cml2_lab" "this" {
   topology = templatefile("topology.yaml", { toponame = var.toponame })
 
   # stages have no effect if wait is false
-  wait = true
+  # wait = false
 
   # labs are always started with create
   # labs are always stopped / wiped / removed with delete
@@ -22,12 +22,13 @@ resource "cml2_lab" "this" {
   # special        = var.special
   configs = var.configs
 
-  staging {
-    stages    = var.stages
-    unmatched = "START"
+  staging = {
+    # stages = var.stages
+    stages = ["infra", "group1", "group2"]
+    # start_remaining = false
   }
 
-  # timeouts {
+  # timeouts = {
   #   create = "20h"
   #   update = "1h30m"
   #   delete = "20m"

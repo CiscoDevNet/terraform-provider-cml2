@@ -40,6 +40,6 @@ provider "cml2" {
 
 - `cacert` (String) CA CERT, PEM encoded
 - `password` (String, Sensitive) CML2 password
-- `skip_verify` (Boolean) Disable TLS certificate verification
+- `skip_verify` (Boolean) disable TLS certificate verification
 - `token` (String, Sensitive) CML2 API token (JWT)
 - `username` (String) CML2 username

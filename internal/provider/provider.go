@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -67,7 +67,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	if len(data.Token.Value) > 0 && len(data.Username.Value) > 0 {
 		resp.Diagnostics.AddWarning(
-			"Both auth options provided",
+			"Conflicting configuration",
 			"both token and username / password were provided")
 	}
 
@@ -112,36 +112,36 @@ func (p *CML2Provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagno
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"address": {
-				MarkdownDescription: "CML2 controller address",
-				Required:            true,
-				Type:                types.StringType,
+				Description: "CML2 controller address",
+				Required:    true,
+				Type:        types.StringType,
 			},
 			"username": {
-				MarkdownDescription: "CML2 username",
-				Optional:            true,
-				Type:                types.StringType,
+				Description: "CML2 username",
+				Optional:    true,
+				Type:        types.StringType,
 			},
 			"password": {
-				MarkdownDescription: "CML2 password",
-				Optional:            true,
-				Type:                types.StringType,
-				Sensitive:           true,
+				Description: "CML2 password",
+				Optional:    true,
+				Type:        types.StringType,
+				Sensitive:   true,
 			},
 			"token": {
-				MarkdownDescription: "CML2 API token (JWT)",
-				Optional:            true,
-				Type:                types.StringType,
-				Sensitive:           true,
+				Description: "CML2 API token (JWT)",
+				Optional:    true,
+				Type:        types.StringType,
+				Sensitive:   true,
 			},
 			"cacert": {
-				MarkdownDescription: "CA CERT, PEM encoded",
-				Optional:            true,
-				Type:                types.StringType,
+				Description: "CA CERT, PEM encoded",
+				Optional:    true,
+				Type:        types.StringType,
 			},
 			"skip_verify": {
-				MarkdownDescription: "Disable TLS certificate verification",
-				Optional:            true,
-				Type:                types.BoolType,
+				Description: "disable TLS certificate verification",
+				Optional:    true,
+				Type:        types.BoolType,
 			},
 		},
 	}, nil

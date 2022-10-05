@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -71,7 +70,7 @@ retry:
 		return nil, err
 	}
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +105,8 @@ func (c *Client) jsonGet(ctx context.Context, api string, result interface{}) er
 	return c.jsonReq(ctx, http.MethodGet, api, nil, result)
 }
 
-func (c *Client) jsonPut(ctx context.Context, api string, data io.Reader, result interface{}) error {
-	return c.jsonReq(ctx, http.MethodPut, api, data, result)
+func (c *Client) jsonPut(ctx context.Context, api string) error {
+	return c.jsonReq(ctx, http.MethodPut, api, nil, nil)
 }
 
 func (c *Client) jsonPost(ctx context.Context, api string, data io.Reader, result interface{}) error {

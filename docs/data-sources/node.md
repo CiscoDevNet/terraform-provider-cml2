@@ -29,25 +29,25 @@ node data source
 
 Read-Only:
 
-- `configuration` (String) device configuration
-- `id` (String) Node ID (UUID)
-- `interfaces` (Attributes List) interfaces on the node (see [below for nested schema](#nestedatt--node--interfaces))
+- `configuration` (String) node configuration
+- `id` (String) node ID (UUID)
+- `interfaces` (Attributes List) list of interfaces on the node (see [below for nested schema](#nestedatt--node--interfaces))
 - `label` (String) label
-- `nodedefinition` (String) Node Definition
+- `nodedefinition` (String) node definition / type
 - `state` (String) state
-- `tags` (List of String) Tags of the node
+- `tags` (List of String) tags of the node
 
 <a id="nestedatt--node--interfaces"></a>
 ### Nested Schema for `node.interfaces`
 
 Read-Only:
 
-- `id` (String) Interface ID (UUID)
+- `id` (String) interface ID (UUID)
 - `ip4` (List of String) IPv4 address list
 - `ip6` (List of String) IPv6 address list
 - `is_connected` (Boolean) connection status
 - `label` (String) label
 - `mac_address` (String) MAC address
-- `state` (String) state
+- `state` (String) interface state (UP / DOWN)
 
 

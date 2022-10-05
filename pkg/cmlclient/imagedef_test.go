@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	mr "github.com/rschmied/terraform-provider-cml2/m/v2/internal/mockresponder"
+	mr "github.com/rschmied/terraform-provider-cml2/m/v2/pkg/mockresponder"
 )
 
 func TestClient_GetImageDefs(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -38,21 +38,21 @@ func (d *NodeDataSource) Metadata(ctx context.Context, req datasource.MetadataRe
 func (d *NodeDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "node data source",
+		Description: "node data source",
 
 		Attributes: map[string]tfsdk.Attribute{
 			"lab_id": {
-				MarkdownDescription: "lab id",
-				Required:            true,
-				Type:                types.StringType,
+				Description: "lab id",
+				Required:    true,
+				Type:        types.StringType,
 			},
 			"node_id": {
-				MarkdownDescription: "node id",
-				Required:            true,
-				Type:                types.StringType,
+				Description: "node id",
+				Required:    true,
+				Type:        types.StringType,
 			},
 			"node": {
-				MarkdownDescription: "node data",
+				Description: "node data",
 				Attributes: tfsdk.SingleNestedAttributes(
 					nodeSchema(),
 				),
@@ -72,7 +72,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	lab, err := d.client.GetLab(ctx, data.LabID.Value, false)
+	lab, err := d.client.LabGet(ctx, data.LabID.Value, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 const CML2ErrorLabel = "CML2 Provider Error"
@@ -21,10 +21,18 @@ const CML2ErrorLabel = "CML2 Provider Error"
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &LabResource{}
 var _ resource.ResourceWithImportState = &LabResource{}
+var _ resource.ResourceWithValidateConfig = &LabResource{}
 var _ tfsdk.AttributeValidator = labStateValidator{}
 
 type LabResource struct {
 	client *cmlclient.Client
+}
+
+type startData struct {
+	wait     bool
+	lab      *cmlclient.Lab
+	staging  *ResourceStaging
+	timeouts *ResourceTimeouts
 }
 
 func NewLabResource() resource.Resource {
@@ -33,6 +41,34 @@ func NewLabResource() resource.Resource {
 
 func (r *LabResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lab"
+}
+
+func (r *LabResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data LabResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If staging is not configured, return without warning.
+	// (I think it never can be unknown as it's configuration data)
+	if data.Staging.IsNull() || data.Staging.IsUnknown() {
+		return
+	}
+
+	// If wait is set (true), return without warning
+	// if it is null, then the default is "true" (e.g. wait)
+	if data.Wait.IsNull() || data.Wait.Value {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeWarning(
+		path.Root("staging"),
+		"Conflicting configuration",
+		"Expected \"wait\" to be true with when staging is configured. "+
+			"The resource may return unexpected results.",
+	)
 }
 
 func (r *LabResource) converge(ctx context.Context, diags *diag.Diagnostics, id string, timeout types.String) {
@@ -51,7 +87,7 @@ func (r *LabResource) converge(ctx context.Context, diags *diag.Diagnostics, id 
 
 	for !booted {
 
-		booted, err = r.client.ConvergedLab(ctx, id)
+		booted, err = r.client.HasLabConverged(ctx, id)
 		if err != nil {
 			diags.AddError(
 				CML2ErrorLabel,
@@ -89,7 +125,7 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	tflog.Info(ctx, "ModifyPlan")
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, configData)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -97,14 +133,14 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// do we have state?
 	noState := req.State.Raw.IsNull()
 	if !noState {
-		resp.Diagnostics.Append(req.State.Get(ctx, stateData)...)
+		resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
 	// get the planned state
-	resp.Diagnostics.Append(resp.Plan.Get(ctx, planData)...)
+	resp.Diagnostics.Append(resp.Plan.Get(ctx, &planData)...)
 	if resp.Diagnostics.HasError() {
 		tflog.Error(ctx, "ModifyPlan: plan has errors")
 		return
@@ -224,7 +260,7 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 func (r *LabResource) stop(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab stop")
-	err := r.client.StopLab(ctx, id)
+	err := r.client.LabStop(ctx, id)
 	if err != nil {
 		diags.AddError(
 			CML2ErrorLabel,
@@ -237,7 +273,7 @@ func (r *LabResource) stop(ctx context.Context, diags diag.Diagnostics, id strin
 
 func (r *LabResource) wipe(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab wipe")
-	err := r.client.WipeLab(ctx, id)
+	err := r.client.LabWipe(ctx, id)
 	if err != nil {
 		diags.AddError(
 			CML2ErrorLabel,
@@ -248,9 +284,9 @@ func (r *LabResource) wipe(ctx context.Context, diags diag.Diagnostics, id strin
 	tflog.Info(ctx, "lab wipe done")
 }
 
-func (r *LabResource) start(ctx context.Context, diags diag.Diagnostics, id string) {
+func (r *LabResource) startNodesAll(ctx context.Context, diags *diag.Diagnostics, start startData) {
 	tflog.Info(ctx, "lab start")
-	err := r.client.StartLab(ctx, id)
+	err := r.client.LabStart(ctx, start.lab.ID)
 	if err != nil {
 		diags.AddError(
 			CML2ErrorLabel,
@@ -258,6 +294,46 @@ func (r *LabResource) start(ctx context.Context, diags diag.Diagnostics, id stri
 		)
 	}
 	tflog.Info(ctx, "lab start done")
+	if start.wait {
+		r.converge(ctx, diags, start.lab.ID, start.timeouts.Create)
+	}
+}
+
+func (r *LabResource) startNodes(ctx context.Context, diags *diag.Diagnostics, start startData) {
+
+	// start all nodes at once, no staging
+	if start.staging == nil {
+		r.startNodesAll(ctx, diags, start)
+		return
+	}
+
+	// start nodes in stages
+	for _, stage_elem := range start.staging.Stages.Elems {
+		stage := stage_elem.(types.String).Value
+		for _, node := range start.lab.Nodes {
+			for _, tag := range node.Tags {
+				if tag == stage {
+					tflog.Info(ctx, fmt.Sprintf("starting node %s", node.Label))
+					err := r.client.NodeStart(ctx, node)
+					if err != nil {
+						diags.AddError(
+							CML2ErrorLabel,
+							fmt.Sprintf("Unable to start node %s, got error: %s", node.Label, err),
+						)
+					}
+				}
+			}
+		}
+		// this is not 100% correct as the timeout is applied to each stage
+		// should be: timeout applied to all stages combined
+		r.converge(ctx, diags, start.lab.ID, start.timeouts.Create)
+	}
+
+	// start remaining nodes, if indicated
+	if start.staging.StartRemaining.Value {
+		tflog.Info(ctx, "starting remaining nodes")
+		r.startNodesAll(ctx, diags, start)
+	}
 }
 
 func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *LabResourceModel, diags *diag.Diagnostics) {
@@ -282,7 +358,7 @@ func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, dat
 			continue
 		}
 		config_string := config.(types.String).Value
-		err = r.client.SetNodeConfig(ctx, node, config_string)
+		err = r.client.NodeSetConfig(ctx, node, config_string)
 		if err != nil {
 			diags.AddError("set node config failed",
 				fmt.Sprintf("setting the new node configuration failed: %s", err),
@@ -293,19 +369,24 @@ func (r *LabResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, dat
 }
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var data *LabResourceModel
-
-	staging := getStaging(ctx, req.Config, &resp.Diagnostics)
-	_ = staging
+	var (
+		data *LabResourceModel
+		err  error
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	start := startData{
+		staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
+		timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
+		wait:     data.Wait.Null || data.Wait.Value,
+	}
+
 	tflog.Info(ctx, "Create: import")
-	lab, err := r.client.ImportLab(ctx, data.Topology.Value)
+	start.lab, err = r.client.LabImport(ctx, data.Topology.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -314,30 +395,19 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	// if unspecified, start the lab...
-	r.injectConfigs(ctx, lab, data, &resp.Diagnostics)
+	// inject the configurations into the nodes
+	r.injectConfigs(ctx, start.lab, data, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if data.State.Null || data.State.Value == cmlclient.LabStateStarted {
-		r.start(ctx, resp.Diagnostics, lab.ID)
-	}
 
-	// if unspecified, wait for it to converge
-	if data.Wait.Null || data.Wait.Value {
-		// defaults
-		timeouts := ResourceTimeouts{
-			Create: types.String{Value: "2h"},
-			Update: types.String{Value: "2h"},
-		}
-		if !data.Timeouts.IsNull() {
-			timeouts = getTimeouts(ctx, req.Config, &resp.Diagnostics)
-		}
-		r.converge(ctx, &resp.Diagnostics, lab.ID, timeouts.Create)
+	// if unknown state or specifically "start" state, start the lab...
+	if data.State.Unknown || data.State.Value == cmlclient.LabStateStarted {
+		r.startNodes(ctx, &resp.Diagnostics, start)
 	}
 
 	// fetch lab again, with nodes and interfaces
-	lab, err = r.client.GetLab(ctx, lab.ID, false)
+	lab, err := r.client.LabGet(ctx, start.lab.ID, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -388,7 +458,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	tflog.Info(ctx, "Read: start")
 
-	lab, err := r.client.GetLab(ctx, data.Id.Value, false)
+	lab, err := r.client.LabGet(ctx, data.Id.Value, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -413,22 +483,22 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 }
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var configData, planData, stateData *LabResourceModel
+	var (
+		configData, planData, stateData *LabResourceModel
+		err                             error
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -436,9 +506,21 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	if stateData.State.Value != planData.State.Value {
 		tflog.Info(ctx, "state changed")
 
-		timeouts := getTimeouts(ctx, req.Config, &resp.Diagnostics)
-		staging := getStaging(ctx, req.Config, &resp.Diagnostics)
-		_ = staging
+		start := startData{
+			staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
+			timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
+			wait:     planData.Wait.Null || planData.Wait.Value,
+		}
+
+		// need to get the lab data here
+		start.lab, err = r.client.LabGet(ctx, planData.Id.Value, false)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				CML2ErrorLabel,
+				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
+			)
+			return
+		}
 
 		// this is very blunt ...
 		if stateData.State.Value == cmlclient.LabStateStarted {
@@ -447,14 +529,14 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 			}
 			if planData.State.Value == cmlclient.LabStateDefined {
 				r.stop(ctx, resp.Diagnostics, planData.Id.Value)
-				r.converge(ctx, &resp.Diagnostics, planData.Id.Value, timeouts.Update)
+				r.converge(ctx, &resp.Diagnostics, planData.Id.Value, start.timeouts.Update)
 				r.wipe(ctx, resp.Diagnostics, planData.Id.Value)
 			}
 		}
 
 		if stateData.State.Value == cmlclient.LabStateStopped {
 			if planData.State.Value == cmlclient.LabStateStarted {
-				r.start(ctx, resp.Diagnostics, planData.Id.Value)
+				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 			if planData.State.Value == cmlclient.LabStateDefined {
 				r.wipe(ctx, resp.Diagnostics, planData.Id.Value)
@@ -463,21 +545,21 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 
 		if stateData.State.Value == cmlclient.LabStateDefined {
 			if planData.State.Value == cmlclient.LabStateStarted {
-				r.start(ctx, resp.Diagnostics, planData.Id.Value)
+				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 		}
 		// not sure if this makes sense... state could change when not waiting
 		// for convergence.  then again, there's no differentiation at the lab
 		// level between "STARTED" and "BOOTED" (e.g. converged).  It's always
 		// started...
-		if planData.Wait.Null || planData.Wait.Value {
-			r.converge(ctx, &resp.Diagnostics, planData.Id.Value, timeouts.Update)
+		if start.wait {
+			r.converge(ctx, &resp.Diagnostics, planData.Id.Value, start.timeouts.Update)
 		}
 	}
 
 	// since we have changed lab state, we need to re-read all the node
 	// state...
-	lab, err := r.client.GetLab(ctx, planData.Id.Value, false)
+	lab, err := r.client.LabGet(ctx, planData.Id.Value, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -503,7 +585,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	lab, err := r.client.GetLab(ctx, data.Id.Value, true)
+	lab, err := r.client.LabGet(ctx, data.Id.Value, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -519,7 +601,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		r.wipe(ctx, resp.Diagnostics, data.Id.Value)
 	}
 
-	err = r.client.DestroyLab(ctx, data.Id.Value)
+	err = r.client.LabDestroy(ctx, data.Id.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

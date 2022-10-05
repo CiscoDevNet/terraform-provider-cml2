@@ -13,96 +13,48 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "CML Lab resource",
+		Description: "A CML lab resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.",
 
-		Blocks: map[string]tfsdk.Block{
-			"timeouts": {
-				Attributes: map[string]tfsdk.Attribute{
-					"create": {
-						Optional:    true,
-						Description: "create timeout",
-						Type:        types.StringType,
-						Validators: []tfsdk.AttributeValidator{
-							durationValidator{},
-						},
-					},
-					"update": {
-						Optional:    true,
-						Description: "update timeout",
-						Type:        types.StringType,
-						Validators: []tfsdk.AttributeValidator{
-							durationValidator{},
-						},
-					},
-					"delete": {
-						Optional:    true,
-						Description: "delete timeout (currently unused)",
-						Type:        types.StringType,
-						Validators: []tfsdk.AttributeValidator{
-							durationValidator{},
-						},
-					},
-				},
-				NestingMode: tfsdk.BlockNestingModeSingle,
-			},
-			"staging": {
-				Attributes: map[string]tfsdk.Attribute{
-					"stages": {
-						Description: "Ordered list of tags, controls node launch",
-						Optional:    true,
-						Type: types.ListType{
-							ElemType: types.StringType,
-						},
-						PlanModifiers: []tfsdk.AttributePlanModifier{
-							resource.RequiresReplace(),
-						},
-					},
-					"unmatched": {
-						Optional:    true,
-						Description: "what to do with nodes which are not matched, values are START or IGNORE",
-						Type:        types.StringType,
-						Validators: []tfsdk.AttributeValidator{
-							stageModeValidator{},
-						},
-					},
-				},
-				NestingMode: tfsdk.BlockNestingModeSingle,
-			},
-		},
+		// Attributes are preferred over Blocks. Blocks should typically be used
+		// for configuration compatibility with previously existing schemas from
+		// an older Terraform Plugin SDK. Efforts should be made to convert from
+		// Blocks to Attributes as a breaking change for practitioners.
 
 		Attributes: map[string]tfsdk.Attribute{
 			// topology is marked as sensitive mostly b/c lengthy topology
 			// YAML clutters the output.
 			"topology": {
-				MarkdownDescription: "topology to start",
-				Required:            true,
-				Type:                types.StringType,
-				Sensitive:           true,
+				Description: "topology to start",
+				Required:    true,
+				Type:        types.StringType,
+				Sensitive:   true,
 				PlanModifiers: []tfsdk.AttributePlanModifier{
 					resource.RequiresReplace(),
 				},
 			},
 			"wait": {
-				MarkdownDescription: "wait until topology is BOOTED if true",
+				Description:         "wait until topology is BOOTED if true",
+				MarkdownDescription: "wait until topology is `BOOTED` if true",
 				Optional:            true,
 				Type:                types.BoolType,
 			},
 			"id": {
-				Computed:            true,
-				MarkdownDescription: "CML lab identifier, a UUID",
+				Computed:    true,
+				Description: "CML lab identifier, a UUID",
 				PlanModifiers: tfsdk.AttributePlanModifiers{
 					resource.UseStateForUnknown(),
 				},
 				Type: types.StringType,
 			},
 			"booted": {
-				Computed:            true,
-				MarkdownDescription: "All nodes in the lab have booted",
-				Type:                types.BoolType,
+				Computed:    true,
+				Description: "all nodes in the lab have booted",
+				Type:        types.BoolType,
 			},
 			"state": {
 				Computed:            true,
 				Optional:            true,
+				Description:         "CML lab state, one of DEFINED_ON_CORE, STARTED or STOPPED",
 				MarkdownDescription: "CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`",
 				PlanModifiers: tfsdk.AttributePlanModifiers{
 					resource.UseStateForUnknown(),
@@ -113,7 +65,7 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				},
 			},
 			"nodes": {
-				Description: "List of nodes and their interfaces with IP addresses",
+				Description: "ist of nodes and their interfaces with IP addresses",
 				Computed:    true,
 				Attributes: tfsdk.MapNestedAttributes(
 					nodeSchema(),
@@ -123,7 +75,7 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 				},
 			},
 			"configs": {
-				Description: "Map of node configurations to store into nodes, the key is the label of the node",
+				Description: "map of node configurations to store into nodes, the key is the label of the node",
 				Optional:    true,
 				Type: types.MapType{
 					ElemType: types.StringType,
@@ -132,6 +84,62 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 					resource.RequiresReplace(),
 				},
 			},
+			"timeouts": {
+				Description:         "timeouts for operations, given as a parsable string as in 60m or 2h",
+				MarkdownDescription: "timeouts for operations, given as a parsable string as in `60m` or `2h`",
+				Optional:            true,
+				Attributes: tfsdk.SingleNestedAttributes(
+					map[string]tfsdk.Attribute{
+						"create": {
+							Required:    true,
+							Description: "create timeout",
+							Type:        types.StringType,
+							Validators: []tfsdk.AttributeValidator{
+								durationValidator{},
+							},
+						},
+						"update": {
+							Required:    true,
+							Description: "update timeout",
+							Type:        types.StringType,
+							Validators: []tfsdk.AttributeValidator{
+								durationValidator{},
+							},
+						},
+						"delete": {
+							Optional:    true,
+							Description: "delete timeout (currently unused)",
+							Type:        types.StringType,
+							Validators: []tfsdk.AttributeValidator{
+								durationValidator{},
+							},
+						},
+					},
+				),
+			},
+			"staging": {
+				Description: "defines in what sequence nodes are launched",
+				Optional:    true,
+				Attributes: tfsdk.SingleNestedAttributes(
+					map[string]tfsdk.Attribute{
+						"stages": {
+							Description: "ordered list of node tags, controls node launch. Nodes currently not launched will be launched in the stage with the matching tag. Tags must match exactly.",
+							Required:    true,
+							Type: types.ListType{
+								ElemType: types.StringType,
+							},
+							PlanModifiers: []tfsdk.AttributePlanModifier{
+								resource.RequiresReplace(),
+							},
+						},
+						"start_remaining": {
+							Optional:    true,
+							Description: "if true (which is the default) then all nodes which are not matched by the stages list and which are still unstarted at the end of the stages list will be started",
+							Type:        types.BoolType,
+						},
+					},
+				),
+			},
 		},
 	}, nil
 }
@@ -139,48 +147,48 @@ func (t *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 func interfaceSchema() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
-			MarkdownDescription: "Interface ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "interface ID (UUID)",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "label",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"mac_address": {
-			MarkdownDescription: "MAC address",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "MAC address",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"is_connected": {
-			MarkdownDescription: "connection status",
-			Type:                types.BoolType,
-			Computed:            true,
+			Description: "connection status",
+			Type:        types.BoolType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "interface state (UP / DOWN)",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"ip4": {
-			MarkdownDescription: "IPv4 address list",
-			Computed:            true,
+			Description: "IPv4 address list",
+			Computed:    true,
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
@@ -189,8 +197,8 @@ func interfaceSchema() map[string]tfsdk.Attribute {
 			},
 		},
 		"ip6": {
-			MarkdownDescription: "IPv6 address list",
-			Computed:            true,
+			Description: "IPv6 address list",
+			Computed:    true,
 			Type: types.ListType{
 				ElemType: types.StringType,
 			},
@@ -204,40 +212,40 @@ func interfaceSchema() map[string]tfsdk.Attribute {
 func nodeSchema() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
-			MarkdownDescription: "Node ID (UUID)",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "node ID (UUID)",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"label": {
-			MarkdownDescription: "label",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "label",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"state": {
-			MarkdownDescription: "state",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "state",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"nodedefinition": {
-			MarkdownDescription: "Node Definition",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "node definition / type",
+			Type:        types.StringType,
+			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"interfaces": {
-			MarkdownDescription: "interfaces on the node",
-			Computed:            true,
+			Description: "list of interfaces on the node",
+			Computed:    true,
 			// Sensitive:           false,
 			Attributes: tfsdk.ListNestedAttributes(
 				interfaceSchema(),
@@ -247,8 +255,8 @@ func nodeSchema() map[string]tfsdk.Attribute {
 			},
 		},
 		"tags": {
-			MarkdownDescription: "Tags of the node",
-			Computed:            true,
+			Description: "tags of the node",
+			Computed:    true,
 			// Sensitive:           false,
 			Type: types.ListType{
 				ElemType: types.StringType,
@@ -258,9 +266,9 @@ func nodeSchema() map[string]tfsdk.Attribute {
 			},
 		},
 		"configuration": {
-			MarkdownDescription: "device configuration",
-			Type:                types.StringType,
-			Computed:            true,
+			Description: "node configuration",
+			Type:        types.StringType,
+			Computed:    true,
 			// Sensitive:           true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),

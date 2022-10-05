@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 func main() {
@@ -60,7 +60,7 @@ func main() {
 	// }
 	// l, err := client.ImportLab(ctx, string(topo))
 
-	l, err := client.GetLab(ctx, labID, false)
+	l, err := client.LabGet(ctx, labID, false)
 	if err != nil {
 		log.Println(err)
 		return

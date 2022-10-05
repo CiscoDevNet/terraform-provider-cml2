@@ -1,6 +1,6 @@
 lab:
-  description: 'i am changed again'
-  notes: ''
+  description: "i am changed again"
+  notes: ""
   timestamp: 1606137179.2951126
   title: ${toponame}
   version: 0.0.4
@@ -23,7 +23,7 @@ nodes:
     node_definition: unmanaged_switch
     x: -100
     y: -200
-    configuration: ''
+    # configuration: ""
     tags:
       - infra
     interfaces:
@@ -221,8 +221,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    tags:
-      - group2
     interfaces:
       - id: i0
         slot: 0
@@ -240,9 +238,6 @@ nodes:
       # hostname inserthostname_here
       # like this:
       # echo "127.0.0.1   inserthostname_here" >>/etc/hosts
-    tags:
-      - infra
-      - group2
     interfaces:
       - id: i0
         slot: 0
