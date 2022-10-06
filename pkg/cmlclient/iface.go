@@ -22,6 +22,12 @@ import (
 // 	"state": "STARTED"
 // }
 
+const (
+	IfaceStateDefined = "DEFINED_ON_CORE"
+	IfaceStateStopped = "STOPPED"
+	IfaceStateStarted = "STARTED"
+)
+
 type Interface struct {
 	ID          string `json:"id"`
 	Label       string `json:"label"`
@@ -38,7 +44,15 @@ type Interface struct {
 	node *Node
 }
 
-func (imap interfaceMap) MarshalJSON() ([]byte, error) {
+func (iface Interface) Exists() bool {
+	return iface.State != IfaceStateDefined
+}
+
+func (iface Interface) Runs() bool {
+	return iface.State == IfaceStateStarted
+}
+
+func (imap InterfaceMap) MarshalJSON() ([]byte, error) {
 	ilist := []*Interface{}
 	for _, iface := range imap {
 		ilist = append(ilist, iface)
@@ -58,7 +72,7 @@ func (c *Client) getInterfacesForNode(ctx context.Context, id string, node *Node
 		return err
 	}
 
-	interfaceMap := make(interfaceMap)
+	interfaceMap := make(InterfaceMap)
 	for _, ifaceID := range *interfaceIDlist {
 		api = fmt.Sprintf("labs/%s/interfaces/%s", id, ifaceID)
 		iface := &Interface{node: node}
@@ -72,7 +86,7 @@ func (c *Client) getInterfacesForNode(ctx context.Context, id string, node *Node
 	return nil
 }
 
-func (c *Client) findInterface(nodes nodeMap, id string) *Interface {
+func (c *Client) findInterface(nodes NodeMap, id string) *Interface {
 	for _, node := range nodes {
 		if iface, found := node.Interfaces[id]; found {
 			return iface

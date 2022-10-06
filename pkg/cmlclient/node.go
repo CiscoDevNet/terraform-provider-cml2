@@ -1,6 +1,7 @@
 package cmlclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -50,6 +51,13 @@ import (
 // 	"boot_progress": "Booted"
 //   }
 
+const (
+	NodeStateDefined = "DEFINED_ON_CORE"
+	NodeStateStopped = "STOPPED"
+	NodeStateStarted = "STARTED"
+	NodeStateBooted  = "BOOTED"
+)
+
 type Node struct {
 	ID              string       `json:"id"`
 	Label           string       `json:"label"`
@@ -59,16 +67,21 @@ type Node struct {
 	ImageDefinition string       `json:"image_definition"`
 	Configuration   string       `json:"configuration"`
 	CPUs            int          `json:"cpus"`
+	CPUlimit        int          `json:"cpu_limit"`
 	RAM             int          `json:"ram"`
 	State           string       `json:"state"`
 	DataVolume      int          `json:"data_volume"`
-	Interfaces      interfaceMap `json:"interfaces"`
+	BootDiskSize    int          `json:"boot_disk_size"`
+	HideLinks       bool         `json:"hide_links"`
+	Interfaces      InterfaceMap `json:"interfaces"`
+	Tags            []string     `json:"tags"`
+	BootProgress    string       `json:"boot_progress"`
 
 	// extra
 	lab *Lab
 }
 
-func (nmap nodeMap) MarshalJSON() ([]byte, error) {
+func (nmap NodeMap) MarshalJSON() ([]byte, error) {
 	nodeList := []*Node{}
 	for _, node := range nmap {
 		nodeList = append(nodeList, node)
@@ -90,7 +103,7 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 		return err
 	}
 
-	nodeMap := make(nodeMap)
+	nodeMap := make(NodeMap)
 	for _, nodeID := range *nodeIDlist {
 		api = fmt.Sprintf("labs/%s/nodes/%s", lab.ID, nodeID)
 		node := &Node{lab: lab}
@@ -101,5 +114,72 @@ func (c *Client) getNodesForLab(ctx context.Context, lab *Lab) error {
 		nodeMap[nodeID] = node
 	}
 	lab.Nodes = nodeMap
+	return nil
+}
+
+func (c *Client) NodeSetConfig(ctx context.Context, node *Node, configuration string) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s", node.lab.ID, node.ID)
+
+	type nodeConfig struct {
+		Configuration string `json:"configuration"`
+	}
+
+	buf := &bytes.Buffer{}
+	nodeCfg := nodeConfig{Configuration: configuration}
+	err := json.NewEncoder(buf).Encode(nodeCfg)
+	if err != nil {
+		return err
+	}
+
+	// API returns the node ID of the updated node
+	nodeID := ""
+	err = c.jsonPatch(ctx, api, buf, &nodeID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// NodeSetImageID sets the image ID / image definition id of the node to the one
+// provided in imageID.
+func (c *Client) NodeSetImageID(ctx context.Context, labID, nodeID, imageID string) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s", labID, nodeID)
+
+	type nodeConfig struct {
+		ImageID string `json:"image_definition"`
+	}
+
+	buf := &bytes.Buffer{}
+	nodeCfg := nodeConfig{ImageID: imageID}
+	err := json.NewEncoder(buf).Encode(nodeCfg)
+	if err != nil {
+		return err
+	}
+
+	node := Node{}
+	err = c.jsonPatch(ctx, api, buf, &node)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// NodeStart the given node
+func (c *Client) NodeStart(ctx context.Context, node *Node) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s/state/start", node.lab.ID, node.ID)
+	err := c.jsonPut(ctx, api)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// NodeStop the given node
+func (c *Client) NodeStop(ctx context.Context, node *Node) error {
+	api := fmt.Sprintf("labs/%s/nodes/%s/state/stop", node.lab.ID, node.ID)
+	err := c.jsonPut(ctx, api)
+	if err != nil {
+		return err
+	}
 	return nil
 }

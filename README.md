@@ -1,5 +1,7 @@
 # Terraform Provider for Cisco CML2
 
+[![CodeQL](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml)
+
 _This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://www.terraform.io/docs/plugin/which-sdk.html) in the Terraform documentation for additional information._
 
 This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "work-in-progress".  The current implementation provides:
@@ -31,6 +33,29 @@ go install
 ```
 
 ## Using the provider
+
+### Environment
+
+The provider is using environment variables for configuration.  Heres an example:
+
+```shell
+# for testing purposes, suggest to use direnv
+
+# this is used by the cmlclient test command, ctest, not needed for the provider
+# CML_LABID="ba35782a-06ee-4234-9de4-473ffe3c09e8"
+
+CML_HOST="https://cml-controller.cml.lab"
+CML_TOKEN=" valid-cmd-jwt "
+CML_USERNAME=""
+CML_PASSWORD=""
+TF_VAR_token=$CML_TOKEN
+
+export CML_HOST CML_USERNAME CML_PASSWORD TF_VAR_token
+```
+
+### HCL
+
+> _NOTE:_ this is mostly outdated... Need to update!!
 
 Here's a simple example that shows how to use the provider. It will import a
 lab as defined in `topology.yml`, then start it and wait for it to converge
@@ -112,7 +137,7 @@ provider_installation {
 
 Sample filesystem mirror layout:
 
-```
+```plain
 /tmp/terraform/
 └── registry.terraform.io
     └── ciscodevnet
@@ -145,7 +170,7 @@ To generate or update documentation, run `go generate`.
 
 In order to run the full suite of Acceptance tests, run `make testacc`.
 
-*Note:* Acceptance tests create real resources, and often cost money to run.
+_Note:_ Acceptance tests create real resources, and often cost money to run.
 
 ```shell
 make testacc

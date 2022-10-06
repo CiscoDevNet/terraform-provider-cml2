@@ -4,150 +4,165 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/internal/cmlclient"
+	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ tfsdk.Provider = &provider{}
+var _ provider.Provider = &CML2Provider{}
+var _ provider.ProviderWithMetadata = &CML2Provider{}
 
-// provider satisfies the tfsdk.Provider interface and usually is included
-// with all Resource and DataSource implementations.
-type provider struct {
-	// client can contain the upstream provider SDK or HTTP client used to
-	// communicate with the upstream service. Resource and DataSource
-	// implementations can then make calls using this client.
-	//
-	client *cmlclient.Client
-
-	// configured is set to true at the end of the Configure method.
-	// This can be used in Resource and DataSource implementations to verify
-	// that the provider was previously configured.
-	configured bool
-
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+// CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
+type CML2Provider struct {
 	version string
 }
 
-// providerData can be used to store data from the Terraform configuration.
-type providerData struct {
+// CML2ProviderModel describes the provider data model.
+type CML2ProviderModel struct {
 	Address    types.String `tfsdk:"address"`
+	Username   types.String `tfsdk:"username"`
+	Password   types.String `tfsdk:"password"`
 	Token      types.String `tfsdk:"token"`
+	CAcert     types.String `tfsdk:"cacert"`
 	SkipVerify types.Bool   `tfsdk:"skip_verify"`
 }
 
-func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
-	var data providerData
-	diags := req.Config.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "cml2"
+	resp.Version = p.version
+}
+
+func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data CML2ProviderModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	if data.Address.Null || data.Token.Null {
-		diags.AddError(
+	// check if provided auth configuration makes sense
+	if data.Token.Null &&
+		(data.Username.Null || data.Password.Null) {
+		resp.Diagnostics.AddError(
 			"Required configuration missing",
-			fmt.Sprintf("address and token must be configured to use %T", p),
+			fmt.Sprintf("null check: either username and password or a token must be provided %T", p),
+		)
+	}
+
+	if len(data.Token.Value) == 0 &&
+		(len(data.Username.Value) == 0 || len(data.Password.Value) == 0) {
+		resp.Diagnostics.AddError(
+			"Required configuration missing",
+			fmt.Sprintf("value check: either username and password or a token must be provided %T", p),
+		)
+	}
+
+	if len(data.Token.Value) > 0 && len(data.Username.Value) > 0 {
+		resp.Diagnostics.AddWarning(
+			"Conflicting configuration",
+			"both token and username / password were provided")
+	}
+
+	// an address must be specified
+	if len(data.Address.Value) == 0 {
+		resp.Diagnostics.AddError(
+			"Required configuration missing",
+			fmt.Sprintf("a server address must be configured to use %T", p),
 		)
 	}
 	if data.SkipVerify.Null {
+		tflog.Warn(ctx, "unspecified certificate verification, will verify")
 		data.SkipVerify.Value = false
 	}
 
-	// initialize the CML2 API client
-	p.client = cmlclient.NewClientWithContext(
-		ctx,
+	// create a new CML2 client
+	client := cmlclient.NewClient(
 		data.Address.Value,
-		data.Token.Value,
 		data.SkipVerify.Value,
 	)
+	if len(data.Username.Value) > 0 {
+		client.SetUsernamePassword(data.Username.Value, data.Password.Value)
+	}
+	if len(data.Token.Value) > 0 {
+		client.SetToken(data.Token.Value)
+	}
 
-	tflog.Info(ctx,
-		"initializing",
-		map[string]interface{}{"token": data.Token.Value},
-	)
-
-	p.configured = true
+	if len(data.CAcert.Value) > 0 {
+		err := client.SetCACert([]byte(data.CAcert.Value))
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Configuration issue",
+				fmt.Sprintf("Provided certificate could not be used: %s", err),
+			)
+		}
+	}
+	resp.DataSourceData = client
+	resp.ResourceData = client
 }
 
-func (p *provider) GetResources(ctx context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	return map[string]tfsdk.ResourceType{
-		"cml2_lab": cmlLabResourceType{},
-		// "cml2_node": cmlNodeResourceType{},
-		// "cml2_link":      cmlLinkResourceType{},
-		// "cml2_interface": cmlInterfaceResourceType{},
-	}, nil
-}
-
-func (p *provider) GetDataSources(ctx context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{
-		"cml2_lab_details": cmlLabDetailDataSourceType{},
-	}, nil
-}
-
-func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+func (p *CML2Provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"address": {
-				MarkdownDescription: "CML controller address",
-				Required:            true,
-				Type:                types.StringType,
+				Description: "CML2 controller address",
+				Required:    true,
+				Type:        types.StringType,
+			},
+			"username": {
+				Description: "CML2 username",
+				Optional:    true,
+				Type:        types.StringType,
+			},
+			"password": {
+				Description: "CML2 password",
+				Optional:    true,
+				Type:        types.StringType,
+				Sensitive:   true,
 			},
 			"token": {
-				MarkdownDescription: "CML API token (JWT)",
-				Required:            true,
-				Type:                types.StringType,
-				Sensitive:           true,
+				Description: "CML2 API token (JWT)",
+				Optional:    true,
+				Type:        types.StringType,
+				Sensitive:   true,
+			},
+			"cacert": {
+				Description: "CA CERT, PEM encoded",
+				Optional:    true,
+				Type:        types.StringType,
 			},
 			"skip_verify": {
-				MarkdownDescription: "disable TLS certificate verification",
-				Optional:            true,
-				Type:                types.BoolType,
+				Description: "disable TLS certificate verification",
+				Optional:    true,
+				Type:        types.BoolType,
 			},
 		},
 	}, nil
 }
 
-func New(version string) func() tfsdk.Provider {
-	return func() tfsdk.Provider {
-		return &provider{
-			version: version,
-		}
+func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewLabResource,
 	}
 }
 
-// convertProviderType is a helper function for NewResource and NewDataSource
-// implementations to associate the concrete provider type. Alternatively,
-// this helper can be skipped and the provider type can be directly type
-// asserted (e.g. provider: in.(*provider)), however using this can prevent
-// potential panics.
-func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	p, ok := in.(*provider)
-
-	if !ok {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			fmt.Sprintf("While creating the data source or resource, an unexpected provider type (%T) was received. This is always a bug in the provider code and should be reported to the provider developers.", p),
-		)
-		return provider{}, diags
+func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewNodeDataSource,
 	}
+}
 
-	if p == nil {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			"While creating the data source or resource, an unexpected empty provider instance was received. This is always a bug in the provider code and should be reported to the provider developers.",
-		)
-		return provider{}, diags
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &CML2Provider{
+			version: version,
+		}
 	}
-
-	return *p, diags
 }

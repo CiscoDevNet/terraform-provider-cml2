@@ -3,21 +3,69 @@
 page_title: "cml2_lab Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  CML Lab resource
+  A CML lab resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
 ---
 
 # cml2_lab (Resource)
 
-CML Lab resource
+A CML lab resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
 
 ## Example Usage
 
 ```terraform
-resource "cml2_lab" "bananas" {
-  topology = file("topology.yaml")
-  # start    = true
-  # wait     = false
-  # state    = "STARTED"
+resource "cml2_lab" "example" {
+
+  # simply load the content of the given file
+  topology = file("example-topology.yaml")
+
+  # alternatively, use a template and replace variables within
+  # topology = templatefile("topology.yaml", { toponame = var.toponame })
+
+  # snippet from topology.yaml:
+  # lab:
+  #   description: 'lengthy description'
+  #   notes: 'some verbose notes'
+  #   timestamp: 1606137179.2951126
+  #   title: ${toponame}
+  #   version: 0.0.4
+  # nodes:
+  # ...
+
+  # if wait is set then wait until the lab converged, it defaults to true stages
+  # have no effect if wait is false and this will produce a warning!
+  # wait = false
+
+  # state can be STARTED or DEFINED_ON_CORE when creating. For a running lab, it
+  # can be also set to STOPPED. If not set, it defaults to DEFINED_ON_CORE (e.g.
+  # the lab is created but will not be started after creating).
+  # state = "STARTED"
+
+  # dicionary, keyed with the node label and the text configuration which will
+  # be injected into the node when creating the lab resource.
+  configs = {
+    "server-0" : "hostname server-0",
+    "server-1" : "hostname server-1",
+    "server-2" : "hostname server-2"
+    "server-3" : "hostname server-3",
+  }
+
+  staging = {
+    stages = [
+      "infrastructure",
+      "underlay",
+      "overlay",
+      "red-team",
+      "blue-team"
+    ],
+    start_remaining = false
+  }
+
+  timeouts = {
+    create = "20h"
+    update = "1h30m"
+    delete = "20m" # currently unused
+  }
+
 }
 ```
 
@@ -30,12 +78,61 @@ resource "cml2_lab" "bananas" {
 
 ### Optional
 
-- `start` (Boolean) topology will be started if true
-- `state` (String) CML lab state
-- `wait` (Boolean) wait until topology is BOOTED if true
+- `configs` (Map of String) map of node configurations to store into nodes, the key is the label of the node
+- `staging` (Attributes) defines in what sequence nodes are launched (see [below for nested schema](#nestedatt--staging))
+- `state` (String) CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`
+- `timeouts` (Attributes) timeouts for operations, given as a parsable string as in `60m` or `2h` (see [below for nested schema](#nestedatt--timeouts))
+- `wait` (Boolean) wait until topology is `BOOTED` if true
 
 ### Read-Only
 
+- `booted` (Boolean) all nodes in the lab have booted
 - `id` (String) CML lab identifier, a UUID
+- `nodes` (Attributes Map) ist of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
+
+<a id="nestedatt--staging"></a>
+### Nested Schema for `staging`
+
+Optional:
+
+- `stages` (List of String) ordered list of node tags, controls node launch. Nodes currently not launched will be launched in the stage with the matching tag. Tags must match exactly.
+- `start_remaining` (Boolean) if true (which is the default) then all nodes which are not matched by the stages list and which are still unstarted at the end of the stages list will be started
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) create timeout
+- `delete` (String) delete timeout (currently unused)
+- `update` (String) update timeout
+
+
+<a id="nestedatt--nodes"></a>
+### Nested Schema for `nodes`
+
+Read-Only:
+
+- `configuration` (String) node configuration
+- `id` (String) node ID (UUID)
+- `interfaces` (Attributes List) list of interfaces on the node (see [below for nested schema](#nestedatt--nodes--interfaces))
+- `label` (String) label
+- `nodedefinition` (String) node definition / type
+- `state` (String) state
+- `tags` (List of String) tags of the node
+
+<a id="nestedatt--nodes--interfaces"></a>
+### Nested Schema for `nodes.interfaces`
+
+Read-Only:
+
+- `id` (String) interface ID (UUID)
+- `ip4` (List of String) IPv4 address list
+- `ip6` (List of String) IPv6 address list
+- `is_connected` (Boolean) connection status
+- `label` (String) label
+- `mac_address` (String) MAC address
+- `state` (String) interface state (UP / DOWN)
 
 
