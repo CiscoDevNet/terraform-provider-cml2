@@ -9,29 +9,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
+
+	cmlclient "github.com/rschmied/gocmlclient"
+
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
+	d_node "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/node"
+	r_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lab"
+	r_lifecycle "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lifecycle"
+	r_link "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/link"
+	r_node "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/node"
+
+	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ provider.Provider = &CML2Provider{}
 var _ provider.ProviderWithMetadata = &CML2Provider{}
 
+const CML2ErrorLabel = "CML2 Provider Error"
+
 // CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
 type CML2Provider struct {
 	version string
-}
-
-// CML2ProviderModel describes the provider data model.
-type CML2ProviderModel struct {
-	Address    types.String `tfsdk:"address"`
-	Username   types.String `tfsdk:"username"`
-	Password   types.String `tfsdk:"password"`
-	Token      types.String `tfsdk:"token"`
-	CAcert     types.String `tfsdk:"cacert"`
-	SkipVerify types.Bool   `tfsdk:"skip_verify"`
 }
 
 func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -40,10 +41,9 @@ func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataReques
 }
 
 func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data CML2ProviderModel
+	var data schema.ProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -83,10 +83,21 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		data.SkipVerify.Value = false
 	}
 
+	if data.UseCache.Null {
+		data.SkipVerify.Value = false
+	}
+	if data.UseCache.Value {
+		resp.Diagnostics.AddWarning(
+			"Experimental feature enabled",
+			"\"use_cache\" is considered experimental and may not work as expected; use with care",
+		)
+	}
+
 	// create a new CML2 client
 	client := cmlclient.NewClient(
 		data.Address.Value,
 		data.SkipVerify.Value,
+		data.UseCache.Value,
 	)
 	if len(data.Username.Value) > 0 {
 		client.SetUsernamePassword(data.Username.Value, data.Password.Value)
@@ -104,58 +115,30 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 			)
 		}
 	}
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	config := common.NewProviderConfig(client)
+	resp.DataSourceData = config
+	resp.ResourceData = config
 }
 
 func (p *CML2Provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
-		Attributes: map[string]tfsdk.Attribute{
-			"address": {
-				Description: "CML2 controller address",
-				Required:    true,
-				Type:        types.StringType,
-			},
-			"username": {
-				Description: "CML2 username",
-				Optional:    true,
-				Type:        types.StringType,
-			},
-			"password": {
-				Description: "CML2 password",
-				Optional:    true,
-				Type:        types.StringType,
-				Sensitive:   true,
-			},
-			"token": {
-				Description: "CML2 API token (JWT)",
-				Optional:    true,
-				Type:        types.StringType,
-				Sensitive:   true,
-			},
-			"cacert": {
-				Description: "CA CERT, PEM encoded",
-				Optional:    true,
-				Type:        types.StringType,
-			},
-			"skip_verify": {
-				Description: "disable TLS certificate verification",
-				Optional:    true,
-				Type:        types.BoolType,
-			},
-		},
+		Attributes: schema.Provider(),
 	}, nil
 }
 
 func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewLabResource,
+		r_lab.NewResource,
+		r_lifecycle.NewResource,
+		r_link.NewResource,
+		r_node.NewResource,
 	}
 }
 
 func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewNodeDataSource,
+		d_lab.NewDataSource,
+		d_node.NewDataSource,
 	}
 }
 

@@ -1,6 +1,7 @@
 .envrc
-.github
 .vscode
+
+*.code-workspace
 
 *.dll
 *.exe
@@ -37,3 +38,5 @@ website/vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+
+tftest

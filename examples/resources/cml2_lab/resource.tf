@@ -1,54 +1,48 @@
-resource "cml2_lab" "example" {
+# This shows the use of a lab with nodes and links
+# the links are explicitly specified with slots
+# Nothing will be started, just basic create, read
+# update / delete.
 
-  # simply load the content of the given file
-  topology = file("example-topology.yaml")
+resource "cml2_lab" "twonode" {
+  title       = "two node lab"
+  description = "nodes are connected with two links"
+  notes       = <<-EOT
+  # Heading
+  - topic one
+  - topic two
+  EOT
+}
 
-  # alternatively, use a template and replace variables within
-  # topology = templatefile("topology.yaml", { toponame = var.toponame })
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.twonode.id
+  label          = "R1"
+  nodedefinition = "alpine"
+  ram            = 512
+  x              = 200
+  y              = 130
+  tags           = ["group1"]
+}
 
-  # snippet from topology.yaml:
-  # lab:
-  #   description: 'lengthy description'
-  #   notes: 'some verbose notes'
-  #   timestamp: 1606137179.2951126
-  #   title: ${toponame}
-  #   version: 0.0.4
-  # nodes:
-  # ...
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.twonode.id
+  label          = "R2"
+  nodedefinition = "alpine"
+  x              = 100
+  y              = 130
+}
 
-  # if wait is set then wait until the lab converged, it defaults to true stages
-  # have no effect if wait is false and this will produce a warning!
-  # wait = false
+resource "cml2_link" "l0" {
+  lab_id      = cml2_lab.twonode.id
+  node_a      = cml2_node.r1.id
+  node_a_slot = 3
+  node_b      = cml2_node.r2.id
+  node_b_slot = 3
+}
 
-  # state can be STARTED or DEFINED_ON_CORE when creating. For a running lab, it
-  # can be also set to STOPPED. If not set, it defaults to DEFINED_ON_CORE (e.g.
-  # the lab is created but will not be started after creating).
-  # state = "STARTED"
-
-  # dicionary, keyed with the node label and the text configuration which will
-  # be injected into the node when creating the lab resource.
-  configs = {
-    "server-0" : "hostname server-0",
-    "server-1" : "hostname server-1",
-    "server-2" : "hostname server-2"
-    "server-3" : "hostname server-3",
-  }
-
-  staging = {
-    stages = [
-      "infrastructure",
-      "underlay",
-      "overlay",
-      "red-team",
-      "blue-team"
-    ],
-    start_remaining = false
-  }
-
-  timeouts = {
-    create = "20h"
-    update = "1h30m"
-    delete = "20m" # currently unused
-  }
-
+resource "cml2_link" "l1" {
+  lab_id      = cml2_lab.twonode.id
+  node_a      = cml2_node.r1.id
+  node_a_slot = 2
+  node_b      = cml2_node.r2.id
+  node_b_slot = 2
 }
