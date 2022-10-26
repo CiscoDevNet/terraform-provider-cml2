@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/rschmied/terraform-provider-cml2/m/v2/pkg/cmlclient"
+	cmlclient "github.com/rschmied/gocmlclient"
 )
 
 func main() {
@@ -35,14 +34,14 @@ func main() {
 		return
 	}
 	ctx := context.Background()
-	client := cmlclient.NewClient(host, false)
+	client := cmlclient.NewClient(host, false, false)
 	if token_found {
 		client.SetToken(token)
 	} else {
 		client.SetUsernamePassword(username, password)
 	}
 
-	cert, err := ioutil.ReadFile("/home/rschmied/tftest/ca.pem")
+	cert, err := os.ReadFile("/home/rschmied/tftest/ca.pem")
 	if err != nil {
 		log.Println(err)
 		return
@@ -53,7 +52,7 @@ func main() {
 		return
 	}
 
-	// topo, err := ioutil.ReadFile("/home/rschmied/tftest/topology.yaml")
+	// topo, err := os.ReadFile("/home/rschmied/tftest/topology.yaml")
 	// if err != nil {
 	// 	log.Println(err)
 	// 	return

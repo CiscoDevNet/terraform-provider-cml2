@@ -16,16 +16,25 @@ description: |-
 provider "cml2" {
   # address must use https://
   address = var.address
-  # set either a JWT or username/password
+
+  # credentials, set either a JWT or username/password
   # token   = var.token
   username = var.username
   password = var.password
+
   # read the CA certificate from file
   # if not specified, he system root CAs are used
   cacert = file("ca.pem")
+
   # should the certificate be verified?
   # (defaults to true)
   # skip_verify = false
+
+  # should the API client cache responses?
+  # this will improve performance but isn't guaranteed
+  # to work for all scenarios
+  # (defaults to false)
+  # use_cache = true
 }
 ```
 
@@ -34,12 +43,13 @@ provider "cml2" {
 
 ### Required
 
-- `address` (String) CML2 controller address
+- `address` (String) CML2 controller address.
 
 ### Optional
 
-- `cacert` (String) CA CERT, PEM encoded
-- `password` (String, Sensitive) CML2 password
-- `skip_verify` (Boolean) disable TLS certificate verification
-- `token` (String, Sensitive) CML2 API token (JWT)
-- `username` (String) CML2 username
+- `cacert` (String) A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.
+- `password` (String, Sensitive) CML2 password.
+- `skip_verify` (Boolean) Disables TLS certificate verification.
+- `token` (String, Sensitive) CML2 API token (JWT).
+- `use_cache` (Boolean) Enables the client cache, this is considered experimental.
+- `username` (String) CML2 username.
