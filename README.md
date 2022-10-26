@@ -1,4 +1,4 @@
-[![CodeQL](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/codeql-analysis.yml) [![Go](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/test.yml/badge.svg)](https://github.com/rschmied/terraform-provider-cml2/actions/workflows/test.yml) [![Coverage Status](https://coveralls.io/repos/github/rschmied/terraform-provider-cml2/badge.svg?branch=main)](https://coveralls.io/github/rschmied/terraform-provider-cml2?branch=main)
+[![CodeQL](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml) [![Go](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml/badge.svg)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml) [![Coverage Status](https://coveralls.io/repos/github/CiscoDevNet/terraform-provider-cml2/badge.svg?branch=main)](https://coveralls.io/github/CiscoDevNet/terraform-provider-cml2?branch=main)
 
 # Terraform Provider for Cisco CML2
 
@@ -45,6 +45,8 @@ TF_VAR_address="https://cml-controller.cml.lab"
 
 export TF_VAR_username TF_VAR_password TF_VAR_address
 ```
+
+Those are referenced for testing in `internal/provider/testing`.
 
 ### HCL
 
