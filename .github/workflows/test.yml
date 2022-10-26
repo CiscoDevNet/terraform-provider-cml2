@@ -74,16 +74,25 @@ jobs:
           terraform_wrapper: false
       - uses: actions/checkout@v3
       - run: go mod download
+
       - env:
           # for the time being, only do unit tests, below needs to be changed
           # to secrets when used with the tunnel.sh script.
           # TF_ACC: "0"
-          TF_VAR_address: "https://localhost"
-          TF_VAR_username: "admin"
-          TF_VAR_password: "secret"
+          NGROK_URL: ${{ secrets.NGROK_URL }}
         run: |
-          go test -race -covermode atomic -coverprofile=covprofile ./internal/...
-        timeout-minutes: 10
+          echo "setting env vars"
+          echo "TF_VAR_address=https://localhost" >>$GITHUB_ENV
+          if [ -n "$NGROK_URL" ]; then
+            echo "TF_ACC=1" >> $GITHUB_ENV
+            echo "TF_VAR_address=${NGROK_URL}" >> $GITHUB_ENV
+          fi
+
+      - env:
+          TF_VAR_username: ${{ secrets.USERNAME }}
+          TF_VAR_password: ${{ secrets.PASSWORD }}
+        run: go test -race -v -covermode atomic -coverprofile=covprofile ./internal/...
+        timeout-minutes: 20
 
       - name: Install goveralls
         run: go install github.com/mattn/goveralls@latest

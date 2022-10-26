@@ -11,6 +11,13 @@ fi
 REPO="ciscodevnet/terraform-provider-cml2"
 CML="https://cml-controller.cml.lab:443"
 
+if [ "$1" == "-d" ]; then
+    gh api -XDELETE /repos/$REPO/actions/secrets/NGROK_URL
+    gh api -XDELETE /repos/$REPO/actions/secrets/USERNAME
+    gh api -XDELETE /repos/$REPO/actions/secrets/PASSWORD
+    exit
+fi
+
 # check if ngrok is running
 if ! curl >/dev/null -sf localhost:4040/api; then
     echo "starting tmux and ngrok"
@@ -44,8 +51,12 @@ read -d' ' KEY_ID KEY <<< "$(gh api /repos/$REPO/actions/secrets/public-key | jq
 
 # create the encrypted secret from our tunnel endpoint URL
 export GH_KEY="$KEY"
-MSG=$(~/go/bin/mkkey $TUNNEL)
 
 # create/update the secret on github (NGROK_URL is the secret name)
-echo '{"encrypted_value":"'$MSG'","key_id":"'$KEY_ID'"}' | \
+echo '{"encrypted_value":"'$(~/go/bin/mkkey $TUNNEL)'","key_id":"'$KEY_ID'"}' | \
 gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
+echo '{"encrypted_value":"'$(~/go/bin/mkkey $TF_VAR_username)'","key_id":"'$KEY_ID'"}' | \
+gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
+echo '{"encrypted_value":"'$(~/go/bin/mkkey $TF_VAR_password)'","key_id":"'$KEY_ID'"}' | \
+gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
+
