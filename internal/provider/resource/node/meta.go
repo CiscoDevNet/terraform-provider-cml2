@@ -34,8 +34,8 @@ func (r *NodeResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagno
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
-		Description: "A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided",
-		Attributes:  schema.Node(),
+		MarkdownDescription: "A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once and then requires a replace.",
+		Attributes:          schema.Node(),
 	}, nil
 }
 

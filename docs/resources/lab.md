@@ -3,12 +3,12 @@
 page_title: "cml2_lab Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+  A lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided.
 ---
 
 # cml2_lab (Resource)
 
-A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+A lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided.
 
 ## Example Usage
 

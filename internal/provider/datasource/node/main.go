@@ -46,7 +46,7 @@ func (d *NodeDataSource) Configure(ctx context.Context, req datasource.Configure
 func (d *NodeDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "A CML2 node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.",
+		MarkdownDescription: "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as \"optional\".",
 
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {

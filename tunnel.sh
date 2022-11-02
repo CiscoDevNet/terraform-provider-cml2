@@ -2,61 +2,121 @@
 
 # set -x
 
-# check if we have everything...
-if ! which ngrok gh curl tmux mkkey; then
-    echo "required command missing!"
-    exit
-fi
 
 REPO="ciscodevnet/terraform-provider-cml2"
 CML="https://cml-controller.cml.lab:443"
 
-if [ "$1" == "-d" ]; then
+
+function help() {
+    cmd=$(basename $0)
+    cat << EOT
+$cmd usage:
+
+$cmd start -- starts ngrok in tmux and provisions credentials to GH
+$cmd stop -- stops tmux (and ngrok) and removes credentials from GH
+$cmd force -- forcefully removes credentials from GH
+$cmd status -- shows the status (also the default)
+$cmd -h | --help | help -- shows this help
+
+Requirements:
+- TF_VAR_username and TF_VAR_password environment variables with CML credentials
+- authorized gh tool (Github cli)
+- curl, mkkey, ngrok and tmux in the path
+- ngrok authtoken provided via ~/.ngrok2/ngrok.yml
+
+Repo name and CML controller URL can be configured at the top of this script.
+They currently are:
+
+GH Repository name: https://github.com/$REPO
+Local CML2 address: $CML
+
+EOT
+}
+
+function get_status() {
+    if ! tmux list-sessions -F "#S" | grep -qs ^NGROK; then
+        echo -n "no "
+    fi
+    echo "session exists"
+}
+
+
+function remove_secrets() {
     gh api -XDELETE /repos/$REPO/actions/secrets/NGROK_URL
     gh api -XDELETE /repos/$REPO/actions/secrets/USERNAME
     gh api -XDELETE /repos/$REPO/actions/secrets/PASSWORD
-    exit
-fi
+}
 
-# check if ngrok is running
-if ! curl >/dev/null -sf localhost:4040/api; then
-    echo "starting tmux and ngrok"
-    if ! tmux has-session; then
-        tmux new-session -d
-    fi
-    tmux new-window  -n "ngrok" ngrok start --none
-    sleep 1
-    if ! >/dev/null curl -sf localhost:4040/api; then
-        echo "can't start ngrok, failing"
-        exit 1
+
+function stop() {
+    status=$(get_status)
+    if [ "$status" = "session exists" ]; then
+        tmux kill-session -t NGROK
+        remove_secrets
     else
-        echo "tmux started, ngrok started"
+        echo $status
     fi
+}
+
+
+function start() {
+    # check if ngrok is running
+    if ! curl >/dev/null -sf localhost:4040/api; then
+        echo "starting tmux and ngrok"
+        tmux &>/dev/null kill-session -t NGROK
+        tmux new-session -d -s NGROK
+        tmux new-window  -t NGROK -n "ngrok" ngrok start --none
+        sleep 1
+        if ! >/dev/null curl -sf localhost:4040/api; then
+            echo "can't start ngrok, failing"
+            exit 1
+        else
+            echo "tmux and ngrok started"
+        fi
+    fi
+
+    # get the tunnel from the agent and start it, if no tunnel
+    TUNNEL=$(curl -sf localhost:4040/api/tunnels | jq -r '.tunnels|map(select(.config.addr == "'$CML'"))[0]|.public_url')
+    if [ "$TUNNEL" = "null" ]; then
+        DATA='{"proto": "http","addr": "'$CML'","name": "cml"}'
+        TUNNEL=$(echo $DATA | curl -sf -XPOST -d@- -H "Content-Type: application/json" localhost:4040/api/tunnels | jq -r '.public_url')
+    fi
+
+    # read the public github key for our repo
+    read -d' ' GH_KEY_ID GH_KEY <<< "$(gh api /repos/$REPO/actions/secrets/public-key | jq -r '.|.key_id, .key')"
+
+    # make them visible to the mkkey tool
+    export GH_KEY GH_KEY_ID TUNNEL
+
+    # create/update the needed secrets on Github
+    mkkey TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
+    mkkey TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
+    mkkey TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
+}
+
+
+# check if we have everything...
+if ! which &>/dev/null ngrok gh curl tmux mkkey; then
+    # color="\033[31;40m"
+    color="\033[31m"
+    nocolor="\033[0m"
+    echo
+    echo -e $color"Required command is missing!"$nocolor
+    echo
+    help
+    exit 1
 fi
-
-# get the tunnel from the agent and start it, if no tunnel
-TUNNEL=$(curl -sf localhost:4040/api/tunnels | jq -r '.tunnels|map(select(.config.addr == "'$CML'"))[0]|.public_url')
-if [ "$TUNNEL" = "null" ]; then
-    DATA='{"proto": "http","addr": "'$CML'","name": "cml"}'
-    TUNNEL=$(echo $DATA | curl -sf -XPOST -d@- -H "Content-Type: application/json" localhost:4040/api/tunnels | jq -r '.public_url')
+if [ "$1" == "start" ]; then
+    start
+elif [ "$1" == "stop" ]; then
+    stop
+elif [ "$1" == "force" ]; then
+    remove_secrets
+elif [[ "$1" =~ -h|--help|help ]]; then
+    help
+elif [ -z "$1" -o "$1" = "status" ]; then
+    get_status
+else
+    help
 fi
-
-# read the public github key for our repo
-read -d' ' KEY_ID KEY <<< "$(gh api /repos/$REPO/actions/secrets/public-key | jq -r '.|.key_id, .key')"
-
-# {
-#   "key_id": "012345678912345678",
-#   "key": "2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"
-# }
-
-# create the encrypted secret from our tunnel endpoint URL
-export GH_KEY="$KEY"
-
-# create/update the secret on github (NGROK_URL is the secret name)
-echo '{"encrypted_value":"'$(~/go/bin/mkkey $TUNNEL)'","key_id":"'$KEY_ID'"}' | \
-gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
-echo '{"encrypted_value":"'$(~/go/bin/mkkey $TF_VAR_username)'","key_id":"'$KEY_ID'"}' | \
-gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
-echo '{"encrypted_value":"'$(~/go/bin/mkkey $TF_VAR_password)'","key_id":"'$KEY_ID'"}' | \
-gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
-
+exit 0

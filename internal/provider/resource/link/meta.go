@@ -36,7 +36,7 @@ func (r *LinkResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagno
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
-		Description: "A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided",
+		Description: "A link resource represents a CML link. At create time, the lab ID, source and destination node ID are required.  Interface slots are optional.  By default, the next free interface slot is used.",
 		Attributes:  schema.Link(),
 	}, nil
 }

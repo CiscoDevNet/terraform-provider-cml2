@@ -34,7 +34,7 @@ func (r *LabResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnos
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
-		Description: "A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided",
+		Description: "A lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided.",
 		Attributes:  schema.Lab(),
 	}, nil
 }
