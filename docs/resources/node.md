@@ -3,12 +3,12 @@
 page_title: "cml2_node Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+  A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to STARTED (see the lifecyle resource) once and then requires a replace.
 ---
 
 # cml2_node (Resource)
 
-A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once and then requires a replace.
 
 
 

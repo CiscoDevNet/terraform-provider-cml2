@@ -48,7 +48,7 @@ func (t *LabLifecycleResource) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "A CML lab lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.",
+		Description: "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.",
 
 		// Attributes are preferred over Blocks. Blocks should typically be used
 		// for configuration compatibility with previously existing schemas from

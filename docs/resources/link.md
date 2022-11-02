@@ -3,12 +3,12 @@
 page_title: "cml2_link Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+  A link resource represents a CML link. At create time, the lab ID, source and destination node ID are required.  Interface slots are optional.  By default, the next free interface slot is used.
 ---
 
 # cml2_link (Resource)
 
-A CML lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided
+A link resource represents a CML link. At create time, the lab ID, source and destination node ID are required.  Interface slots are optional.  By default, the next free interface slot is used.
 
 
 

@@ -49,7 +49,7 @@ func (d *LabDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagn
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
-		MarkdownDescription: "A CML2 lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.",
+		MarkdownDescription: "A CML2 lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as \"optional\".",
 		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Description: "lab id",

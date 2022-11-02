@@ -3,13 +3,14 @@ provider "cml2" {
   address = var.address
 
   # credentials, set either a JWT or username/password
+  # an error is raised if neither token or username / password are set
   # token   = var.token
   username = var.username
   password = var.password
 
   # read the CA certificate from file
-  # if not specified, he system root CAs are used
-  cacert = file("ca.pem")
+  # if not specified, the system root CAs are used
+  # cacert = file("ca.pem")
 
   # should the certificate be verified?
   # (defaults to true)

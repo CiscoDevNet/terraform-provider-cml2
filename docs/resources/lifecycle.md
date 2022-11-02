@@ -3,12 +3,12 @@
 page_title: "cml2_lifecycle Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML lab lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
+  A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
 ---
 
 # cml2_lifecycle (Resource)
 
-A CML lab lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
+A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.
 
 ## Example Usage
 
