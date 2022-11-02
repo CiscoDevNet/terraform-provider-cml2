@@ -71,9 +71,8 @@ func main() {
 		log.Printf("encrypt didn't work: %s\n", err)
 		os.Exit(1)
 	}
-	// print the result to stdout, base64 encoded
+	// print the JSON object to stdout, the encrypted secret is base64 encoded
 	secret := Secret{keyID, base64.StdEncoding.EncodeToString(encMsg)}
-	// fmt.Println(base64.StdEncoding.EncodeToString(encMsg))
 	data, err := json.Marshal(secret)
 	if err != nil {
 		log.Printf("couldn't encode secret: %s\n", err)

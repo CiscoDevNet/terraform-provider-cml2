@@ -3,12 +3,12 @@
 page_title: "cml2_lab Data Source - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML2 lab data source. Either the lab id or the lab title must be provided to retrieve the lab data from the controller.  Note that all of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+  A lab data source. Either the lab id or the lab title must be provided to retrieve the lab data from the controller.  Note that all of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as "optional".
 ---
 
 # cml2_lab (Data Source)
 
-A CML2 lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as "optional".
 
 ## Example Usage
 

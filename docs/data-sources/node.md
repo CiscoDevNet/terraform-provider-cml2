@@ -3,12 +3,12 @@
 page_title: "cml2_node Data Source - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A CML2 node data source.  Both, the node id and the lab_id must be provided to retrieve the node data from the controller.  Note that all of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+  A node data source.  Both, the node id and the lab_id must be provided to retrieve the node data from the controller.  Note that all of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
 ---
 
 # cml2_node (Data Source)
 
-A CML2 node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
 
 ## Example Usage
 
