@@ -27,7 +27,7 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.ID.Value, false)
+	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -38,12 +38,12 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	if lab.State != cmlclient.LabStateDefined {
 		if lab.State == cmlclient.LabStateStarted {
-			r.stop(ctx, resp.Diagnostics, data.ID.Value)
+			r.stop(ctx, resp.Diagnostics, data.LabID.ValueString())
 		}
-		r.wipe(ctx, resp.Diagnostics, data.ID.Value)
+		r.wipe(ctx, resp.Diagnostics, data.LabID.ValueString())
 	}
 
-	err = r.cfg.Client().LabDestroy(ctx, data.ID.Value)
+	err = r.cfg.Client().LabDestroy(ctx, data.LabID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

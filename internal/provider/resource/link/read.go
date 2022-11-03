@@ -22,7 +22,9 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	link, err := r.cfg.Client().LinkGet(ctx, data.LabID.Value, data.ID.Value, true)
+	link, err := r.cfg.Client().LinkGet(
+		ctx, data.LabID.ValueString(), data.ID.ValueString(), true,
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

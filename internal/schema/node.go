@@ -125,18 +125,18 @@ var NodeAttrType = map[string]attr.Type{
 	"boot_disk_size": types.Int64Type,
 	"data_volume":    types.Int64Type,
 	"vnc_key":        types.StringType,
-	"serial_devices": types.ListType{
-		ElemType: types.ObjectType{
-			AttrTypes: serialKeyAttrType,
-		},
-	},
-	"compute_id": types.StringType,
+	"serial_devices": types.ListType{ElemType: SerialDevicesAttrType},
+	"compute_id":     types.StringType,
 }
 
-var serialKeyAttrType = map[string]attr.Type{
-	"console_key":   types.StringType,
-	"device_number": types.Int64Type,
-}
+var (
+	SerialDevicesAttrType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"console_key":   types.StringType,
+			"device_number": types.Int64Type,
+		},
+	}
+)
 
 func Node() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
@@ -156,8 +156,7 @@ func Node() map[string]tfsdk.Attribute {
 		"label": {
 			Description: "label",
 			Type:        types.StringType,
-			Computed:    true,
-			Optional:    true,
+			Required:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -292,9 +291,7 @@ func Node() map[string]tfsdk.Attribute {
 			Description: "a list of serial devices (consoles)",
 			Computed:    true,
 			Type: types.ListType{
-				ElemType: types.ObjectType{
-					AttrTypes: serialKeyAttrType,
-				},
+				ElemType: SerialDevicesAttrType,
 			},
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
@@ -321,77 +318,84 @@ func Node() map[string]tfsdk.Attribute {
 
 func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
 
-	serialDevices := types.List{
-		ElemType: types.ObjectType{
-			AttrTypes: serialKeyAttrType,
-		},
-		Elems: make([]attr.Value, 0),
+	if len(node.SerialDevices) == 0 {
+		return types.ListNull(SerialDevicesAttrType)
 	}
 
+	valueList := make([]attr.Value, 0)
 	for _, serial_device := range node.SerialDevices {
 
 		newSerialDevice := serialDeviceModel{
-			ConsoleKey:   types.String{Value: serial_device.ConsoleKey},
-			DeviceNumber: types.Int64{Value: int64(serial_device.DeviceNumber)},
+			ConsoleKey:   types.StringValue(serial_device.ConsoleKey),
+			DeviceNumber: types.Int64Value(int64(serial_device.DeviceNumber)),
 		}
 
 		var value attr.Value
 		diags.Append(tfsdk.ValueFrom(
 			ctx,
 			newSerialDevice,
-			types.ObjectType{AttrTypes: serialKeyAttrType},
+			SerialDevicesAttrType,
 			&value,
 		)...)
-
-		serialDevices.Elems = append(serialDevices.Elems, value)
+		valueList = append(valueList, value)
 	}
+	serialDevices, _ := types.ListValue(
+		SerialDevicesAttrType,
+		valueList,
+	)
 	return serialDevices
 }
 
 func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
 
-	ifaces := types.List{ElemType: types.ObjectType{
-		AttrTypes: InterfaceAttrType,
-	}}
+	valueList := make([]attr.Value, 0)
 	for _, iface := range node.Interfaces {
 		value := NewInterface(ctx, iface, diags)
-		ifaces.Elems = append(ifaces.Elems, value)
+		valueList = append(valueList, value)
 	}
+	ifaces, _ := types.ListValue(
+		types.ObjectType{AttrTypes: InterfaceAttrType},
+		valueList,
+	)
 
-	tags := types.List{ElemType: types.StringType}
+	valueList = nil
 	for _, tag := range node.Tags {
-		tags.Elems = append(tags.Elems, types.String{Value: tag})
+		valueList = append(valueList, types.StringValue(tag))
 	}
+	tags, _ := types.ListValue(types.StringType, valueList)
 
 	newNode := NodeModel{
-		ID:              types.String{Value: node.ID},
-		LabID:           types.String{Value: node.LabID},
-		Label:           types.String{Value: node.Label},
-		State:           types.String{Value: node.State},
-		NodeDefinition:  types.String{Value: node.NodeDefinition},
-		ImageDefinition: types.String{Value: node.ImageDefinition},
-		Configuration:   types.String{Value: node.Configuration},
+		ID:              types.StringValue(node.ID),
+		LabID:           types.StringValue(node.LabID),
+		Label:           types.StringValue(node.Label),
+		State:           types.StringValue(node.State),
+		NodeDefinition:  types.StringValue(node.NodeDefinition),
+		ImageDefinition: types.StringValue(node.ImageDefinition),
+		Configuration:   types.StringValue(node.Configuration),
 		Interfaces:      ifaces,
 		Tags:            tags,
-		X:               types.Int64{Value: int64(node.X)},
-		Y:               types.Int64{Value: int64(node.Y)},
+		X:               types.Int64Value(int64(node.X)),
+		Y:               types.Int64Value(int64(node.Y)),
 		SerialDevices:   newSerialDevices(ctx, node, diags),
-		CPUs:            types.Int64{Value: int64(node.CPUs)},
-		CPUlimit:        types.Int64{Value: int64(node.CPUlimit)},
-		RAM:             types.Int64{Value: int64(node.RAM)},
-		VNCkey:          types.String{Value: node.VNCkey},
+		CPUlimit:        types.Int64Value(int64(node.CPUlimit)),
 
 		// these values are null if there's no compute ID
-		ComputeID:    types.String{Null: true},
-		BootDiskSize: types.Int64{Null: true},
-		DataVolume:   types.Int64{Null: true},
+		ComputeID:    types.StringNull(),
+		VNCkey:       types.StringNull(),
+		BootDiskSize: types.Int64Null(),
+		DataVolume:   types.Int64Null(),
+		CPUs:         types.Int64Null(),
+		RAM:          types.Int64Null(),
 	}
 
 	// set them, if there IS a compute ID
 	if len(node.ComputeID) > 0 {
-		newNode.ComputeID = types.String{Value: node.ComputeID}
-		newNode.BootDiskSize = types.Int64{Value: int64(node.BootDiskSize)}
-		newNode.DataVolume = types.Int64{Value: int64(node.DataVolume)}
+		newNode.ComputeID = types.StringValue(node.ComputeID)
+		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
+		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
+		newNode.VNCkey = types.StringValue(node.VNCkey)
+		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+		newNode.RAM = types.Int64Value(int64(node.RAM))
 	}
 
 	var value attr.Value

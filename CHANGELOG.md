@@ -2,7 +2,20 @@
 
 Lists the changes in the provider.
 
-## Version 0.0.3
+## Version 0.4.0
+
+- adapted to the terraform-provider-framework v0.0.15 changes
+- udpated documentation
+- `cml2_node.label` is now a required attribute
+- `cml2_lifecycle.lab_id` replaces the `id` for consistency.  This will break
+  existing lifecycle resources but it's easy to fix: just rename the `id` to
+  `lab_id`.
+- `cml2_lifecycle.id` is now auto-generated as a UUIDv4
+- `cml2_lifecycle` resource logic changes... produces more concise change sets
+- added a `cml2_lifecycle` acceptance test
+- renamed the `mkkey` tool to `ghsecret`, adapted the `tunnel.sh` script
+
+## Version 0.3.2
 
 This releases is a large refactor of the initial code base.  It provides suppport
 for a few resources and data sources:

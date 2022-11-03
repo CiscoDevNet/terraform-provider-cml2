@@ -11,9 +11,13 @@ import (
 
 func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var planData, stateData *schema.LinkModel
+	var planData, stateData schema.LinkModel
 
 	tflog.Info(ctx, "Resource Link MODIFYPLAN")
+
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
@@ -24,11 +28,6 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// ensure we have state and a plan
-	if planData == nil || stateData == nil {
 		return
 	}
 
@@ -43,6 +42,6 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		planData.NodeBslot = stateData.NodeBslot
 	}
 
-	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 	tflog.Info(ctx, "Resource Link MODIFYPLAN: done")
 }

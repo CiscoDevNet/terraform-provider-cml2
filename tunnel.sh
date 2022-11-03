@@ -16,12 +16,13 @@ $cmd start -- starts ngrok in tmux and provisions credentials to GH
 $cmd stop -- stops tmux (and ngrok) and removes credentials from GH
 $cmd force -- forcefully removes credentials from GH
 $cmd status -- shows the status (also the default)
+$cmd open -- opens the tmux session
 $cmd -h | --help | help -- shows this help
 
 Requirements:
 - TF_VAR_username and TF_VAR_password environment variables with CML credentials
 - authorized gh tool (Github cli)
-- curl, mkkey, ngrok and tmux in the path
+- curl, ghsecret, ngrok and tmux in the path
 - ngrok authtoken provided via ~/.ngrok2/ngrok.yml
 
 Repo name and CML controller URL can be configured at the top of this script.
@@ -45,6 +46,14 @@ function remove_secrets() {
     gh api -XDELETE /repos/$REPO/actions/secrets/NGROK_URL
     gh api -XDELETE /repos/$REPO/actions/secrets/USERNAME
     gh api -XDELETE /repos/$REPO/actions/secrets/PASSWORD
+}
+
+
+function open() {
+    status=$(get_status)
+    if [ "$status" = "session exists" ]; then
+        tmux attach -t NGROK
+    fi
 }
 
 
@@ -85,18 +94,18 @@ function start() {
     # read the public github key for our repo
     read -d' ' GH_KEY_ID GH_KEY <<< "$(gh api /repos/$REPO/actions/secrets/public-key | jq -r '.|.key_id, .key')"
 
-    # make them visible to the mkkey tool
+    # make them visible to the ghsecret tool
     export GH_KEY GH_KEY_ID TUNNEL
 
     # create/update the needed secrets on Github
-    mkkey TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
-    mkkey TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
-    mkkey TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
+    ghsecret TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
+    ghsecret TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
+    ghsecret TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
 }
 
 
 # check if we have everything...
-if ! which &>/dev/null ngrok gh curl tmux mkkey; then
+if ! which &>/dev/null ngrok gh curl tmux ghsecret; then
     # color="\033[31;40m"
     color="\033[31m"
     nocolor="\033[0m"
@@ -110,6 +119,8 @@ if [ "$1" == "start" ]; then
     start
 elif [ "$1" == "stop" ]; then
     stop
+elif [ "$1" == "open" ]; then
+    open
 elif [ "$1" == "force" ]; then
     remove_secrets
 elif [[ "$1" =~ -h|--help|help ]]; then

@@ -27,12 +27,15 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, data.ID.Value, "1h")
+	common.Converge(
+		ctx, r.cfg.Client(), &resp.Diagnostics,
+		data.ID.ValueString(), "1h",
+	)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.ID.Value, false)
+	lab, err := r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddWarning(
 			CML2ErrorLabel,
@@ -42,7 +45,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 
 	if lab.Running() {
-		err = r.cfg.Client().LabStop(ctx, data.ID.Value)
+		err = r.cfg.Client().LabStop(ctx, data.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddWarning(
 				CML2ErrorLabel,
@@ -50,7 +53,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 			)
 			return
 		}
-		err = r.cfg.Client().LabWipe(ctx, data.ID.Value)
+		err = r.cfg.Client().LabWipe(ctx, data.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddWarning(
 				CML2ErrorLabel,
@@ -65,7 +68,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	err = r.cfg.Client().LabDestroy(ctx, data.ID.Value)
+	err = r.cfg.Client().LabDestroy(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

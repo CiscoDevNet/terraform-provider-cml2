@@ -23,8 +23,8 @@ type GroupModel struct {
 func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) attr.Value {
 
 	newGroup := GroupModel{
-		ID:         types.String{Value: group.ID},
-		Permission: types.String{Value: group.Permission},
+		ID:         types.StringValue(group.ID),
+		Permission: types.StringValue(group.Permission),
 	}
 	var value attr.Value
 	diags.Append(

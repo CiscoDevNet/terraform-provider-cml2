@@ -98,37 +98,35 @@ func Interface() map[string]tfsdk.Attribute {
 
 func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
 
-	ip4List := types.List{ElemType: types.StringType, Null: true}
-	ip6List := types.List{ElemType: types.StringType, Null: true}
-	macAddress := types.String{Null: true}
+	ip4List := types.ListNull(types.StringType)
+	ip6List := types.ListNull(types.StringType)
+	var macAddress types.String
 
 	if iface.Runs() {
 		// IPv4 addresses
 		list := make([]attr.Value, 0)
 		for _, ip := range iface.IP4 {
-			list = append(list, types.String{Value: ip})
+			list = append(list, types.StringValue(ip))
 		}
-		ip4List.Elems = list
-		ip4List.Null = false
+		ip4List, _ = types.ListValue(types.StringType, list)
 		// IPv6 addresses
-		list = make([]attr.Value, 0)
+		list = nil
 		for _, ip := range iface.IP6 {
-			list = append(list, types.String{Value: ip})
+			list = append(list, types.StringValue(ip))
 		}
-		ip6List.Elems = list
-		ip6List.Null = false
+		ip6List, _ = types.ListValue(types.StringType, list)
 	}
 	if iface.Exists() {
-		macAddress = types.String{Value: iface.MACaddress}
+		macAddress = types.StringValue(iface.MACaddress)
 	} else {
-		macAddress = types.String{Null: true, Unknown: true}
+		macAddress = types.StringNull()
 	}
 
 	newIface := InterfaceModel{
-		Id:          types.String{Value: iface.ID},
-		Label:       types.String{Value: iface.Label},
-		State:       types.String{Value: iface.State},
-		IsConnected: types.Bool{Value: iface.IsConnected},
+		Id:          types.StringValue(iface.ID),
+		Label:       types.StringValue(iface.Label),
+		State:       types.StringValue(iface.State),
+		IsConnected: types.BoolValue(iface.IsConnected),
 		MACaddress:  macAddress,
 		IP4:         ip4List,
 		IP6:         ip6List,

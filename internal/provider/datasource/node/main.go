@@ -81,7 +81,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.Value, true) // deep!
+	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true) // deep!
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -90,7 +90,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	node, found := lab.Nodes[data.ID.Value]
+	node, found := lab.Nodes[data.ID.ValueString()]
 	if !found {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

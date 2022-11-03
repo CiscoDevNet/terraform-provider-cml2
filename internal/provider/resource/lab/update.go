@@ -15,7 +15,7 @@ import (
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		planData *schema.LabModel
+		planData schema.LabModel
 		err      error
 	)
 
@@ -27,10 +27,10 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	lab := cmlclient.Lab{
-		ID:          planData.ID.Value,
-		Notes:       planData.Notes.Value,
-		Description: planData.Description.Value,
-		Title:       planData.Title.Value,
+		ID:          planData.ID.ValueString(),
+		Notes:       planData.Notes.ValueString(),
+		Description: planData.Description.ValueString(),
+		Title:       planData.Title.ValueString(),
 	}
 
 	newLab, err := r.cfg.Client().LabUpdate(ctx, lab)

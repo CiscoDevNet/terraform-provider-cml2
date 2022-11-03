@@ -10,6 +10,7 @@ import (
 
 type LabLifecycleModel struct {
 	ID       types.String `tfsdk:"id"`
+	LabID    types.String `tfsdk:"lab_id"`
 	Topology types.String `tfsdk:"topology"`
 	Wait     types.Bool   `tfsdk:"wait"`
 	State    types.String `tfsdk:"state"`
@@ -23,10 +24,16 @@ type LabLifecycleModel struct {
 
 func Lifecycle() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
-
 		"id": {
+			Computed:    true,
+			Description: "resource identifier, a UUID.",
+			PlanModifiers: tfsdk.AttributePlanModifiers{
+				resource.UseStateForUnknown(),
+			},
+			Type: types.StringType,
+		},
+		"lab_id": {
 			Optional:            true,
-			Computed:            true,
 			MarkdownDescription: "CML lab identifier, a UUID. If set, `elements` must be configured as well.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
