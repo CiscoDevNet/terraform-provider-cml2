@@ -32,7 +32,7 @@ func TestAccLifecycleResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLinkResourceConfig(cfg.Cfg),
+				Config: testAccLifecyclekResourceConfig(cfg.Cfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 				),
@@ -56,7 +56,64 @@ func TestAccLifecycleResource(t *testing.T) {
 	})
 }
 
-func testAccLinkResourceConfig(cfg string) string {
+func TestAccLifecycleSequence(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccLifecycleSequence(cfg.Cfg, 0),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+				),
+			},
+			{
+				Config: testAccLifecycleSequence(cfg.Cfg, 1),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STOPPED"),
+				),
+			},
+			{
+				Config: testAccLifecycleSequence(cfg.Cfg, 2),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+				),
+			},
+			{
+				Config: testAccLifecycleSequence(cfg.Cfg, 3),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+				),
+			},
+			{
+				Config: testAccLifecycleSequence(cfg.Cfg, 4),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+				),
+			},
+			// ImportState testing
+			// {
+			// 	ResourceName:      "cml2_link.test",
+			// 	ImportState:       true,
+			// 	ImportStateVerify: true,
+			// },
+			// Update and Read testing
+			// {
+			// 	Config: testAccLabResourceConfig(cfg.Cfg),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
+			// 		resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
+			// 	),
+			// },
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func testAccLifecyclekResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
@@ -88,4 +145,54 @@ resource "cml2_lifecycle" "top" {
 	]
 }
 `, cfg)
+}
+
+func testAccLifecycleSequence(cfg string, seq int) string {
+	f := func(state string) string { return fmt.Sprintf("state = %q", state) }
+	var state string
+	switch seq {
+	case 0:
+		state = ""
+	case 1:
+		state = f("STOPPED")
+	case 2:
+		state = f("DEFINED_ON_CORE")
+	case 3:
+		state = f("STARTED")
+	case 4:
+		state = f("DEFINED_ON_CORE")
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+	title = "lifecycle seq ac-test"
+}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  nodedefinition = "external_connector"
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.this.id
+  label          = "R1"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_link" "l1" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ext.id
+  node_b = cml2_node.r1.id
+}
+resource "cml2_lifecycle" "top" {
+	id = cml2_lab.this.id
+	elements = [
+		cml2_node.ext.id,
+		cml2_node.r1.id,
+		cml2_link.l1.id,
+	]
+	%[2]s
+}
+`, cfg, state)
 }

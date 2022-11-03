@@ -25,9 +25,9 @@ func getTimeouts(ctx context.Context, config tfsdk.Config, diags *diag.Diagnosti
 	if diags.HasError() || timeouts == nil {
 		tflog.Warn(ctx, "timeouts undefined, using defaults")
 		return &labLifecycleTimeouts{
-			Create: types.String{Value: "2h"},
-			Delete: types.String{Value: "2h"},
-			Update: types.String{Value: "2h"},
+			Create: types.StringValue("2h"),
+			Delete: types.StringValue("2h"),
+			Update: types.StringValue("2h"),
 		}
 	}
 	tflog.Info(ctx, fmt.Sprintf("timeouts: %+v", timeouts))

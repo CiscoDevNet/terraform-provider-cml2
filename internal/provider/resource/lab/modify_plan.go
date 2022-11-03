@@ -12,9 +12,13 @@ import (
 
 func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var stateData, planData *schema.LabModel
+	var stateData, planData schema.LabModel
 
-	tflog.Info(ctx, "Resource Lab ModifyPlan")
+	tflog.Info(ctx, "Resource Lab MODIFYPLAN")
+
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
@@ -28,16 +32,11 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		return
 	}
 
-	// when deleting, there's no plan
-	if planData == nil {
-		return
-	}
-
 	// if state and plan are identical -> modified date has changed
 	// this gets auto-updated when we change something
 	if !reflect.DeepEqual(stateData, planData) {
 		planData.Modified = types.StringUnknown()
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
-	tflog.Info(ctx, "Resource Lab ModifyPlan: done")
+	tflog.Info(ctx, "Resource Lab MODIFYPLAN: done")
 }

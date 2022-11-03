@@ -2,7 +2,13 @@
 
 # Terraform Provider for Cisco CML2
 
-This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "work-in-progress".  The current implementation provides:
+This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "beta". Changes can be expected, for example:
+
+    - configuration (provider, resources, data-sources)
+    - provider behavior
+    - features (additional resources, ...)
+
+ The current implementation provides:
 
 - Resources and a data sources (`internal/provider/`),
   - resource `cml2_lab` to create, update and destroy labs

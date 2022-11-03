@@ -15,7 +15,7 @@ import (
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		planData *schema.LabModel
+		planData schema.LabModel
 		err      error
 	)
 

@@ -15,16 +15,14 @@ import (
 
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var configData, planData, stateData *schema.LabLifecycleModel
+	var configData, planData, stateData schema.LabLifecycleModel
 
-	// Read Terraform plan data into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
-	if resp.Diagnostics.HasError() {
+	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN")
+
+	// configuration data for the resource
+	if req.Config.Raw.IsNull() {
 		return
 	}
-
-	tflog.Info(ctx, "ModifyPlan")
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -39,15 +37,16 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 	}
 
-	// get the planned state
-	resp.Diagnostics.Append(resp.Plan.Get(ctx, &planData)...)
-	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "ModifyPlan: plan has errors")
+	// not much to do without a plan...
+	if req.Plan.Raw.IsNull() {
+		tflog.Error(ctx, "ModifyPlan: no plan exists...")
 		return
 	}
 
-	if planData == nil {
-		tflog.Error(ctx, "ModifyPlan: no plan exists...")
+	// get the planned state
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, "ModifyPlan: plan has errors")
 		return
 	}
 
@@ -69,6 +68,10 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 	}
 
+	if configData.State.IsNull() {
+		planData.State = types.StringValue("STARTED")
+	}
+
 	changeNeeded := false
 	if !noState {
 		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
@@ -86,17 +89,44 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 
 		for id, node := range nodes {
 
+			planState := planData.State.ValueString()
+
 			// these all need to be re-read when state changes...  based on
 			// actual state change, these can be optimized to provide a better
 			// state diff -- but it works for now
-			node.State = types.StringUnknown()
-			node.DataVolume = types.Int64Unknown()
-			node.ComputeID = types.StringUnknown()
-			node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
-			node.CPUs = types.Int64Unknown()
-			node.VNCkey = types.StringUnknown()
-			node.RAM = types.Int64Unknown()
-			node.BootDiskSize = types.Int64Unknown()
+
+			// node.DataVolume = types.Int64Unknown()
+			// node.CPUs = types.Int64Unknown()
+			// node.RAM = types.Int64Unknown()
+			// node.BootDiskSize = types.Int64Unknown()
+
+			if planState != "STARTED" {
+				node.State = types.StringValue(planData.State.ValueString())
+			}
+
+			if planData.State.ValueString() == "DEFINED_ON_CORE" {
+				node.SerialDevices = types.ListNull(schema.SerialDevicesAttrType)
+				node.VNCkey = types.StringNull()
+				node.ComputeID = types.StringNull()
+				node.DataVolume = types.Int64Null()
+				node.CPUs = types.Int64Null()
+				node.RAM = types.Int64Null()
+				node.BootDiskSize = types.Int64Null()
+				node.State = types.StringValue("DEFINED_ON_CORE")
+			}
+			if planData.State.ValueString() == "STARTED" {
+				node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
+				node.VNCkey = types.StringUnknown()
+				node.ComputeID = types.StringUnknown()
+				node.DataVolume = types.Int64Unknown()
+				node.CPUs = types.Int64Unknown()
+				node.RAM = types.Int64Unknown()
+				node.BootDiskSize = types.Int64Unknown()
+				node.State = types.StringUnknown()
+			}
+			if planData.State.ValueString() == "STOPPED" {
+				node.State = types.StringValue("STOPPED")
+			}
 
 			// This is a bit of a hack since the node def name is hard coded
 			// here.  what happens is that UMS nodes get the bridge name as the
@@ -114,22 +144,48 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				return
 			}
 
+			// planState := planData.State.ValueString()
+			// for idx := range ifaces {
+			// 	ifaces[idx].IP4 = types.ListUnknown(types.StringType)
+			// 	ifaces[idx].IP6 = types.ListUnknown(types.StringType)
+			// 	// we know that when we wipe, the MAC is going to be null
+			// 	if planState == "DEFINED_ON_CORE" {
+			// 		ifaces[idx].MACaddress = types.StringNull()
+			// 		ifaces[idx].IP4 = types.ListNull(types.StringType)
+			// 		ifaces[idx].IP6 = types.ListNull(types.StringType)
+			// 	} else {
+			// 		// MACaddresses won't change at state change if one was assigned
+			// 		if ifaces[idx].MACaddress.IsNull() {
+			// 			ifaces[idx].MACaddress = types.StringUnknown()
+			// 		}
+			// 	}
+			// 	// if planData.State.ValueString() == "STOPPED" {
+			// 	// 	ifaces[idx].IP4 = types.ListNull(types.StringType)
+			// 	// 	ifaces[idx].IP6 = types.ListNull(types.StringType)
+			// 	// }
+			// 	ifaces[idx].State = types.StringUnknown()
+
 			for idx := range ifaces {
-				ifaces[idx].IP4 = types.ListUnknown(types.StringType)
-				ifaces[idx].IP6 = types.ListUnknown(types.StringType)
-				// we know that when we wipe, the MAC is going to be null
-				if planData.State.ValueString() == "DEFINED_ON_CORE" {
-					ifaces[idx].MACaddress = types.StringNull()
-					ifaces[idx].IP4 = types.ListNull(types.StringType)
-					ifaces[idx].IP6 = types.ListNull(types.StringType)
-				} else {
+				if planState == "STARTED" {
+					ifaces[idx].IP4 = types.ListUnknown(types.StringType)
+					ifaces[idx].IP6 = types.ListUnknown(types.StringType)
 					// MACaddresses won't change at state change if one was assigned
 					if ifaces[idx].MACaddress.IsNull() {
 						ifaces[idx].MACaddress = types.StringUnknown()
 					}
+					ifaces[idx].State = types.StringUnknown()
 				}
-				ifaces[idx].State = types.StringUnknown()
-
+				if planState == "DEFINED_ON_CORE" || planState == "STOPPED" {
+					ifaces[idx].IP4 = types.ListNull(types.StringType)
+					ifaces[idx].IP6 = types.ListNull(types.StringType)
+				}
+				if planState == "DEFINED_ON_CORE" {
+					ifaces[idx].MACaddress = types.StringNull()
+					ifaces[idx].State = types.StringValue("DEFINED_ON_CORE")
+				}
+				if planState == "STOPPED" {
+					ifaces[idx].State = types.StringValue("STOPPED")
+				}
 			}
 
 			resp.Diagnostics.Append(
@@ -158,10 +214,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			return
 		}
 
-		// booted state of lab is unknown at this point
-		planData.Booted = types.BoolUnknown()
+		// booted state of lab is unknown if the plan is to start
+		if planData.State.ValueString() == "STARTED" {
+			planData.Booted = types.BoolUnknown()
+		} else {
+			planData.Booted = types.BoolValue(false)
+		}
 	}
 
-	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
-	tflog.Info(ctx, "ModifyPlan: done")
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
+
+	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN: done")
 }

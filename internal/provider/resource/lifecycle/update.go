@@ -108,9 +108,9 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
-	planData.State = types.String{Value: lab.State}
+	planData.State = types.StringValue(lab.State)
 	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
-	planData.Booted = types.Bool{Value: lab.Booted()}
+	planData.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)
 	tflog.Info(ctx, "Update: done")

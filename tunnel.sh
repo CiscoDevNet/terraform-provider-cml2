@@ -21,7 +21,7 @@ $cmd -h | --help | help -- shows this help
 Requirements:
 - TF_VAR_username and TF_VAR_password environment variables with CML credentials
 - authorized gh tool (Github cli)
-- curl, mkkey, ngrok and tmux in the path
+- curl, ghsecret, ngrok and tmux in the path
 - ngrok authtoken provided via ~/.ngrok2/ngrok.yml
 
 Repo name and CML controller URL can be configured at the top of this script.
@@ -85,18 +85,18 @@ function start() {
     # read the public github key for our repo
     read -d' ' GH_KEY_ID GH_KEY <<< "$(gh api /repos/$REPO/actions/secrets/public-key | jq -r '.|.key_id, .key')"
 
-    # make them visible to the mkkey tool
+    # make them visible to the ghsecret tool
     export GH_KEY GH_KEY_ID TUNNEL
 
     # create/update the needed secrets on Github
-    mkkey TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
-    mkkey TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
-    mkkey TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
+    ghsecret TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
+    ghsecret TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
+    ghsecret TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
 }
 
 
 # check if we have everything...
-if ! which &>/dev/null ngrok gh curl tmux mkkey; then
+if ! which &>/dev/null ngrok gh curl tmux ghsecret; then
     # color="\033[31;40m"
     color="\033[31m"
     nocolor="\033[0m"

@@ -14,7 +14,7 @@ import (
 
 func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
-		data *schema.LabLifecycleModel
+		data schema.LabLifecycleModel
 		err  error
 	)
 
@@ -39,7 +39,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		data.ID = types.String{Value: start.lab.ID}
+		data.ID = types.StringValue(start.lab.ID)
 	} else {
 		start.lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), true)
 		if err != nil {
@@ -52,7 +52,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// inject the configurations into the nodes
-	r.injectConfigs(ctx, start.lab, data, &resp.Diagnostics)
+	r.injectConfigs(ctx, start.lab, &data, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -72,11 +72,11 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.ID = types.String{Value: lab.ID}
-	data.State = types.String{Value: lab.State}
+	data.ID = types.StringValue(lab.ID)
+	data.State = types.StringValue(lab.State)
 	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
-	data.Booted = types.Bool{Value: lab.Booted()}
+	data.Booted = types.BoolValue(lab.Booted())
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	tflog.Info(ctx, "Create: done")
 }

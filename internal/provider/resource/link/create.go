@@ -17,7 +17,7 @@ import (
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data *schema.LinkModel
+		data schema.LinkModel
 		err  error
 	)
 

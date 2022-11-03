@@ -13,7 +13,7 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 
 	var planData schema.NodeModel
 
-	tflog.Info(ctx, "Resource Node ModifyPlan")
+	tflog.Info(ctx, "Resource Node MODIFYPLAN")
 
 	// when deleting, there's no plan
 	if req.Plan.Raw.IsNull() {
@@ -38,5 +38,5 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 
-	tflog.Info(ctx, "Resource Node ModifyPlan: done")
+	tflog.Info(ctx, "Resource Node MODIFYPLAN: done")
 }

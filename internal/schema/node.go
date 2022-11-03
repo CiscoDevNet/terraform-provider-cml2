@@ -318,6 +318,10 @@ func Node() map[string]tfsdk.Attribute {
 
 func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
 
+	if len(node.SerialDevices) == 0 {
+		return types.ListNull(SerialDevicesAttrType)
+	}
+
 	valueList := make([]attr.Value, 0)
 	for _, serial_device := range node.SerialDevices {
 
@@ -373,15 +377,15 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		X:               types.Int64Value(int64(node.X)),
 		Y:               types.Int64Value(int64(node.Y)),
 		SerialDevices:   newSerialDevices(ctx, node, diags),
-		CPUs:            types.Int64Value(int64(node.CPUs)),
 		CPUlimit:        types.Int64Value(int64(node.CPUlimit)),
-		RAM:             types.Int64Value(int64(node.RAM)),
-		VNCkey:          types.StringValue(node.VNCkey),
 
 		// these values are null if there's no compute ID
 		ComputeID:    types.StringNull(),
+		VNCkey:       types.StringNull(),
 		BootDiskSize: types.Int64Null(),
 		DataVolume:   types.Int64Null(),
+		CPUs:         types.Int64Null(),
+		RAM:          types.Int64Null(),
 	}
 
 	// set them, if there IS a compute ID
@@ -389,6 +393,9 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		newNode.ComputeID = types.StringValue(node.ComputeID)
 		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
 		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
+		newNode.VNCkey = types.StringValue(node.VNCkey)
+		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+		newNode.RAM = types.Int64Value(int64(node.RAM))
 	}
 
 	var value attr.Value

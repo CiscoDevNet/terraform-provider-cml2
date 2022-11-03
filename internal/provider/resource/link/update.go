@@ -10,7 +10,7 @@ import (
 
 func (r LinkResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
-	var planData *schema.LinkModel
+	var planData schema.LinkModel
 
 	tflog.Info(ctx, "Resource Link UPDATE")
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
