@@ -80,7 +80,7 @@ func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.Valid
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if data.ID.Null && data.Title.Null {
+	if data.ID.IsNull() && data.Title.IsNull() {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
 			"need to provide either title to search for or a lab ID",
@@ -104,10 +104,10 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		lab *cmlclient.Lab
 		err error
 	)
-	if data.ID.Null {
-		lab, err = d.cfg.Client().LabGetByTitle(ctx, data.Title.Value, false)
+	if data.ID.IsNull() {
+		lab, err = d.cfg.Client().LabGetByTitle(ctx, data.Title.ValueString(), false)
 	} else {
-		lab, err = d.cfg.Client().LabGet(ctx, data.ID.Value, false)
+		lab, err = d.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(

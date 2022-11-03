@@ -74,7 +74,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace (
-// 	github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient
-// 	github.com/rschmied/mockresponder => /home/rschmied/Projects/mockresponder
-// )
+replace github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient

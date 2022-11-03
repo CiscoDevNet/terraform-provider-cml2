@@ -30,13 +30,13 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	lab := cmlclient.Lab{}
 	if !data.Notes.IsNull() {
-		lab.Notes = data.Notes.Value
+		lab.Notes = data.Notes.ValueString()
 	}
 	if !data.Description.IsNull() {
-		lab.Description = data.Description.Value
+		lab.Description = data.Description.ValueString()
 	}
 	if !data.Title.IsNull() {
-		lab.Title = data.Title.Value
+		lab.Title = data.Title.ValueString()
 	}
 
 	newLab, err := r.cfg.Client().LabCreate(ctx, lab)

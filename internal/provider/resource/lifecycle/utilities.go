@@ -41,8 +41,7 @@ func getStaging(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostic
 	// default for this is true
 	if staging != nil && staging.StartRemaining.IsNull() {
 		tflog.Info(ctx, "setting start remaining to true, default value")
-		staging.StartRemaining.Null = false
-		staging.StartRemaining.Value = true
+		staging.StartRemaining = types.BoolValue(true)
 	}
 	return staging
 }
@@ -84,7 +83,7 @@ func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Di
 	}
 	tflog.Info(ctx, "lab start done")
 	if start.wait {
-		timeout := start.timeouts.Create.Value
+		timeout := start.timeouts.Create.ValueString()
 		common.Converge(ctx, r.cfg.Client(), diags, start.lab.ID, timeout)
 	}
 }
@@ -98,8 +97,8 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 	}
 
 	// start nodes in stages
-	for _, stage_elem := range start.staging.Stages.Elems {
-		stage := stage_elem.(types.String).Value
+	for _, stage_elem := range start.staging.Stages.Elements() {
+		stage := stage_elem.(types.String).ValueString()
 		for _, node := range start.lab.Nodes {
 			for _, tag := range node.Tags {
 				if tag == stage {
@@ -116,12 +115,12 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 		}
 		// this is not 100% correct as the timeout is applied to each stage
 		// should be: timeout applied to all stages combined
-		timeout := start.timeouts.Create.Value
+		timeout := start.timeouts.Create.ValueString()
 		common.Converge(ctx, r.cfg.Client(), diags, start.lab.ID, timeout)
 	}
 
 	// start remaining nodes, if indicated
-	if start.staging.StartRemaining.Value {
+	if start.staging.StartRemaining.ValueBool() {
 		tflog.Info(ctx, "starting remaining nodes")
 		r.startNodesAll(ctx, diags, start)
 	}
@@ -135,7 +134,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 		return
 	}
 
-	for nodeID, config := range data.Configs.Elems {
+	for nodeID, config := range data.Configs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
 		if err == cmlclient.ErrElementNotFound {
 			node = lab.Nodes[nodeID]
@@ -148,7 +147,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 			diags.AddError(CML2ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
 			continue
 		}
-		config_string := config.(types.String).Value
+		config_string := config.(types.String).ValueString()
 		err = r.cfg.Client().NodeSetConfig(ctx, node, config_string)
 		if err != nil {
 			diags.AddError("set node config failed",
@@ -168,12 +167,13 @@ func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *cmlclient
 	sort.Slice(nodeList, func(i, j int) bool {
 		return nodeList[i].ID < nodeList[j].ID
 	})
-	nodes := types.Map{
-		ElemType: types.ObjectType{AttrTypes: schema.NodeAttrType},
-		Elems:    make(map[string]attr.Value),
-	}
+	valueMap := make(map[string]attr.Value, 0)
 	for _, node := range nodeList {
-		nodes.Elems[node.ID] = schema.NewNode(ctx, node, diags)
+		valueMap[node.ID] = schema.NewNode(ctx, node, diags)
 	}
+	nodes, _ := types.MapValue(
+		types.ObjectType{AttrTypes: schema.NodeAttrType},
+		valueMap,
+	)
 	return nodes
 }

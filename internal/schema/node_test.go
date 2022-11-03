@@ -54,7 +54,7 @@ func TestNewNode(t *testing.T) {
 	diag.Append(tfsdk.ValueAs(ctx, value, &newNode)...)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
-	assert.Len(t, newNode.Interfaces.Elems, 2)
+	assert.Len(t, newNode.Interfaces.Elements(), 2)
 }
 
 func TestNodeAttrs(t *testing.T) {

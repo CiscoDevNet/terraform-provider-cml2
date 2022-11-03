@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
@@ -35,7 +36,7 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// if state and plan are identical -> modified date has changed
 	// this gets auto-updated when we change something
 	if !reflect.DeepEqual(stateData, planData) {
-		planData.Modified.Unknown = true
+		planData.Modified = types.StringUnknown()
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
 	tflog.Info(ctx, "Resource Lab ModifyPlan: done")

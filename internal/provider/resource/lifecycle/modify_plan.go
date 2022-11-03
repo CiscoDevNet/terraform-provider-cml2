@@ -64,15 +64,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	// }
 
 	// check if we can transition to specified state
-	if planData.State.Value == cmlclient.LabStateStopped {
-		if !noState && stateData.State.Value == cmlclient.LabStateDefined {
+	if planData.State.ValueString() == cmlclient.LabStateStopped {
+		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
 				"can't transition from DEFINED_ON_CORE to STOPPED",
 			)
 			return
 		}
-		if noState && planData.State.Value == cmlclient.LabStateStopped {
+		if noState && planData.State.ValueString() == cmlclient.LabStateStopped {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
 				"can't transition from no state to STOPPED",
@@ -83,7 +83,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 
 	changeNeeded := false
 	if !noState {
-		changeNeeded = planData.State.Value != stateData.State.Value
+		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
 	}
 
 	if changeNeeded {
@@ -101,29 +101,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			// these all need to be re-read when state changes...  based on
 			// actual state change, these can be optimized to provide a better
 			// state diff -- but it works for now
-			node.State.Unknown = true
-			node.State.Null = false
-
-			node.DataVolume.Unknown = true
-			node.DataVolume.Null = false
-
-			node.ComputeID.Unknown = true
-			node.ComputeID.Null = false
-
-			node.SerialDevices.Unknown = true
-			node.SerialDevices.Null = false
-
-			node.CPUs.Unknown = true
-			node.CPUs.Null = false
-
-			node.VNCkey.Unknown = true
-			node.VNCkey.Null = false
-
-			node.RAM.Unknown = true
-			node.RAM.Null = false
-
-			node.BootDiskSize.Unknown = true
-			node.BootDiskSize.Null = false
+			node.State = types.StringUnknown()
+			node.DataVolume = types.Int64Unknown()
+			node.ComputeID = types.StringUnknown()
+			node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
+			node.CPUs = types.Int64Unknown()
+			node.VNCkey = types.StringUnknown()
+			node.RAM = types.Int64Unknown()
+			node.BootDiskSize = types.Int64Unknown()
 
 			// This is a bit of a hack since the node def name is hard coded
 			// here.  what happens is that UMS nodes get the bridge name as the
@@ -131,8 +116,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			// start, the configuration is set to the name of the bridge, like
 			// ums-b843d547-54.
 			// As an alternative, all configurations could be set to "Unknown"
-			if node.NodeDefinition.Value == "unmanaged_switch" {
-				node.Configuration.Unknown = true
+			if node.NodeDefinition.ValueString() == "unmanaged_switch" {
+				node.Configuration = types.StringUnknown()
 			}
 
 			var ifaces []schema.InterfaceModel
@@ -142,24 +127,19 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			}
 
 			for idx := range ifaces {
-				ifaces[idx].IP4.Unknown = true
-				ifaces[idx].IP6.Unknown = true
+				ifaces[idx].IP4 = types.ListUnknown(types.StringType)
+				ifaces[idx].IP6 = types.ListUnknown(types.StringType)
 				// we know that when we wipe, the MAC is going to be null
-				if planData.State.Value == "DEFINED_ON_CORE" {
-					ifaces[idx].MACaddress.Unknown = false
-					ifaces[idx].MACaddress.Null = true
+				if planData.State.ValueString() == "DEFINED_ON_CORE" {
+					ifaces[idx].MACaddress = types.StringNull()
 				} else {
 					// MACaddresses won't change at state change if one was assigned
-					if ifaces[idx].MACaddress.Null {
-						ifaces[idx].MACaddress.Unknown = true
-						ifaces[idx].MACaddress.Null = false // why? oh, why!
+					if ifaces[idx].MACaddress.IsNull() {
+						ifaces[idx].MACaddress = types.StringUnknown()
 					}
 				}
-				ifaces[idx].State.Unknown = true
+				ifaces[idx].State = types.StringUnknown()
 
-				// iface := ifaces[idx]
-				// tflog.Info(ctx, fmt.Sprintf("mac: %v/%v", iface.MACaddress.Null, iface.MACaddress.Unknown))
-				// tflog.Info(ctx, fmt.Sprintf("ip4: %v/%v", iface.IP4.Null, iface.IP4.Unknown))
 			}
 
 			resp.Diagnostics.Append(
@@ -189,7 +169,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 
 		// booted state of lab is unknown at this point
-		planData.Booted.Unknown = true
+		planData.Booted = types.BoolUnknown()
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)

@@ -25,7 +25,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, "Read: start")
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.ID.Value, true)
+	lab, err := r.cfg.Client().LabGet(ctx, data.ID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

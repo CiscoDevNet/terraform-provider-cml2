@@ -26,12 +26,12 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	start := startData{
 		staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
 		timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
-		wait:     data.Wait.Null || data.Wait.Value,
+		wait:     data.Wait.IsNull() || data.Wait.ValueBool(),
 	}
 
 	if data.ID.IsUnknown() {
 		tflog.Info(ctx, "Create: import")
-		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.Value)
+		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
@@ -41,7 +41,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		}
 		data.ID = types.String{Value: start.lab.ID}
 	} else {
-		start.lab, err = r.cfg.Client().LabGet(ctx, data.ID.Value, true)
+		start.lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
@@ -58,7 +58,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// if unknown state or specifically "start" state, start the lab...
-	if data.State.Unknown || data.State.Value == cmlclient.LabStateStarted {
+	if data.State.IsUnknown() || data.State.ValueString() == cmlclient.LabStateStarted {
 		r.startNodes(ctx, &resp.Diagnostics, start)
 	}
 

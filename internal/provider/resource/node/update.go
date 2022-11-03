@@ -15,7 +15,7 @@ import (
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		stateData, planData *schema.NodeModel
+		stateData, planData schema.NodeModel
 		err                 error
 	)
 
@@ -32,53 +32,53 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	node := &cmlclient.Node{
-		ID:    planData.ID.Value,
-		LabID: planData.LabID.Value,
+		ID:    planData.ID.ValueString(),
+		LabID: planData.LabID.ValueString(),
 	}
 
 	if !planData.X.IsNull() {
-		node.X = int(planData.X.Value)
+		node.X = int(planData.X.ValueInt64())
 	}
 	if !planData.Y.IsNull() {
-		node.Y = int(planData.Y.Value)
+		node.Y = int(planData.Y.ValueInt64())
 	}
 	if !planData.Label.IsNull() {
-		node.Label = planData.Label.Value
+		node.Label = planData.Label.ValueString()
 	}
 	if !planData.Tags.IsNull() {
+		var tag types.String
 		tags := []string{}
-		tag := types.String{}
-		for _, elem := range planData.Tags.Elems {
+		for _, elem := range planData.Tags.Elements() {
 			// Ignore error and diagnostics for the simple conversion here
 			// Can't use elem.String() here as that has the value in quotes!
 			tfsdk.ValueAs(ctx, elem, &tag)
-			tags = append(tags, tag.Value)
+			tags = append(tags, tag.ValueString())
 		}
 		node.Tags = tags
 	}
 
 	// these can only be changed when the node is DEFINED_ON_CORE
-	if stateData.State.Value == cmlclient.LabStateDefined {
+	if stateData.State.ValueString() == cmlclient.LabStateDefined {
 		if !planData.Configuration.IsNull() {
-			node.Configuration = planData.Configuration.Value
+			node.Configuration = planData.Configuration.ValueString()
 		}
 		if !planData.RAM.IsNull() {
-			node.RAM = int(planData.RAM.Value)
+			node.RAM = int(planData.RAM.ValueInt64())
 		}
 		if !planData.CPUs.IsNull() {
-			node.CPUs = int(planData.CPUs.Value)
+			node.CPUs = int(planData.CPUs.ValueInt64())
 		}
 		if !planData.CPUlimit.IsNull() {
-			node.CPUlimit = int(planData.CPUlimit.Value)
+			node.CPUlimit = int(planData.CPUlimit.ValueInt64())
 		}
 		if !planData.BootDiskSize.IsNull() {
-			node.BootDiskSize = int(planData.BootDiskSize.Value)
+			node.BootDiskSize = int(planData.BootDiskSize.ValueInt64())
 		}
 		if !planData.DataVolume.IsNull() {
-			node.DataVolume = int(planData.DataVolume.Value)
+			node.DataVolume = int(planData.DataVolume.ValueInt64())
 		}
 		if !planData.ImageDefinition.IsNull() {
-			node.ImageDefinition = planData.ImageDefinition.Value
+			node.ImageDefinition = planData.ImageDefinition.ValueString()
 		}
 	}
 

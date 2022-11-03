@@ -39,8 +39,8 @@ func TestInterface(t *testing.T) {
 	diag.Append(tfsdk.ValueAs(ctx, value, &newIface)...)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
-	assert.Len(t, newIface.IP4.Elems, 1)
-	assert.Len(t, newIface.IP6.Elems, 1)
+	assert.Len(t, newIface.IP4.Elements(), 1)
+	assert.Len(t, newIface.IP6.Elements(), 1)
 }
 
 func TestInterfaceSchema(t *testing.T) {

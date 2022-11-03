@@ -23,7 +23,10 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	node := &cmlclient.Node{LabID: data.LabID.Value, ID: data.ID.Value}
+	node := &cmlclient.Node{
+		LabID: data.LabID.ValueString(),
+		ID:    data.ID.ValueString(),
+	}
 	node, err := r.cfg.Client().NodeGet(ctx, node, false)
 	if err != nil {
 		resp.Diagnostics.AddError(

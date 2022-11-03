@@ -32,13 +32,13 @@ func (v LabState) Validate(ctx context.Context, req tfsdk.ValidateAttributeReque
 		return
 	}
 
-	if labState.Unknown || labState.Null {
+	if labState.IsUnknown() || labState.IsNull() {
 		return
 	}
 
-	if labState.Value != cmlclient.LabStateDefined &&
-		labState.Value != cmlclient.LabStateStopped &&
-		labState.Value != cmlclient.LabStateStarted {
+	if labState.ValueString() != cmlclient.LabStateDefined &&
+		labState.ValueString() != cmlclient.LabStateStopped &&
+		labState.ValueString() != cmlclient.LabStateStarted {
 		resp.Diagnostics.AddAttributeError(
 			req.AttributePath,
 			"Invalid lab state",

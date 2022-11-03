@@ -35,17 +35,17 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	if stateData.State.Value != planData.State.Value {
+	if stateData.State.ValueString() != planData.State.ValueString() {
 		tflog.Info(ctx, "state changed")
 
 		start := startData{
 			staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
 			timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
-			wait:     planData.Wait.Null || planData.Wait.Value,
+			wait:     planData.Wait.IsNull() || planData.Wait.ValueBool(),
 		}
 
 		// need to get the lab data here
-		start.lab, err = r.cfg.Client().LabGet(ctx, planData.ID.Value, true)
+		start.lab, err = r.cfg.Client().LabGet(ctx, planData.ID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
@@ -55,29 +55,32 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// this is very blunt ...
-		if stateData.State.Value == cmlclient.LabStateStarted {
-			if planData.State.Value == cmlclient.LabStateStopped {
-				r.stop(ctx, resp.Diagnostics, planData.ID.Value)
+		if stateData.State.ValueString() == cmlclient.LabStateStarted {
+			if planData.State.ValueString() == cmlclient.LabStateStopped {
+				r.stop(ctx, resp.Diagnostics, planData.ID.ValueString())
 			}
-			if planData.State.Value == cmlclient.LabStateDefined {
-				r.stop(ctx, resp.Diagnostics, planData.ID.Value)
-				timeout := start.timeouts.Update.Value
-				common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.ID.Value, timeout)
-				r.wipe(ctx, resp.Diagnostics, planData.ID.Value)
+			if planData.State.ValueString() == cmlclient.LabStateDefined {
+				r.stop(ctx, resp.Diagnostics, planData.ID.ValueString())
+				timeout := start.timeouts.Update.ValueString()
+				common.Converge(
+					ctx, r.cfg.Client(), &resp.Diagnostics,
+					planData.ID.ValueString(), timeout,
+				)
+				r.wipe(ctx, resp.Diagnostics, planData.ID.ValueString())
 			}
 		}
 
-		if stateData.State.Value == cmlclient.LabStateStopped {
-			if planData.State.Value == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == cmlclient.LabStateStopped {
+			if planData.State.ValueString() == cmlclient.LabStateStarted {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
-			if planData.State.Value == cmlclient.LabStateDefined {
-				r.wipe(ctx, resp.Diagnostics, planData.ID.Value)
+			if planData.State.ValueString() == cmlclient.LabStateDefined {
+				r.wipe(ctx, resp.Diagnostics, planData.ID.ValueString())
 			}
 		}
 
-		if stateData.State.Value == cmlclient.LabStateDefined {
-			if planData.State.Value == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == cmlclient.LabStateDefined {
+			if planData.State.ValueString() == cmlclient.LabStateStarted {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 		}
@@ -86,14 +89,17 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		// level between "STARTED" and "BOOTED" (e.g. converged).  It's always
 		// started...
 		if start.wait {
-			timeout := start.timeouts.Update.Value
-			common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.ID.Value, timeout)
+			timeout := start.timeouts.Update.ValueString()
+			common.Converge(
+				ctx, r.cfg.Client(), &resp.Diagnostics,
+				planData.ID.ValueString(), timeout,
+			)
 		}
 	}
 
 	// since we have changed lab state, we need to re-read all the node
 	// state...
-	lab, err := r.cfg.Client().LabGet(ctx, planData.ID.Value, true)
+	lab, err := r.cfg.Client().LabGet(ctx, planData.ID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

@@ -17,7 +17,7 @@ import (
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data *schema.NodeModel
+		data schema.NodeModel
 		err  error
 	)
 
@@ -28,58 +28,49 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	// label
-	// nodedefiniton
-	// imagedefinition
-	// tags
-	// configuration
-	// x, y
-	// cpus, cpu_limit
-	// boot_disk_size, data_volume
-
 	node := cmlclient.Node{}
 
-	node.LabID = data.LabID.Value
+	node.LabID = data.LabID.ValueString()
 
 	if !data.Label.IsNull() {
-		node.Label = data.Label.Value
+		node.Label = data.Label.ValueString()
 	}
 	if !data.NodeDefinition.IsNull() {
-		node.NodeDefinition = data.NodeDefinition.Value
+		node.NodeDefinition = data.NodeDefinition.ValueString()
 	}
 	if !data.ImageDefinition.IsNull() {
-		node.ImageDefinition = data.ImageDefinition.Value
+		node.ImageDefinition = data.ImageDefinition.ValueString()
 	}
 	if !data.Tags.IsNull() {
 		tags := []string{}
-		for _, tag := range data.Tags.Elems {
-			tags = append(tags, tag.(types.String).Value)
+		for _, tag := range data.Tags.Elements() {
+			tags = append(tags, tag.(types.String).ValueString())
 		}
 		node.Tags = tags
 	}
 	if !data.Configuration.IsNull() {
-		node.Configuration = data.Configuration.Value
+		node.Configuration = data.Configuration.ValueString()
 	}
 	if !data.X.IsNull() {
-		node.X = int(data.X.Value)
+		node.X = int(data.X.ValueInt64())
 	}
 	if !data.Y.IsNull() {
-		node.Y = int(data.Y.Value)
+		node.Y = int(data.Y.ValueInt64())
 	}
 	if !data.CPUs.IsNull() {
-		node.CPUs = int(data.CPUs.Value)
+		node.CPUs = int(data.CPUs.ValueInt64())
 	}
 	if !data.CPUlimit.IsNull() {
-		node.CPUlimit = int(data.CPUlimit.Value)
+		node.CPUlimit = int(data.CPUlimit.ValueInt64())
 	}
 	if !data.BootDiskSize.IsNull() {
-		node.BootDiskSize = int(data.BootDiskSize.Value)
+		node.BootDiskSize = int(data.BootDiskSize.ValueInt64())
 	}
 	if !data.DataVolume.IsNull() {
-		node.DataVolume = int(data.DataVolume.Value)
+		node.DataVolume = int(data.DataVolume.ValueInt64())
 	}
 	if !data.RAM.IsNull() {
-		node.RAM = int(data.RAM.Value)
+		node.RAM = int(data.RAM.ValueInt64())
 	}
 
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)

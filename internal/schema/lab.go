@@ -166,28 +166,27 @@ func Lab() map[string]tfsdk.Attribute {
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
 func NewLab(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) attr.Value {
 
-	groups := types.List{
-		ElemType: types.ObjectType{
-			AttrTypes: GroupAttrType,
-		},
-	}
-
+	valueList := make([]attr.Value, 0)
 	for _, group := range lab.Groups {
 		value := NewGroup(ctx, group, diags)
-		groups.Elems = append(groups.Elems, value)
+		valueList = append(valueList, value)
 	}
+	groups, _ := types.ListValue(
+		types.ObjectType{AttrTypes: GroupAttrType},
+		valueList,
+	)
 
 	newLab := LabModel{
-		ID:          types.String{Value: lab.ID},
-		State:       types.String{Value: lab.State},
-		Created:     types.String{Value: lab.Created},
-		Modified:    types.String{Value: lab.Modified},
-		Title:       types.String{Value: lab.Title},
-		Owner:       types.String{Value: lab.Owner.ID},
-		Description: types.String{Value: lab.Description},
-		NodeCount:   types.Int64{Value: int64(lab.NodeCount)},
-		LinkCount:   types.Int64{Value: int64(lab.LinkCount)},
-		Notes:       types.String{Value: lab.Notes},
+		ID:          types.StringValue(lab.ID),
+		State:       types.StringValue(lab.State),
+		Created:     types.StringValue(lab.Created),
+		Modified:    types.StringValue(lab.Modified),
+		Title:       types.StringValue(lab.Title),
+		Owner:       types.StringValue(lab.Owner.ID),
+		Description: types.StringValue(lab.Description),
+		NodeCount:   types.Int64Value(int64(lab.NodeCount)),
+		LinkCount:   types.Int64Value(int64(lab.LinkCount)),
+		Notes:       types.StringValue(lab.Notes),
 		Groups:      groups,
 	}
 

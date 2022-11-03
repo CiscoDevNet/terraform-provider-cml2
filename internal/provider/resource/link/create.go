@@ -45,15 +45,15 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	link := cmlclient.Link{}
-	link.LabID = data.LabID.Value
-	link.SrcNode = data.NodeA.Value
-	link.DstNode = data.NodeB.Value
+	link.LabID = data.LabID.ValueString()
+	link.SrcNode = data.NodeA.ValueString()
+	link.DstNode = data.NodeB.ValueString()
 	if !data.NodeAslot.IsUnknown() {
-		slot := int(data.NodeAslot.Value)
+		slot := int(data.NodeAslot.ValueInt64())
 		link.SrcSlot = &slot
 	}
 	if !data.NodeBslot.IsUnknown() {
-		slot := int(data.NodeBslot.Value)
+		slot := int(data.NodeBslot.ValueInt64())
 		link.DstSlot = &slot
 	}
 
@@ -66,27 +66,11 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	if data.NodeAslot.IsNull() {
-		tflog.Info(ctx, "a is null")
-		data.NodeAslot.Null = false
-	}
-	if data.NodeBslot.IsNull() {
-		tflog.Info(ctx, "b is null")
-		data.NodeBslot.Null = false
-	}
-	if data.NodeAslot.IsUnknown() {
-		tflog.Info(ctx, "a is unknown")
-		data.NodeAslot.Unknown = false
-	}
-	if data.NodeBslot.IsUnknown() {
-		tflog.Info(ctx, "b is unknown")
-		data.NodeBslot.Unknown = false
-	}
 	tflog.Info(ctx, fmt.Sprintf("src slot %d", *newLink.SrcSlot))
 	tflog.Info(ctx, fmt.Sprintf("dst slot %d", *newLink.DstSlot))
 
-	data.NodeAslot = types.Int64{Value: int64(*newLink.SrcSlot)}
-	data.NodeBslot = types.Int64{Value: int64(*newLink.DstSlot)}
+	data.NodeAslot = types.Int64Value(int64(*newLink.SrcSlot))
+	data.NodeBslot = types.Int64Value(int64(*newLink.DstSlot))
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(

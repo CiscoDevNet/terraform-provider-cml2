@@ -27,7 +27,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		lab *cmlclient.Lab
 		err error
 	)
-	lab, err = r.cfg.Client().LabGet(ctx, data.ID.Value, false)
+	lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

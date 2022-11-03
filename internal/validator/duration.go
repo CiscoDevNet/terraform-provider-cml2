@@ -32,11 +32,11 @@ func (v Duration) Validate(ctx context.Context, req tfsdk.ValidateAttributeReque
 		return
 	}
 
-	if duration.Unknown || duration.Null {
+	if duration.IsUnknown() || duration.IsNull() {
 		return
 	}
 
-	_, err := time.ParseDuration(duration.Value)
+	_, err := time.ParseDuration(duration.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			req.AttributePath,

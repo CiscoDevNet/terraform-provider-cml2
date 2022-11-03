@@ -157,22 +157,22 @@ func Link() map[string]tfsdk.Attribute {
 func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics) attr.Value {
 
 	newLink := LinkModel{
-		ID:         types.String{Value: link.ID},
-		Label:      types.String{Value: link.Label},
-		State:      types.String{Value: link.State},
-		CaptureKey: types.String{Value: link.PCAPkey},
-		LabID:      types.String{Value: link.LabID},
-		InterfaceA: types.String{Value: link.SrcID},
-		InterfaceB: types.String{Value: link.DstID},
-		NodeA:      types.String{Value: link.SrcNode},
-		NodeB:      types.String{Value: link.DstNode},
+		ID:         types.StringValue(link.ID),
+		Label:      types.StringValue(link.Label),
+		State:      types.StringValue(link.State),
+		CaptureKey: types.StringValue(link.PCAPkey),
+		LabID:      types.StringValue(link.LabID),
+		InterfaceA: types.StringValue(link.SrcID),
+		InterfaceB: types.StringValue(link.DstID),
+		NodeA:      types.StringValue(link.SrcNode),
+		NodeB:      types.StringValue(link.DstNode),
 	}
 
 	if link.SrcSlot != nil {
-		newLink.NodeAslot = types.Int64{Value: int64(*link.SrcSlot)}
+		newLink.NodeAslot = types.Int64Value(int64(*link.SrcSlot))
 	}
 	if link.DstSlot != nil {
-		newLink.NodeBslot = types.Int64{Value: int64(*link.DstSlot)}
+		newLink.NodeBslot = types.Int64Value(int64(*link.DstSlot))
 	}
 
 	var value attr.Value

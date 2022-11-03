@@ -76,7 +76,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 	}
 
 	// id and elements are mutually exclusive with topology
-	if !data.ID.Null && data.Elements.Null {
+	if !data.ID.IsNull() && data.Elements.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("elements"),
 			"Required configuration",
@@ -84,7 +84,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 		)
 		return
 	}
-	if !data.ID.Null && !data.Topology.Null {
+	if !data.ID.IsNull() && !data.Topology.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("topology"),
 			"Conflicting configuration",
@@ -101,7 +101,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 
 	// If wait is set (true), return without warning
 	// if it is null, then the default is "true" (e.g. wait)
-	if data.Wait.IsNull() || data.Wait.Value {
+	if data.Wait.IsNull() || data.Wait.ValueBool() {
 		return
 	}
 

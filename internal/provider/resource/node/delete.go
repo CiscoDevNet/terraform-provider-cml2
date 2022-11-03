@@ -15,7 +15,7 @@ import (
 func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 
 	var (
-		data *schema.NodeModel
+		data schema.NodeModel
 		err  error
 	)
 
@@ -26,12 +26,10 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	// if data.State.Value != cmlclient.NodeStateDefined {
-	// 	resp.Diagnostics.AddError(CML2ErrorLabel, "node is not in DEFINED_ON_CORE state")
-	// 	return
-	// }
-
-	node := &cmlclient.Node{ID: data.ID.Value, LabID: data.LabID.Value}
+	node := &cmlclient.Node{
+		ID:    data.ID.ValueString(),
+		LabID: data.LabID.ValueString(),
+	}
 
 	err = r.cfg.Client().NodeStop(ctx, node)
 	if err != nil {
