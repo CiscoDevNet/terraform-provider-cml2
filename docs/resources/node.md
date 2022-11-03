@@ -18,6 +18,7 @@ A node resource represents a CML node. At create time, the lab ID and a node def
 ### Required
 
 - `lab_id` (String) lab ID containing the node (UUID)
+- `label` (String) label
 - `nodedefinition` (String) node definition / type
 
 ### Optional
@@ -28,7 +29,6 @@ A node resource represents a CML node. At create time, the lab ID and a node def
 - `cpus` (Number) number of cpus
 - `data_volume` (Number) size of data volume, in GB
 - `imagedefinition` (String) image definition / type
-- `label` (String) label
 - `ram` (Number) amount of RAM, megabytes
 - `tags` (List of String) tags of the node
 - `x` (Number) x coordinate

@@ -16,6 +16,7 @@ $cmd start -- starts ngrok in tmux and provisions credentials to GH
 $cmd stop -- stops tmux (and ngrok) and removes credentials from GH
 $cmd force -- forcefully removes credentials from GH
 $cmd status -- shows the status (also the default)
+$cmd open -- opens the tmux session
 $cmd -h | --help | help -- shows this help
 
 Requirements:
@@ -45,6 +46,14 @@ function remove_secrets() {
     gh api -XDELETE /repos/$REPO/actions/secrets/NGROK_URL
     gh api -XDELETE /repos/$REPO/actions/secrets/USERNAME
     gh api -XDELETE /repos/$REPO/actions/secrets/PASSWORD
+}
+
+
+function open() {
+    status=$(get_status)
+    if [ "$status" = "session exists" ]; then
+        tmux attach -t NGROK
+    fi
 }
 
 
@@ -110,6 +119,8 @@ if [ "$1" == "start" ]; then
     start
 elif [ "$1" == "stop" ]; then
     stop
+elif [ "$1" == "open" ]; then
+    open
 elif [ "$1" == "force" ]; then
     remove_secrets
 elif [[ "$1" =~ -h|--help|help ]]; then

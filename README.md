@@ -4,11 +4,13 @@
 
 This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "beta". Changes can be expected, for example:
 
-    - configuration (provider, resources, data-sources)
-    - provider behavior
-    - features (additional resources, ...)
+- configuration (provider, resources, data-sources)
+- provider behavior
+- features (additional resources, ...)
 
- The current implementation provides:
+> **Note:** While it should work with 2.3, it has only been tested with 2.4 at the moment.  If there's an issue with 2.3 then please open an issue on Github, providing details.  Older versions are blocked within by the `gocmlclient`.
+
+The current implementation provides:
 
 - Resources and a data sources (`internal/provider/`),
   - resource `cml2_lab` to create, update and destroy labs
