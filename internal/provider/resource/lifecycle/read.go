@@ -25,7 +25,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, "Read: start")
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.ID.ValueString(), true)
+	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,
@@ -36,7 +36,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, fmt.Sprintf("Read: lab state: %s", lab.State))
 
-	data.ID = types.StringValue(lab.ID)
+	data.LabID = types.StringValue(lab.ID)
 	data.State = types.StringValue(lab.State)
 	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())

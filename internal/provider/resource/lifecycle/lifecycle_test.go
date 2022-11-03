@@ -137,7 +137,7 @@ resource "cml2_link" "l1" {
   node_b = cml2_node.r2.id
 }
 resource "cml2_lifecycle" "top" {
-	id = cml2_lab.this.id
+	lab_id = cml2_lab.this.id
 	elements = [
 		cml2_node.r1.id,
 		cml2_node.r2.id,
@@ -186,7 +186,7 @@ resource "cml2_link" "l1" {
   node_b = cml2_node.r1.id
 }
 resource "cml2_lifecycle" "top" {
-	id = cml2_lab.this.id
+	lab_id = cml2_lab.this.id
 	elements = [
 		cml2_node.ext.id,
 		cml2_node.r1.id,

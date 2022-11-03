@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -18,9 +19,16 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		err  error
 	)
 
+	tflog.Info(ctx, "Resource Lifecycle CREATE")
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// create a resource identifier
+	if data.ID.IsUnknown() {
+		data.ID = types.StringValue(uuid.New().String())
 	}
 
 	start := startData{
@@ -29,7 +37,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		wait:     data.Wait.IsNull() || data.Wait.ValueBool(),
 	}
 
-	if data.ID.IsUnknown() {
+	if data.LabID.IsUnknown() {
 		tflog.Info(ctx, "Create: import")
 		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.ValueString())
 		if err != nil {
@@ -39,9 +47,9 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		data.ID = types.StringValue(start.lab.ID)
+		data.LabID = types.StringValue(start.lab.ID)
 	} else {
-		start.lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), true)
+		start.lab, err = r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
@@ -72,11 +80,11 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.ID = types.StringValue(lab.ID)
+	data.LabID = types.StringValue(lab.ID)
 	data.State = types.StringValue(lab.State)
 	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	tflog.Info(ctx, "Create: done")
+	tflog.Info(ctx, "Resource Lifecycle CREATE: done")
 }

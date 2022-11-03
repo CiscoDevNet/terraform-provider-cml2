@@ -45,7 +45,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// need to get the lab data here
-		start.lab, err = r.cfg.Client().LabGet(ctx, planData.ID.ValueString(), true)
+		start.lab, err = r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				CML2ErrorLabel,
@@ -57,16 +57,16 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		// this is very blunt ...
 		if stateData.State.ValueString() == cmlclient.LabStateStarted {
 			if planData.State.ValueString() == cmlclient.LabStateStopped {
-				r.stop(ctx, resp.Diagnostics, planData.ID.ValueString())
+				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
 			if planData.State.ValueString() == cmlclient.LabStateDefined {
-				r.stop(ctx, resp.Diagnostics, planData.ID.ValueString())
+				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 				timeout := start.timeouts.Update.ValueString()
 				common.Converge(
 					ctx, r.cfg.Client(), &resp.Diagnostics,
-					planData.ID.ValueString(), timeout,
+					planData.LabID.ValueString(), timeout,
 				)
-				r.wipe(ctx, resp.Diagnostics, planData.ID.ValueString())
+				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
 		}
 
@@ -75,7 +75,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 			if planData.State.ValueString() == cmlclient.LabStateDefined {
-				r.wipe(ctx, resp.Diagnostics, planData.ID.ValueString())
+				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
 		}
 
@@ -92,14 +92,14 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 			timeout := start.timeouts.Update.ValueString()
 			common.Converge(
 				ctx, r.cfg.Client(), &resp.Diagnostics,
-				planData.ID.ValueString(), timeout,
+				planData.LabID.ValueString(), timeout,
 			)
 		}
 	}
 
 	// since we have changed lab state, we need to re-read all the node
 	// state...
-	lab, err := r.cfg.Client().LabGet(ctx, planData.ID.ValueString(), true)
+	lab, err := r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			CML2ErrorLabel,

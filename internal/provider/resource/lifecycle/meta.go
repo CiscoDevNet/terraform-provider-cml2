@@ -48,7 +48,7 @@ func (t *LabLifecycleResource) GetSchema(ctx context.Context) (tfsdk.Schema, dia
 
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the language server.
-		Description: "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.",
+		Description: "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.  This is a synthetic resource which \"glues\" other actual resources like labs, nodes and links together.",
 
 		// Attributes are preferred over Blocks. Blocks should typically be used
 		// for configuration compatibility with previously existing schemas from
@@ -76,19 +76,19 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 	}
 
 	// id and elements are mutually exclusive with topology
-	if !data.ID.IsNull() && data.Elements.IsNull() {
+	if !data.LabID.IsNull() && data.Elements.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("elements"),
 			"Required configuration",
-			"When \"ID\" is set, \"elements\" is a required attribue.",
+			"When \"LabID\" is set, \"elements\" is a required attribue.",
 		)
 		return
 	}
-	if !data.ID.IsNull() && !data.Topology.IsNull() {
+	if !data.LabID.IsNull() && !data.Topology.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("topology"),
 			"Conflicting configuration",
-			"Can't set \"ID\" and \"topology\" at the same time.",
+			"Can't set \"LabID\" and \"topology\" at the same time.",
 		)
 		return
 	}
