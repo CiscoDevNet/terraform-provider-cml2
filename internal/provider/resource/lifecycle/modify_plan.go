@@ -51,18 +51,6 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		return
 	}
 
-	// if !noState && !configData.Elements.IsNull() {
-	// 	for idx := 0; idx < len(planData.Elements.Elems); idx++ {
-	// 		id := stateData.Elements.Elems[idx].(types.String)
-	// 		id.Null = false
-	// 		id.Unknown = false
-	// 		resp.Diagnostics.Append(tfsdk.ValueFrom(ctx, id, types.StringType, &planData.Elements.Elems[idx])...)
-	// 		if resp.Diagnostics.HasError() {
-	// 			return
-	// 		}
-	// 	}
-	// }
-
 	// check if we can transition to specified state
 	if planData.State.ValueString() == cmlclient.LabStateStopped {
 		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {
@@ -132,6 +120,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				// we know that when we wipe, the MAC is going to be null
 				if planData.State.ValueString() == "DEFINED_ON_CORE" {
 					ifaces[idx].MACaddress = types.StringNull()
+					ifaces[idx].IP4 = types.ListNull(types.StringType)
+					ifaces[idx].IP6 = types.ListNull(types.StringType)
 				} else {
 					// MACaddresses won't change at state change if one was assigned
 					if ifaces[idx].MACaddress.IsNull() {

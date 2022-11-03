@@ -98,10 +98,9 @@ func Interface() map[string]tfsdk.Attribute {
 
 func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
 
-	var (
-		ip4List, ip6List types.List
-		macAddress       types.String
-	)
+	ip4List := types.ListNull(types.StringType)
+	ip6List := types.ListNull(types.StringType)
+	var macAddress types.String
 
 	if iface.Runs() {
 		// IPv4 addresses
@@ -120,7 +119,7 @@ func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.D
 	if iface.Exists() {
 		macAddress = types.StringValue(iface.MACaddress)
 	} else {
-		macAddress = types.StringUnknown()
+		macAddress = types.StringNull()
 	}
 
 	newIface := InterfaceModel{

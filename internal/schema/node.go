@@ -125,18 +125,15 @@ var NodeAttrType = map[string]attr.Type{
 	"boot_disk_size": types.Int64Type,
 	"data_volume":    types.Int64Type,
 	"vnc_key":        types.StringType,
-	"serial_devices": SerialDevicesAttrType,
+	"serial_devices": types.ListType{ElemType: SerialDevicesAttrType},
 	"compute_id":     types.StringType,
 }
 
 var (
-	serialDeviceAttrType = map[string]attr.Type{
-		"console_key":   types.StringType,
-		"device_number": types.Int64Type,
-	}
-	SerialDevicesAttrType = types.ListType{
-		ElemType: types.ObjectType{
-			AttrTypes: serialDeviceAttrType,
+	SerialDevicesAttrType = types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"console_key":   types.StringType,
+			"device_number": types.Int64Type,
 		},
 	}
 )
@@ -293,7 +290,9 @@ func Node() map[string]tfsdk.Attribute {
 		"serial_devices": {
 			Description: "a list of serial devices (consoles)",
 			Computed:    true,
-			Type:        SerialDevicesAttrType,
+			Type: types.ListType{
+				ElemType: SerialDevicesAttrType,
+			},
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -331,13 +330,13 @@ func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Dia
 		diags.Append(tfsdk.ValueFrom(
 			ctx,
 			newSerialDevice,
-			types.ObjectType{AttrTypes: serialDeviceAttrType},
+			SerialDevicesAttrType,
 			&value,
 		)...)
 		valueList = append(valueList, value)
 	}
 	serialDevices, _ := types.ListValue(
-		types.ObjectType{AttrTypes: serialDeviceAttrType},
+		SerialDevicesAttrType,
 		valueList,
 	)
 	return serialDevices
