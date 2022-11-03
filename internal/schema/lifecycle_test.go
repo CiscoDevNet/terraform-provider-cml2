@@ -18,7 +18,7 @@ func TestLifecycleAttrs(t *testing.T) {
 
 	got, diag := schema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 10, len(schema.Attributes))
+	assert.Equal(t, 11, len(schema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }
