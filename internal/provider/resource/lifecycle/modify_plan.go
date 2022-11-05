@@ -44,12 +44,6 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		return
 	}
 
-	// if there's no Lab ID provided then this is an import and
-	// we will learn it from the controller
-	if planData.LabID.IsNull() {
-		planData.LabID = types.StringUnknown()
-	}
-
 	// check if we can transition to specified state
 	if planData.State.ValueString() == cmlclient.LabStateStopped {
 		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {

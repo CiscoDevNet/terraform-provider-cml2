@@ -74,11 +74,32 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 				Config:      testAccLifecycleConfigCheck(cfg.Cfg, true),
 				ExpectError: re2,
 			},
+		},
+	})
+}
+
+func TestAccLifecycleImportLab(t *testing.T) {
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
 			{
-				Config: testAccLifecycleConfigCheck2(cfg.Cfg),
+				Config: testAccLifecycleImportLab(cfg.Cfg),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
+				),
 			},
 		},
 	})
+}
+
+func uuidCheck(value string) error {
+	re := regexp.MustCompile(`\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b`)
+	if !re.MatchString(value) {
+		return fmt.Errorf("%s is not a UUID", value)
+	}
+	return nil
 }
 
 func TestAccLifecycleResourceState(t *testing.T) {
@@ -275,7 +296,7 @@ resource "cml2_lifecycle" "top" {
 `, cfg, topo)
 }
 
-func testAccLifecycleConfigCheck2(cfg string) string {
+func testAccLifecycleImportLab(cfg string) string {
 	// BEWARE!! the yaml below must be indented with spaces, not with tabs!!
 	return fmt.Sprintf(`
 %[1]s
