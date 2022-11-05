@@ -2,6 +2,7 @@ package lifecycle_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -52,6 +53,30 @@ func TestAccLifecycleResource(t *testing.T) {
 			// 	),
 			// },
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccLifecycleResourceState(t *testing.T) {
+	re1 := regexp.MustCompile(`can't transition from no state to STOPPED`)
+	re2 := regexp.MustCompile(`can't transition from DEFINED_ON_CORE to STOPPED`)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config:      testAccLifecycleStateCheck(cfg.Cfg, "STOPPED"),
+				ExpectError: re1,
+			},
+			{
+				Config: testAccLifecycleStateCheck(cfg.Cfg, "DEFINED_ON_CORE"),
+			},
+			{
+				Config:      testAccLifecycleStateCheck(cfg.Cfg, "STOPPED"),
+				ExpectError: re2,
+			},
 		},
 	})
 }
@@ -193,6 +218,19 @@ resource "cml2_lifecycle" "top" {
 		cml2_link.l1.id,
 	]
 	%[2]s
+}
+`, cfg, state)
+}
+
+func testAccLifecycleStateCheck(cfg, state string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+}
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	elements = []
+	state = %[2]q
 }
 `, cfg, state)
 }

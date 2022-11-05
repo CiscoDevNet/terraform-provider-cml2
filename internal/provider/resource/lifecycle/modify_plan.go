@@ -20,7 +20,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN")
 
 	// configuration data for the resource
-	if req.Config.Raw.IsNull() {
+	if req.Config.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
 	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
@@ -35,12 +35,6 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		if resp.Diagnostics.HasError() {
 			return
 		}
-	}
-
-	// not much to do without a plan...
-	if req.Plan.Raw.IsNull() {
-		tflog.Error(ctx, "ModifyPlan: no plan exists...")
-		return
 	}
 
 	// get the planned state
@@ -68,6 +62,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 	}
 
+	// store the default in state if it is not provided in the configuration
 	if configData.State.IsNull() {
 		planData.State = types.StringValue("STARTED")
 	}
@@ -90,16 +85,6 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		for id, node := range nodes {
 
 			planState := planData.State.ValueString()
-
-			// these all need to be re-read when state changes...  based on
-			// actual state change, these can be optimized to provide a better
-			// state diff -- but it works for now
-
-			// node.DataVolume = types.Int64Unknown()
-			// node.CPUs = types.Int64Unknown()
-			// node.RAM = types.Int64Unknown()
-			// node.BootDiskSize = types.Int64Unknown()
-
 			if planState != "STARTED" {
 				node.State = types.StringValue(planData.State.ValueString())
 			}
@@ -143,27 +128,6 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			if resp.Diagnostics.HasError() {
 				return
 			}
-
-			// planState := planData.State.ValueString()
-			// for idx := range ifaces {
-			// 	ifaces[idx].IP4 = types.ListUnknown(types.StringType)
-			// 	ifaces[idx].IP6 = types.ListUnknown(types.StringType)
-			// 	// we know that when we wipe, the MAC is going to be null
-			// 	if planState == "DEFINED_ON_CORE" {
-			// 		ifaces[idx].MACaddress = types.StringNull()
-			// 		ifaces[idx].IP4 = types.ListNull(types.StringType)
-			// 		ifaces[idx].IP6 = types.ListNull(types.StringType)
-			// 	} else {
-			// 		// MACaddresses won't change at state change if one was assigned
-			// 		if ifaces[idx].MACaddress.IsNull() {
-			// 			ifaces[idx].MACaddress = types.StringUnknown()
-			// 		}
-			// 	}
-			// 	// if planData.State.ValueString() == "STOPPED" {
-			// 	// 	ifaces[idx].IP4 = types.ListNull(types.StringType)
-			// 	// 	ifaces[idx].IP6 = types.ListNull(types.StringType)
-			// 	// }
-			// 	ifaces[idx].State = types.StringUnknown()
 
 			for idx := range ifaces {
 				if planState == "STARTED" {

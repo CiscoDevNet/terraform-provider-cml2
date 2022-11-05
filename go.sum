@@ -181,6 +181,8 @@ github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSg
 github.com/rogpeppe/go-internal v1.6.1 h1:/FiVV8dS/e+YqF2JvO3yXRFbBLTIuSDkuC7aBOAvL+k=
 github.com/rschmied/gocmlclient v0.0.3 h1:9CD/cdElopuL8F5nYt0siB2shSKVGidLfHXcCSKRz6g=
 github.com/rschmied/gocmlclient v0.0.3/go.mod h1:tmOIobLLJ0/BNYAzLrRaSkqTK4jzbZprNRXSfEzdXIk=
+github.com/rschmied/gocmlclient v0.0.4 h1:+r9y/V6jNJCiMgzqt+JMBnK+OHUs7Tb8TsWMAmfqTKc=
+github.com/rschmied/gocmlclient v0.0.4/go.mod h1:tmOIobLLJ0/BNYAzLrRaSkqTK4jzbZprNRXSfEzdXIk=
 github.com/rschmied/mockresponder v1.0.2 h1:yhHReg70zS2RDEs2ZBJXagWRZ1zmgXjVMzoHyqqsOhU=
 github.com/russross/blackfriday v1.6.0 h1:KqfZb0pUVN2lYqZUYRddxF4OR8ZMURnJIG5Y3VRLtww=
 github.com/russross/blackfriday v1.6.0/go.mod h1:ti0ldHuxg49ri4ksnFxlkCfN+hvslNlmVHqNRXXJNAY=

@@ -33,11 +33,15 @@ func TestAccLinkResource(t *testing.T) {
 			// Create and Read testing
 			{
 				Config: testAccLinkResourceConfig(cfg.Cfg),
-				Check: resource.ComposeAggregateTestCheckFunc(
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_link.l0", "label", "r1-eth3<->r2-eth0"),
-					resource.TestCheckResourceAttr("data.cml2_node.r1", "node.interfaces.#", "4"),
-					// resource.TestCheckResourceAttr("cml2_lab.test", "description", "description"),
 				),
+			},
+			{
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.cml2_node.r1", "node.interfaces.#", "4"),
+				),
+				RefreshState: true,
 			},
 			// ImportState testing
 			// {

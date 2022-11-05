@@ -24,12 +24,17 @@ The required data looks like this:
 
 The tool prints the JSON object that can then be fed into `gh` like this:
 
-    mkkey ENVVARNAME | gh api -XPUT /some/endpoint --input -
+    ghsecret ENVVARNAME | gh api -XPUT /some/endpoint --input -
 
 `ENVVARNAME` is the name of the environment variable that holds the secret
 string.  In addition, the result from the "public-key" API call must to be
 provided as environment variables `GH_KEY` and `GH_KEY_ID`, respectively.
 
 The names of these variables can be changed via command line arguments, if needed.
+
+Here's a silly example:
+
+    $ GH_KEY="$(echo 'qwe' | base64)" GH_KEY_ID="123" ghsecret HOME
+    {"key_id":"123","encrypted_value":"bnwu9dXlXcFGYatcXsdpHR0MiiAE3115Mz6wkDrdNACQZSo+1JgPHrhaJCEEnbVpGF5YJMa3tJGGyeb2vqY="}
 
 See the `tunnel.sh` script for a usage example with the 'secrets' API.
