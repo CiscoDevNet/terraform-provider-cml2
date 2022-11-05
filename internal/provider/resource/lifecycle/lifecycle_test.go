@@ -57,6 +57,30 @@ func TestAccLifecycleResource(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleConfigCheck(t *testing.T) {
+	re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
+	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config:      testAccLifecycleConfigCheck(cfg.Cfg, false),
+				ExpectError: re1,
+			},
+			{
+				Config:      testAccLifecycleConfigCheck(cfg.Cfg, true),
+				ExpectError: re2,
+			},
+			{
+				Config: testAccLifecycleConfigCheck2(cfg.Cfg),
+			},
+		},
+	})
+}
+
 func TestAccLifecycleResourceState(t *testing.T) {
 	re1 := regexp.MustCompile(`can't transition from no state to STOPPED`)
 	re2 := regexp.MustCompile(`can't transition from DEFINED_ON_CORE to STOPPED`)
@@ -233,4 +257,48 @@ resource "cml2_lifecycle" "top" {
 	state = %[2]q
 }
 `, cfg, state)
+}
+
+func testAccLifecycleConfigCheck(cfg string, insertTopo bool) string {
+	topo := ""
+	if insertTopo {
+		topo = fmt.Sprintf("topology = %q", "blabla")
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+}
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	%[2]s
+}
+`, cfg, topo)
+}
+
+func testAccLifecycleConfigCheck2(cfg string) string {
+	// BEWARE!! the yaml below must be indented with spaces, not with tabs!!
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lifecycle" "top" {
+	topology = <<-EOT
+    lab:
+        description: 'need one node'
+        notes: ''
+        title: empty
+        version: 0.1.0
+    links: []
+    nodes:
+        - id: n0
+          label: alpine-0
+          x: 1
+          y: 1
+          node_definition: alpine
+          interfaces: []
+    EOT
+	staging = {
+		stages=["infra","core","sites"]
+	}
+	wait = false
+}
+`, cfg)
 }

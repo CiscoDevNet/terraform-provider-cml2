@@ -34,6 +34,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 		},
 		"lab_id": {
 			Optional:            true,
+			Computed:            true,
 			MarkdownDescription: "CML lab identifier, a UUID. If set, `elements` must be configured as well.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
