@@ -63,7 +63,7 @@ var LinkAttrType = map[string]attr.Type{
 func Link() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
-			Description: "link ID (UUID)",
+			Description: "Link ID (UUID).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -71,7 +71,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"interface_a": {
-			Description: "interface ID containing the node (UUID)",
+			Description: "Interface ID containing the node (UUID).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -79,7 +79,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"interface_b": {
-			Description: "interface ID containing the node (UUID)",
+			Description: "Interface ID containing the node (UUID).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -87,12 +87,12 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"lab_id": {
-			Description: "lab ID containing the link (UUID)",
+			Description: "Lab ID containing the link (UUID).",
 			Type:        types.StringType,
 			Required:    true,
 		},
 		"label": {
-			Description: "link label (auto generated)",
+			Description: "link label (auto generated).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -100,7 +100,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"link_capture_key": {
-			Description: "link capture key (when running)",
+			Description: "link capture key (when running).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -108,7 +108,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"node_a": {
-			Description: "node (A) attached to link",
+			Description: "Node (A) attached to link.",
 			Type:        types.StringType,
 			Required:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -116,7 +116,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"node_b": {
-			Description: "node (B) attached to link",
+			Description: "Node (B) attached to link.",
 			Type:        types.StringType,
 			Required:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -124,7 +124,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"node_a_slot": {
-			Description: "optional interface slot on node A (src), if not provided use next free",
+			Description: "Optional interface slot on node A (src), if not provided use next free.",
 			Type:        types.Int64Type,
 			Optional:    true,
 			Computed:    true,
@@ -134,7 +134,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"node_b_slot": {
-			Description: "optional interface slot on node B (dst), if not provided use next free",
+			Description: "Optional interface slot on node B (dst), if not provided use next free.",
 			Type:        types.Int64Type,
 			Optional:    true,
 			Computed:    true,
@@ -144,7 +144,7 @@ func Link() map[string]tfsdk.Attribute {
 			},
 		},
 		"state": {
-			Description: "link state",
+			Description: "Link state.",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{

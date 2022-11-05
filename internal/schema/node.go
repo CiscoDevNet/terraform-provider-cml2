@@ -141,7 +141,7 @@ var (
 func Node() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
-			Description: "node ID (UUID)",
+			Description: "Node ID (UUID).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -149,12 +149,12 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"lab_id": {
-			Description: "lab ID containing the node (UUID)",
+			Description: "Lab ID containing the node (UUID).",
 			Type:        types.StringType,
 			Required:    true,
 		},
 		"label": {
-			Description: "label",
+			Description: "Node label.",
 			Type:        types.StringType,
 			Required:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -162,15 +162,15 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"state": {
-			Description: "state",
-			Type:        types.StringType,
-			Computed:    true,
+			MarkdownDescription: "Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).",
+			Type:                types.StringType,
+			Computed:            true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"nodedefinition": {
-			Description: "node definition / type",
+			Description: "Node definition / type.",
 			Type:        types.StringType,
 			Required:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -179,7 +179,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"imagedefinition": {
-			Description: "image definition / type",
+			Description: "Image definition, must match the node type.",
 			Type:        types.StringType,
 			Computed:    true,
 			Optional:    true,
@@ -189,7 +189,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"interfaces": {
-			Description: "list of interfaces on the node",
+			Description: "List of interfaces on the node.",
 			Computed:    true,
 			Attributes: tfsdk.ListNestedAttributes(
 				Interface(),
@@ -199,7 +199,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"tags": {
-			Description: "tags of the node",
+			Description: "List of tags of the node.",
 			Computed:    true,
 			Optional:    true,
 			Type: types.ListType{
@@ -210,7 +210,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"configuration": {
-			Description: "node configuration",
+			Description: "Node configuration.",
 			Type:        types.StringType,
 			Computed:    true,
 			Optional:    true,
@@ -220,7 +220,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"x": {
-			Description: "x coordinate",
+			Description: "X coordinate on the topology canvas.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -229,7 +229,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"y": {
-			Description: "x coordinate",
+			Description: "Y coordinate on the topology canvas.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -238,7 +238,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"ram": {
-			Description: "amount of RAM, megabytes",
+			Description: "Amount of RAM, megabytes.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -248,7 +248,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"cpus": {
-			Description: "number of cpus",
+			Description: "Number of CPUs.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -258,7 +258,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"cpu_limit": {
-			Description: "cpu limit in %, 20-100",
+			Description: "CPU limit in %, 20-100.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -268,7 +268,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"boot_disk_size": {
-			Description: "size of boot disk volume, in GB",
+			Description: "Size of boot disk volume, in GB.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -278,7 +278,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"data_volume": {
-			Description: "size of data volume, in GB",
+			Description: "Size of data volume, in GB.",
 			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
@@ -288,7 +288,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"serial_devices": {
-			Description: "a list of serial devices (consoles)",
+			Description: "List of serial devices (consoles).",
 			Computed:    true,
 			Type: types.ListType{
 				ElemType: SerialDevicesAttrType,
@@ -298,7 +298,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"vnc_key": {
-			Description: "VNC key of console, a UUID4",
+			Description: "VNC key of console, a UUID4.",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -306,7 +306,7 @@ func Node() map[string]tfsdk.Attribute {
 			},
 		},
 		"compute_id": {
-			Description: "ID of a compute this node is on, a UUID4",
+			Description: "ID of a compute this node is on, a UUID4.",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{

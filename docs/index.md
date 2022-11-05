@@ -17,7 +17,7 @@ provider "cml2" {
   # address must use https://
   address = var.address
 
-  # credentials, set either a JWT or username/password
+  # credentials, either a JWT or username/password are required
   # an error is raised if neither token or username / password are set
   # token   = var.token
   username = var.username
@@ -44,7 +44,7 @@ provider "cml2" {
 
 ### Required
 
-- `address` (String) CML2 controller address.
+- `address` (String) CML2 controller address, must start with `https://`.
 
 ### Optional
 

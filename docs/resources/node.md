@@ -3,12 +3,12 @@
 page_title: "cml2_node Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to STARTED (see the lifecyle resource) once and then requires a replace.
+  A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to STARTED (see the lifecyle resource) once. Changing attributes will then require a replace.
 ---
 
 # cml2_node (Resource)
 
-A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once and then requires a replace.
+A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once. Changing attributes will then require a replace.
 
 
 
@@ -17,44 +17,44 @@ A node resource represents a CML node. At create time, the lab ID and a node def
 
 ### Required
 
-- `lab_id` (String) lab ID containing the node (UUID)
-- `label` (String) label
-- `nodedefinition` (String) node definition / type
+- `lab_id` (String) Lab ID containing the node (UUID).
+- `label` (String) Node label.
+- `nodedefinition` (String) Node definition / type.
 
 ### Optional
 
-- `boot_disk_size` (Number) size of boot disk volume, in GB
-- `configuration` (String) node configuration
-- `cpu_limit` (Number) cpu limit in %, 20-100
-- `cpus` (Number) number of cpus
-- `data_volume` (Number) size of data volume, in GB
-- `imagedefinition` (String) image definition / type
-- `ram` (Number) amount of RAM, megabytes
-- `tags` (List of String) tags of the node
-- `x` (Number) x coordinate
-- `y` (Number) x coordinate
+- `boot_disk_size` (Number) Size of boot disk volume, in GB.
+- `configuration` (String) Node configuration.
+- `cpu_limit` (Number) CPU limit in %, 20-100.
+- `cpus` (Number) Number of CPUs.
+- `data_volume` (Number) Size of data volume, in GB.
+- `imagedefinition` (String) Image definition, must match the node type.
+- `ram` (Number) Amount of RAM, megabytes.
+- `tags` (List of String) List of tags of the node.
+- `x` (Number) X coordinate on the topology canvas.
+- `y` (Number) Y coordinate on the topology canvas.
 
 ### Read-Only
 
-- `compute_id` (String) ID of a compute this node is on, a UUID4
-- `id` (String) node ID (UUID)
-- `interfaces` (Attributes List) list of interfaces on the node (see [below for nested schema](#nestedatt--interfaces))
-- `serial_devices` (List of Object) a list of serial devices (consoles) (see [below for nested schema](#nestedatt--serial_devices))
-- `state` (String) state
-- `vnc_key` (String) VNC key of console, a UUID4
+- `compute_id` (String) ID of a compute this node is on, a UUID4.
+- `id` (String) Node ID (UUID).
+- `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--interfaces))
+- `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--serial_devices))
+- `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
+- `vnc_key` (String) VNC key of console, a UUID4.
 
 <a id="nestedatt--interfaces"></a>
 ### Nested Schema for `interfaces`
 
 Read-Only:
 
-- `id` (String) interface ID (UUID)
-- `ip4` (List of String) IPv4 address list
-- `ip6` (List of String) IPv6 address list
-- `is_connected` (Boolean) connection status
-- `label` (String) label
-- `mac_address` (String) MAC address
-- `state` (String) interface state (UP / DOWN)
+- `id` (String) Interface ID (UUID).
+- `ip4` (List of String) IPv4 address list.
+- `ip6` (List of String) IPv6 address list.
+- `is_connected` (Boolean) Is the interface connected to a link?
+- `label` (String) Interface label.
+- `mac_address` (String) MAC address.
+- `state` (String) interface state (`UP` or `DOWN`).
 
 
 <a id="nestedatt--serial_devices"></a>

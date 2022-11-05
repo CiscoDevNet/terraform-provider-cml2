@@ -3,20 +3,19 @@
 page_title: "cml2_lab Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided.
+  A lab resource represents a CML lab. At create time, a lab title, lab description and lab notes can be provided.
 ---
 
 # cml2_lab (Resource)
 
-A lab resource represents a CML lab. At create time, lab title, lab description and lab notes can be provided.
+A lab resource represents a CML lab. At create time, a lab title, lab description and lab notes can be provided.
 
 ## Example Usage
 
 ```terraform
-# This shows the use of a lab with nodes and links
-# the links are explicitly specified with slots
-# Nothing will be started, just basic create, read
-# update / delete.
+# This shows the use of a lab with nodes and links the links are explicitly
+# specified with slots Nothing will be started, just basic create, read update /
+# delete.
 
 resource "cml2_lab" "twonode" {
   title       = "two node lab"
@@ -68,27 +67,27 @@ resource "cml2_link" "l1" {
 
 ### Optional
 
-- `description` (String) lab description
-- `groups` (Attributes List) lab notes (see [below for nested schema](#nestedatt--groups))
-- `notes` (String) lab notes
-- `title` (String) title of the lab
+- `description` (String) Lab description.
+- `groups` (Attributes List) Groups assigned to the lab. (see [below for nested schema](#nestedatt--groups))
+- `notes` (String) Lab notes.
+- `title` (String) Title of the lab.
 
 ### Read-Only
 
-- `created` (String) creation datetime string in ISO8601 format
-- `id` (String) CML lab identifier, a UUID
-- `link_count` (Number) number of links in the lab
-- `modified` (String) modification datetime string in ISO8601 format
-- `node_count` (Number) number of nodes in the lab
-- `owner` (String) owner of the lab, a UUID4
-- `state` (String) CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`
+- `created` (String) Creation date/time string in ISO8601 format.
+- `id` (String) Lab identifier, a UUID.
+- `link_count` (Number) Number of links in the lab.
+- `modified` (String) Modification date/time string in ISO8601 format.
+- `node_count` (Number) Number of nodes in the lab.
+- `owner` (String) Owner of the lab, a UUID4.
+- `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.
 
 <a id="nestedatt--groups"></a>
 ### Nested Schema for `groups`
 
 Read-Only:
 
-- `id` (String) group ID (UUID)
-- `permission` (String) permission, either `read_only` or `read_write`
+- `id` (String) Group ID (UUID).
+- `permission` (String) Permission, either `read_only` or `read_write`.
 
 

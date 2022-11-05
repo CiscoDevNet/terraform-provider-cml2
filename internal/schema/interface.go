@@ -34,7 +34,7 @@ var InterfaceAttrType = map[string]attr.Type{
 func Interface() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
-			Description: "interface ID (UUID)",
+			Description: "Interface ID (UUID).",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -42,7 +42,7 @@ func Interface() map[string]tfsdk.Attribute {
 			},
 		},
 		"label": {
-			Description: "label",
+			Description: "Interface label.",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -50,7 +50,7 @@ func Interface() map[string]tfsdk.Attribute {
 			},
 		},
 		"mac_address": {
-			Description: "MAC address",
+			Description: "MAC address.",
 			Type:        types.StringType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -58,7 +58,7 @@ func Interface() map[string]tfsdk.Attribute {
 			},
 		},
 		"is_connected": {
-			Description: "connection status",
+			Description: "Is the interface connected to a link?",
 			Type:        types.BoolType,
 			Computed:    true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -66,15 +66,15 @@ func Interface() map[string]tfsdk.Attribute {
 			},
 		},
 		"state": {
-			Description: "interface state (UP / DOWN)",
-			Type:        types.StringType,
-			Computed:    true,
+			MarkdownDescription: "interface state (`UP` or `DOWN`).",
+			Type:                types.StringType,
+			Computed:            true,
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
 		},
 		"ip4": {
-			Description: "IPv4 address list",
+			Description: "IPv4 address list.",
 			Computed:    true,
 			Type: types.ListType{
 				ElemType: types.StringType,
@@ -84,7 +84,7 @@ func Interface() map[string]tfsdk.Attribute {
 			},
 		},
 		"ip6": {
-			Description: "IPv6 address list",
+			Description: "IPv6 address list.",
 			Computed:    true,
 			Type: types.ListType{
 				ElemType: types.StringType,

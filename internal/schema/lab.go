@@ -50,7 +50,7 @@ func Lab() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
 			Computed:    true,
-			Description: "CML lab identifier, a UUID",
+			Description: "Lab identifier, a UUID.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -58,8 +58,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"state": {
 			Computed:            true,
-			Description:         "CML lab state, one of DEFINED_ON_CORE, STARTED or STOPPED",
-			MarkdownDescription: "CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`",
+			MarkdownDescription: "Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -67,7 +66,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"created": {
 			Computed:    true,
-			Description: "creation datetime string in ISO8601 format",
+			Description: "Creation date/time string in ISO8601 format.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -75,7 +74,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"modified": {
 			Computed:    true,
-			Description: "modification datetime string in ISO8601 format",
+			Description: "Modification date/time string in ISO8601 format.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -84,7 +83,7 @@ func Lab() map[string]tfsdk.Attribute {
 		"title": {
 			Optional:    true,
 			Computed:    true,
-			Description: "title of the lab",
+			Description: "Title of the lab.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -92,7 +91,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"owner": {
 			Computed:    true,
-			Description: "owner of the lab, a UUID4",
+			Description: "Owner of the lab, a UUID4.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -101,7 +100,7 @@ func Lab() map[string]tfsdk.Attribute {
 		"description": {
 			Optional:    true,
 			Computed:    true,
-			Description: "lab description",
+			Description: "Lab description.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -109,7 +108,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"node_count": {
 			Computed:    true,
-			Description: "number of nodes in the lab",
+			Description: "Number of nodes in the lab.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -117,7 +116,7 @@ func Lab() map[string]tfsdk.Attribute {
 		},
 		"link_count": {
 			Computed:    true,
-			Description: "number of links in the lab",
+			Description: "Number of links in the lab.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -126,7 +125,7 @@ func Lab() map[string]tfsdk.Attribute {
 		"notes": {
 			Optional:    true,
 			Computed:    true,
-			Description: "lab notes",
+			Description: "Lab notes.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -135,11 +134,11 @@ func Lab() map[string]tfsdk.Attribute {
 		"groups": {
 			Optional:    true,
 			Computed:    true,
-			Description: "lab notes",
+			Description: "Groups assigned to the lab.",
 			Attributes: tfsdk.ListNestedAttributes(
 				map[string]tfsdk.Attribute{
 					"id": {
-						Description: "group ID (UUID)",
+						Description: "Group ID (UUID).",
 						Type:        types.StringType,
 						Computed:    true,
 						PlanModifiers: tfsdk.AttributePlanModifiers{
@@ -147,8 +146,7 @@ func Lab() map[string]tfsdk.Attribute {
 						},
 					},
 					"permission": {
-						Description:         "permission, either read_only or read_write",
-						MarkdownDescription: "permission, either `read_only` or `read_write`",
+						MarkdownDescription: "Permission, either `read_only` or `read_write`.",
 						Type:                types.StringType,
 						Computed:            true,
 						PlanModifiers: tfsdk.AttributePlanModifiers{

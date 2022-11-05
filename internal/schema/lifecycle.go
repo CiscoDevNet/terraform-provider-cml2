@@ -26,7 +26,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 		"id": {
 			Computed:    true,
-			Description: "resource identifier, a UUID.",
+			Description: "Resource identifier, a UUID.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -35,7 +35,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 		"lab_id": {
 			Optional:            true,
 			Computed:            true,
-			MarkdownDescription: "CML lab identifier, a UUID. If set, `elements` must be configured as well.",
+			MarkdownDescription: "Lab identifier, a UUID. If set, `elements` must be configured as well.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.RequiresReplace(),
 				resource.UseStateForUnknown(),
@@ -66,7 +66,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 		"state": {
 			Computed:            true,
 			Optional:            true,
-			MarkdownDescription: "CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`",
+			MarkdownDescription: "Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.",
 			PlanModifiers: tfsdk.AttributePlanModifiers{
 				resource.UseStateForUnknown(),
 			},
@@ -76,7 +76,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 			},
 		},
 		"nodes": {
-			Description: "List of nodes and their interfaces with IP addresses",
+			Description: "List of nodes and their interfaces with IP addresses.",
 			Computed:    true,
 			Attributes: tfsdk.MapNestedAttributes(
 				Node(),
@@ -102,7 +102,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 				map[string]tfsdk.Attribute{
 					"create": {
 						Required:    true,
-						Description: "create timeout",
+						Description: "Create timeout.",
 						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							validator.Duration{},
@@ -110,7 +110,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 					},
 					"update": {
 						Required:    true,
-						Description: "update timeout",
+						Description: "Update timeout.",
 						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							validator.Duration{},
@@ -118,7 +118,7 @@ func Lifecycle() map[string]tfsdk.Attribute {
 					},
 					"delete": {
 						Optional:    true,
-						Description: "delete timeout (currently unused)",
+						Description: "Delete timeout (currently unused).",
 						Type:        types.StringType,
 						Validators: []tfsdk.AttributeValidator{
 							validator.Duration{},
