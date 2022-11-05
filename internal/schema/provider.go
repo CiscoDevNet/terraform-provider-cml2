@@ -20,9 +20,9 @@ func Provider() map[string]tfsdk.Attribute {
 	return map[string]tfsdk.Attribute{
 
 		"address": {
-			Description: "CML2 controller address.",
-			Required:    true,
-			Type:        types.StringType,
+			MarkdownDescription: "CML2 controller address, must start with `https://`.",
+			Required:            true,
+			Type:                types.StringType,
 		},
 		"username": {
 			Description: "CML2 username.",

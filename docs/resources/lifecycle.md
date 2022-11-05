@@ -104,7 +104,7 @@ resource "cml2_link" "l4" {
 }
 
 resource "cml2_lifecycle" "top" {
-  id = cml2_lab.this.id
+  lab_id = cml2_lab.this.id
   # the elements list has the dependencies
   elements = [
     cml2_node.ext.id,
@@ -144,9 +144,9 @@ output "r1_ip_address" {
 
 - `configs` (Map of String) Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
 - `elements` (List of String) List of node and link IDs the lab consists of.  Works only when a (lab) ID is provided and no topology is configured.
-- `lab_id` (String) CML lab identifier, a UUID. If set, `elements` must be configured as well.
+- `lab_id` (String) Lab identifier, a UUID. If set, `elements` must be configured as well.
 - `staging` (Attributes) Defines in what sequence nodes are launched. (see [below for nested schema](#nestedatt--staging))
-- `state` (String) CML lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`
+- `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.
 - `timeouts` (Attributes) Timeouts for operations, given as a parsable string as in `60m` or `2h`. (see [below for nested schema](#nestedatt--timeouts))
 - `topology` (String, Sensitive) The topology to start, must be valid YAML. Can't be configured if the lab `id` is configured.
 - `wait` (Boolean) If set to `true` then wait until the lab has completely `BOOTED`.
@@ -154,8 +154,8 @@ output "r1_ip_address" {
 ### Read-Only
 
 - `booted` (Boolean) Set to `true` when all nodes in the lab have booted.
-- `id` (String) resource identifier, a UUID.
-- `nodes` (Attributes Map) List of nodes and their interfaces with IP addresses (see [below for nested schema](#nestedatt--nodes))
+- `id` (String) Resource identifier, a UUID.
+- `nodes` (Attributes Map) List of nodes and their interfaces with IP addresses. (see [below for nested schema](#nestedatt--nodes))
 
 <a id="nestedatt--staging"></a>
 ### Nested Schema for `staging`
@@ -174,12 +174,12 @@ Optional:
 
 Required:
 
-- `create` (String) create timeout
-- `update` (String) update timeout
+- `create` (String) Create timeout.
+- `update` (String) Update timeout.
 
 Optional:
 
-- `delete` (String) delete timeout (currently unused)
+- `delete` (String) Delete timeout (currently unused).
 
 
 <a id="nestedatt--nodes"></a>
@@ -187,44 +187,44 @@ Optional:
 
 Required:
 
-- `lab_id` (String) lab ID containing the node (UUID)
-- `label` (String) label
-- `nodedefinition` (String) node definition / type
+- `lab_id` (String) Lab ID containing the node (UUID).
+- `label` (String) Node label.
+- `nodedefinition` (String) Node definition / type.
 
 Optional:
 
-- `boot_disk_size` (Number) size of boot disk volume, in GB
-- `configuration` (String) node configuration
-- `cpu_limit` (Number) cpu limit in %, 20-100
-- `cpus` (Number) number of cpus
-- `data_volume` (Number) size of data volume, in GB
-- `imagedefinition` (String) image definition / type
-- `ram` (Number) amount of RAM, megabytes
-- `tags` (List of String) tags of the node
-- `x` (Number) x coordinate
-- `y` (Number) x coordinate
+- `boot_disk_size` (Number) Size of boot disk volume, in GB.
+- `configuration` (String) Node configuration.
+- `cpu_limit` (Number) CPU limit in %, 20-100.
+- `cpus` (Number) Number of CPUs.
+- `data_volume` (Number) Size of data volume, in GB.
+- `imagedefinition` (String) Image definition, must match the node type.
+- `ram` (Number) Amount of RAM, megabytes.
+- `tags` (List of String) List of tags of the node.
+- `x` (Number) X coordinate on the topology canvas.
+- `y` (Number) Y coordinate on the topology canvas.
 
 Read-Only:
 
-- `compute_id` (String) ID of a compute this node is on, a UUID4
-- `id` (String) node ID (UUID)
-- `interfaces` (Attributes List) list of interfaces on the node (see [below for nested schema](#nestedatt--nodes--interfaces))
-- `serial_devices` (List of Object) a list of serial devices (consoles) (see [below for nested schema](#nestedatt--nodes--serial_devices))
-- `state` (String) state
-- `vnc_key` (String) VNC key of console, a UUID4
+- `compute_id` (String) ID of a compute this node is on, a UUID4.
+- `id` (String) Node ID (UUID).
+- `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--nodes--interfaces))
+- `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--nodes--serial_devices))
+- `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
+- `vnc_key` (String) VNC key of console, a UUID4.
 
 <a id="nestedatt--nodes--interfaces"></a>
 ### Nested Schema for `nodes.interfaces`
 
 Read-Only:
 
-- `id` (String) interface ID (UUID)
-- `ip4` (List of String) IPv4 address list
-- `ip6` (List of String) IPv6 address list
-- `is_connected` (Boolean) connection status
-- `label` (String) label
-- `mac_address` (String) MAC address
-- `state` (String) interface state (UP / DOWN)
+- `id` (String) Interface ID (UUID).
+- `ip4` (List of String) IPv4 address list.
+- `ip6` (List of String) IPv6 address list.
+- `is_connected` (Boolean) Is the interface connected to a link?
+- `label` (String) Interface label.
+- `mac_address` (String) MAC address.
+- `state` (String) interface state (`UP` or `DOWN`).
 
 
 <a id="nestedatt--nodes--serial_devices"></a>

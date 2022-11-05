@@ -2,6 +2,7 @@ package lifecycle_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -52,6 +53,75 @@ func TestAccLifecycleResource(t *testing.T) {
 			// 	),
 			// },
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccLifecycleConfigCheck(t *testing.T) {
+	re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
+	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config:      testAccLifecycleConfigCheck(cfg.Cfg, false),
+				ExpectError: re1,
+			},
+			{
+				Config:      testAccLifecycleConfigCheck(cfg.Cfg, true),
+				ExpectError: re2,
+			},
+		},
+	})
+}
+
+func TestAccLifecycleImportLab(t *testing.T) {
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccLifecycleImportLab(cfg.Cfg),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
+				),
+			},
+		},
+	})
+}
+
+func uuidCheck(value string) error {
+	re := regexp.MustCompile(`\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b`)
+	if !re.MatchString(value) {
+		return fmt.Errorf("%s is not a UUID", value)
+	}
+	return nil
+}
+
+func TestAccLifecycleResourceState(t *testing.T) {
+	re1 := regexp.MustCompile(`can't transition from no state to STOPPED`)
+	re2 := regexp.MustCompile(`can't transition from DEFINED_ON_CORE to STOPPED`)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config:      testAccLifecycleStateCheck(cfg.Cfg, "STOPPED"),
+				ExpectError: re1,
+			},
+			{
+				Config: testAccLifecycleStateCheck(cfg.Cfg, "DEFINED_ON_CORE"),
+			},
+			{
+				Config:      testAccLifecycleStateCheck(cfg.Cfg, "STOPPED"),
+				ExpectError: re2,
+			},
 		},
 	})
 }
@@ -195,4 +265,61 @@ resource "cml2_lifecycle" "top" {
 	%[2]s
 }
 `, cfg, state)
+}
+
+func testAccLifecycleStateCheck(cfg, state string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+}
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	elements = []
+	state = %[2]q
+}
+`, cfg, state)
+}
+
+func testAccLifecycleConfigCheck(cfg string, insertTopo bool) string {
+	topo := ""
+	if insertTopo {
+		topo = fmt.Sprintf("topology = %q", "blabla")
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+}
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	%[2]s
+}
+`, cfg, topo)
+}
+
+func testAccLifecycleImportLab(cfg string) string {
+	// BEWARE!! the yaml below must be indented with spaces, not with tabs!!
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lifecycle" "top" {
+	topology = <<-EOT
+    lab:
+        description: 'need one node'
+        notes: ''
+        title: empty
+        version: 0.1.0
+    links: []
+    nodes:
+        - id: n0
+          label: alpine-0
+          x: 1
+          y: 1
+          node_definition: alpine
+          interfaces: []
+    EOT
+	staging = {
+		stages=["infra","core","sites"]
+	}
+	wait = false
+}
+`, cfg)
 }

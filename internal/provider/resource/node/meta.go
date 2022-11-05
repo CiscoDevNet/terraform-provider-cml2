@@ -34,7 +34,7 @@ func (r *NodeResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagno
 	return tfsdk.Schema{
 		// This description is used by the documentation generator and the
 		// language server.
-		MarkdownDescription: "A node resource represents a CML node. At create time, the lab ID and a node definition must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once and then requires a replace.",
+		MarkdownDescription: "A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the lifecyle resource) once. Changing attributes will then require a replace.",
 		Attributes:          schema.Node(),
 	}, nil
 }

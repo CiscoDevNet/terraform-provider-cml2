@@ -47,7 +47,6 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 			)
 			return
 		}
-		data.LabID = types.StringValue(start.lab.ID)
 	} else {
 		start.lab, err = r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 		if err != nil {

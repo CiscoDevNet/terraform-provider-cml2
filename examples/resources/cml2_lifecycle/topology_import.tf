@@ -16,13 +16,14 @@ resource "cml2_lab" "example" {
   # nodes:
   # ...
 
-  # if wait is set then wait until the lab converged, it defaults to true stages
-  # have no effect if wait is false and this will produce a warning!
+  # if wait is set then wait until the lab converged, it defaults to true.
+  # staging has no effect if wait is set to false and this will produce a
+  # warning!
   # wait = false
 
   # state can be STARTED or DEFINED_ON_CORE when creating. For a running lab, it
-  # can be also set to STOPPED. If not set, it defaults to DEFINED_ON_CORE (e.g.
-  # the lab is created but will not be started after creating).
+  # can be also set to STOPPED. If not set, it defaults to STARTED (e.g.  the
+  # lab is created and will be started after creating).
   # state = "STARTED"
 
   # dictionary, keyed with the node label and the text configuration which will

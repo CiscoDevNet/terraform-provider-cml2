@@ -75,20 +75,20 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 		return
 	}
 
+	if !data.LabID.IsNull() && !data.Topology.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("topology"),
+			"Conflicting configuration",
+			"Can't set \"LabID\" and \"topology\" at the same time.",
+		)
+		return
+	}
 	// id and elements are mutually exclusive with topology
 	if !data.LabID.IsNull() && data.Elements.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("elements"),
 			"Required configuration",
 			"When \"LabID\" is set, \"elements\" is a required attribue.",
-		)
-		return
-	}
-	if !data.LabID.IsNull() && !data.Topology.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("topology"),
-			"Conflicting configuration",
-			"Can't set \"LabID\" and \"topology\" at the same time.",
 		)
 		return
 	}
@@ -108,7 +108,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 	resp.Diagnostics.AddAttributeWarning(
 		path.Root("staging"),
 		"Conflicting configuration",
-		"Expected \"wait\" to be true with when staging is configured. "+
+		"\"wait\" is set to false while staging is configured. "+
 			"The resource may return unexpected results.",
 	)
 }
