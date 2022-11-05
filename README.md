@@ -77,3 +77,8 @@ Those are referenced for testing in `internal/provider/testing`.
 ```shell
 make testacc
 ```
+
+Acceptence testing with Github actions can be achieved using the provided
+`tunnel.sh` script which uses tools like `gh` CLI and ngrok to forward the API
+calls to a locally installed CML instance.  See `tunnel.sh` and the `ghsecret`
+[README](cmd/ghsecret/README.md) for additional details

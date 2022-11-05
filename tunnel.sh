@@ -2,9 +2,12 @@
 
 # set -x
 
+# change these two to local requirements:
 
 REPO="ciscodevnet/terraform-provider-cml2"
 CML="https://cml-controller.cml.lab:443"
+
+# nothing to be changed further down
 
 
 function help() {
@@ -33,6 +36,7 @@ Local CML2 address: $CML
 
 EOT
 }
+
 
 function get_status() {
     if ! tmux list-sessions -F "#S" | grep -qs ^NGROK; then

@@ -2,6 +2,13 @@
 
 Lists the changes in the provider.
 
+## Version 0.4.1
+
+- documentation consistency and small fixes
+- improved integration test coverage
+- fix `lifecycle` import-mode regression
+- updated to latest gocmlclient 0.0.4
+
 ## Version 0.4.0
 
 - adapted to the terraform-provider-framework v0.0.15 changes
