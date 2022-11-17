@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
 	github.com/rschmied/gocmlclient v0.0.4
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.2.0
+	golang.org/x/crypto v0.3.0
 )
 
 require (
