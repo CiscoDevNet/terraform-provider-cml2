@@ -380,21 +380,26 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		CPUlimit:        types.Int64Value(int64(node.CPUlimit)),
 
 		// these values are null if there's no compute ID
-		ComputeID:    types.StringNull(),
-		VNCkey:       types.StringNull(),
-		BootDiskSize: types.Int64Null(),
-		DataVolume:   types.Int64Null(),
-		CPUs:         types.Int64Null(),
-		RAM:          types.Int64Null(),
+		ComputeID: types.StringNull(),
+		VNCkey:    types.StringNull(),
 	}
 
 	// set them, if there IS a compute ID
 	if len(node.ComputeID) > 0 {
 		newNode.ComputeID = types.StringValue(node.ComputeID)
-		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
-		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
 		newNode.VNCkey = types.StringValue(node.VNCkey)
+	}
+
+	if node.BootDiskSize > 0 {
+		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
+	}
+	if node.DataVolume > 0 {
+		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
+	}
+	if node.CPUs > 0 {
 		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+	}
+	if node.RAM > 0 {
 		newNode.RAM = types.Int64Value(int64(node.RAM))
 	}
 

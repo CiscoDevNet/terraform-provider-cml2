@@ -85,6 +85,21 @@ func TestAccNodeResource(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleNodeProps(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceRam(cfg.Cfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "ram", "512"),
+				),
+			},
+		},
+	})
+}
+
 func testAccNodeResourceConfig(cfg, node_def string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -113,6 +128,21 @@ resource "cml2_node" "r1" {
 	y              = 200
 	nodedefinition = "alpine"
 	tags           = ["test", "someothertag"]
+}
+`, cfg)
+}
+
+func testAccNodeResourceRam(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.test.id
+  label          = "R1"
+  ram            = 512
+  nodedefinition = "alpine"
 }
 `, cfg)
 }
