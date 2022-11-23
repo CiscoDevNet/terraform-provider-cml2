@@ -35,6 +35,8 @@ resource "cml2_lab" "example" {
     "server-3" : "hostname server-3",
   }
 
+  # start the nodes in the order given by the list of node tags.
+  # if there's any nodes remaining then leave them alone (don't start them).
   staging = {
     stages = [
       "infrastructure",
@@ -52,4 +54,10 @@ resource "cml2_lab" "example" {
     delete = "20m" # currently unused
   }
 
+}
+
+# the below will output the first IPv4 address on the first interface of the 
+# node with the label "server-3" when the lab state is STARTED.
+output "server3ip" {
+  value = (cml2_lifecycle.this.state == "STARTED") ? [for k, v in cml2_lifecycle.this.nodes : v.interfaces[0].ip4[0] if v.label == "servesr-3"][0] : ""
 }
