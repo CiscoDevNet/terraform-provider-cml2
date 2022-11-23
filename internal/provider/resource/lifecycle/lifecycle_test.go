@@ -3,6 +3,7 @@ package lifecycle_test
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -133,33 +134,33 @@ func TestAccLifecycleSequence(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLifecycleSequence(cfg.Cfg, 0),
+				Config: testAccLifecycleSequence(cfg.Cfg, 0, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "false"),
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
 				),
 			},
 			{
-				Config: testAccLifecycleSequence(cfg.Cfg, 1),
+				Config: testAccLifecycleSequence(cfg.Cfg, 1, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STOPPED"),
 				),
 			},
 			{
-				Config: testAccLifecycleSequence(cfg.Cfg, 2),
+				Config: testAccLifecycleSequence(cfg.Cfg, 2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
 				),
 			},
 			{
-				Config: testAccLifecycleSequence(cfg.Cfg, 3),
+				Config: testAccLifecycleSequence(cfg.Cfg, 3, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
 				),
 			},
 			{
-				Config: testAccLifecycleSequence(cfg.Cfg, 4),
+				Config: testAccLifecycleSequence(cfg.Cfg, 4, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
 				),
@@ -217,7 +218,7 @@ resource "cml2_lifecycle" "top" {
 `, cfg)
 }
 
-func testAccLifecycleSequence(cfg string, seq int) string {
+func testAccLifecycleSequence(cfg string, seq int, all bool) string {
 	f := func(state string) string { return fmt.Sprintf("state = %q", state) }
 	var state string
 	switch seq {
@@ -242,11 +243,19 @@ resource "cml2_node" "ext" {
   lab_id         = cml2_lab.this.id
   label          = "Internet"
   nodedefinition = "external_connector"
+  tags           = [ "bla" ]
 }
 
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
+  nodedefinition = "alpine"
+  tags           = [ "bla" ]
+}
+
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.this.id
+  label          = "R2"
   nodedefinition = "alpine"
 }
 
@@ -260,11 +269,16 @@ resource "cml2_lifecycle" "top" {
 	elements = [
 		cml2_node.ext.id,
 		cml2_node.r1.id,
+		cml2_node.r2.id,
 		cml2_link.l1.id,
 	]
+	staging = {
+		stages = [ "bla" ]
+		start_remaining = %[3]s
+	}
 	%[2]s
 }
-`, cfg, state)
+`, cfg, state, strconv.FormatBool(all))
 }
 
 func testAccLifecycleStateCheck(cfg, state string) string {

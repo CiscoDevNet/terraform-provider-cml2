@@ -142,6 +142,10 @@ resource "cml2_node" "r1" {
   lab_id         = cml2_lab.test.id
   label          = "R1"
   ram            = 512
+  boot_disk_size = 64
+  data_volume    = 64
+  cpus           = 2
+  cpu_limit      = 80
   nodedefinition = "alpine"
 }
 `, cfg)

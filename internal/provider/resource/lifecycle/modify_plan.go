@@ -85,11 +85,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		for id, node := range nodes {
 
 			planState := planData.State.ValueString()
-			if planState != "STARTED" {
-				node.State = types.StringValue(planData.State.ValueString())
-			}
 
-			if planData.State.ValueString() == "DEFINED_ON_CORE" {
+			if planData.State.ValueString() == cmlclient.LabStateDefined {
 				node.SerialDevices = types.ListNull(schema.SerialDevicesAttrType)
 				node.VNCkey = types.StringNull()
 				node.ComputeID = types.StringNull()
@@ -97,9 +94,9 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.CPUs = types.Int64Null()
 				node.RAM = types.Int64Null()
 				node.BootDiskSize = types.Int64Null()
-				node.State = types.StringValue("DEFINED_ON_CORE")
+				node.State = types.StringValue(cmlclient.NodeStateDefined)
 			}
-			if planData.State.ValueString() == "STARTED" {
+			if planData.State.ValueString() == cmlclient.LabStateStarted {
 				node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
 				node.VNCkey = types.StringUnknown()
 				node.ComputeID = types.StringUnknown()
@@ -109,8 +106,10 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.BootDiskSize = types.Int64Unknown()
 				node.State = types.StringUnknown()
 			}
-			if planData.State.ValueString() == "STOPPED" {
-				node.State = types.StringValue("STOPPED")
+			if planData.State.ValueString() == cmlclient.LabStateStopped {
+				if node.State.ValueString() != cmlclient.NodeStateDefined {
+					node.State = types.StringValue(cmlclient.NodeStateStopped)
+				}
 			}
 
 			// This is a bit of a hack since the node def name is hard coded
@@ -130,7 +129,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			}
 
 			for idx := range ifaces {
-				if planState == "STARTED" {
+				if planState == cmlclient.LabStateStarted {
 					ifaces[idx].IP4 = types.ListUnknown(types.StringType)
 					ifaces[idx].IP6 = types.ListUnknown(types.StringType)
 					// MACaddresses won't change at state change if one was assigned
@@ -139,16 +138,18 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 					}
 					ifaces[idx].State = types.StringUnknown()
 				}
-				if planState == "DEFINED_ON_CORE" || planState == "STOPPED" {
+				if planState == cmlclient.LabStateDefined || planState == cmlclient.LabStateStopped {
 					ifaces[idx].IP4 = types.ListNull(types.StringType)
 					ifaces[idx].IP6 = types.ListNull(types.StringType)
 				}
-				if planState == "DEFINED_ON_CORE" {
+				if planState == cmlclient.LabStateDefined {
 					ifaces[idx].MACaddress = types.StringNull()
-					ifaces[idx].State = types.StringValue("DEFINED_ON_CORE")
+					ifaces[idx].State = types.StringValue(cmlclient.IfaceStateDefined)
 				}
-				if planState == "STOPPED" {
-					ifaces[idx].State = types.StringValue("STOPPED")
+				if planState == cmlclient.LabStateStopped {
+					if ifaces[idx].State.ValueString() != cmlclient.IfaceStateDefined {
+						ifaces[idx].State = types.StringValue(cmlclient.IfaceStateStopped)
+					}
 				}
 			}
 
@@ -179,7 +180,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 
 		// booted state of lab is unknown if the plan is to start
-		if planData.State.ValueString() == "STARTED" {
+		if planData.State.ValueString() == cmlclient.LabStateStarted {
 			planData.Booted = types.BoolUnknown()
 		} else {
 			planData.Booted = types.BoolValue(false)
