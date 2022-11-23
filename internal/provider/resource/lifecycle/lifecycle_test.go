@@ -81,14 +81,20 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 
 func TestAccLifecycleImportLab(t *testing.T) {
 
+	re1 := regexp.MustCompile(`node with label xxx not found`)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccLifecycleImportLab(cfg.Cfg),
+				Config:      testAccLifecycleImportLab(cfg.Cfg, "xxx"),
+				ExpectError: re1},
+			{
+				Config: testAccLifecycleImportLab(cfg.Cfg, "alpine-0"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
+					resource.TestCheckOutput("n0config", "new config for alpine"),
 				),
 			},
 		},
@@ -310,7 +316,7 @@ resource "cml2_lifecycle" "top" {
 `, cfg, topo)
 }
 
-func testAccLifecycleImportLab(cfg string) string {
+func testAccLifecycleImportLab(cfg, label string) string {
 	// BEWARE!! the yaml below must be indented with spaces, not with tabs!!
 	return fmt.Sprintf(`
 %[1]s
@@ -328,12 +334,20 @@ resource "cml2_lifecycle" "top" {
           x: 1
           y: 1
           node_definition: alpine
+          configuration: empty
           interfaces: []
     EOT
+	configs = {
+		"%[2]s": "new config for alpine",
+	}
 	staging = {
 		stages=["infra","core","sites"]
 	}
 	wait = false
 }
-`, cfg)
+output "n0config" {
+    value = [ for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0" ][0]
+}
+
+`, cfg, label)
 }
