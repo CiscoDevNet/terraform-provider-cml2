@@ -25,7 +25,7 @@ $cmd -h | --help | help -- shows this help
 Requirements:
 - TF_VAR_username and TF_VAR_password environment variables with CML credentials
 - authorized gh tool (Github cli)
-- curl, ghsecret, ngrok and tmux in the path
+- curl, ghsecret, jq, ngrok and tmux in the path
 - ngrok authtoken provided via ~/.ngrok2/ngrok.yml
 
 Repo name and CML controller URL can be configured at the top of this script.
@@ -109,7 +109,7 @@ function start() {
 
 
 # check if we have everything...
-if ! which &>/dev/null ngrok gh curl tmux ghsecret; then
+if ! which &>/dev/null ngrok jq gh curl tmux ghsecret; then
     # color="\033[31;40m"
     color="\033[31m"
     nocolor="\033[0m"
