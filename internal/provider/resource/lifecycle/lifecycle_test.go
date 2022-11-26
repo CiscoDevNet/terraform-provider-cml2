@@ -58,6 +58,26 @@ func TestAccLifecycleResource(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleImport(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccLifecycleImport(cfg.Cfg),
+				Check:  resource.TestCheckResourceAttrWith("cml2_lab.this", "id", uuidCheck),
+			},
+			// ImportState testing
+			{
+				ResourceName:      "cml2_lab.this",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccLifecycleConfigCheck(t *testing.T) {
 	re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
 	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
@@ -366,10 +386,20 @@ resource "cml2_lifecycle" "top" {
 		stages = ["infra","core","sites"]
 		remaining = false
 	}
+	wait = false
 }
 output "n0config" {
     value = [ for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0" ][0]
 }
 
 `, cfg, label, nodeCfg)
+}
+
+func testAccLifecycleImport(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+	title = "labimport"
+}
+`, cfg)
 }
