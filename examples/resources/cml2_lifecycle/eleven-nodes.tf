@@ -17,6 +17,7 @@ resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
   nodedefinition = "alpine"
+  configuration  = "hostname alpine0"
   ram            = 512
   x              = -109
   y              = 130
@@ -223,6 +224,9 @@ resource "cml2_lifecycle" "top" {
     cml2_link.l9.id,
     cml2_link.l10.id
   ]
+  configs = {
+    "R1" : "hostname injected-hostname"
+  }
   staging = {
     stages          = ["infra", "group1", "group2"]
     start_remaining = false

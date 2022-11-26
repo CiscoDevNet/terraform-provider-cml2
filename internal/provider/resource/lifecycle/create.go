@@ -60,12 +60,12 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 
 	// inject the configurations into the nodes
 	r.injectConfigs(ctx, start.lab, &data, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	// if unknown state or specifically "start" state, start the lab...
-	if data.State.IsUnknown() || data.State.ValueString() == cmlclient.LabStateStarted {
+	// but only if there were no errors from config injection
+	if !resp.Diagnostics.HasError() &&
+		(data.State.IsUnknown() ||
+			data.State.ValueString() == cmlclient.LabStateStarted) {
 		r.startNodes(ctx, &resp.Diagnostics, start)
 	}
 

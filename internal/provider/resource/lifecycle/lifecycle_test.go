@@ -81,20 +81,41 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 
 func TestAccLifecycleImportLab(t *testing.T) {
 
-	re1 := regexp.MustCompile(`node with label xxx not found`)
+	const (
+		initialAlpineConfig = "new config for alpine"
+		changedAlpineConfig = "changed config for alpine"
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
+			// node with label xxx is not found, we expect an error
 			{
-				Config:      testAccLifecycleImportLab(cfg.Cfg, "xxx"),
-				ExpectError: re1},
+				Config: testAccLifecycleImportLab(
+					cfg.Cfg, "xxx", initialAlpineConfig,
+				),
+				ExpectError: regexp.MustCompile(`node with label xxx not found`),
+			},
+			// start lab and ensure that n0config output has the initial config
 			{
-				Config: testAccLifecycleImportLab(cfg.Cfg, "alpine-0"),
+				Config: testAccLifecycleImportLab(
+					cfg.Cfg, "alpine-0", initialAlpineConfig,
+				),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
-					resource.TestCheckOutput("n0config", "new config for alpine"),
+					resource.TestCheckOutput("n0config", initialAlpineConfig),
+				),
+			},
+			// change config and ensure that n0config output now has the changed config
+			// (this requires a replace)
+			{
+				Config: testAccLifecycleImportLab(
+					cfg.Cfg, "alpine-0", changedAlpineConfig,
+				),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
+					resource.TestCheckOutput("n0config", changedAlpineConfig),
 				),
 			},
 		},
@@ -316,7 +337,7 @@ resource "cml2_lifecycle" "top" {
 `, cfg, topo)
 }
 
-func testAccLifecycleImportLab(cfg, label string) string {
+func testAccLifecycleImportLab(cfg, label, nodeCfg string) string {
 	// BEWARE!! the yaml below must be indented with spaces, not with tabs!!
 	return fmt.Sprintf(`
 %[1]s
@@ -334,20 +355,21 @@ resource "cml2_lifecycle" "top" {
           x: 1
           y: 1
           node_definition: alpine
-          configuration: empty
+          configuration: hostname bla
           interfaces: []
+          tags: ["infra"]
     EOT
 	configs = {
-		"%[2]s": "new config for alpine",
+		"%[2]s": %[3]q,
 	}
 	staging = {
-		stages=["infra","core","sites"]
+		stages = ["infra","core","sites"]
+		remaining = false
 	}
-	wait = false
 }
 output "n0config" {
     value = [ for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0" ][0]
 }
 
-`, cfg, label)
+`, cfg, label, nodeCfg)
 }
