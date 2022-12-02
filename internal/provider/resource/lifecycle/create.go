@@ -10,12 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
-		data schema.LabLifecycleModel
+		data cmlschema.LabLifecycleModel
 		err  error
 	)
 

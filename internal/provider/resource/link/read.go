@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data schema.LinkModel
+	var data cmlschema.LinkModel
 
 	tflog.Info(ctx, "Resource Link: READ")
 
@@ -36,8 +36,8 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLink(ctx, link, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LinkAttrType},
+			cmlschema.NewLink(ctx, link, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,
 	)

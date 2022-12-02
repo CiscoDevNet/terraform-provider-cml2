@@ -1,4 +1,4 @@
-package schema_test
+package cmlschema_test
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,25 +37,25 @@ func TestNewLink(t *testing.T) {
 	link.SrcSlot = &slot1
 	link.DstSlot = &slot2
 
-	value := schema.NewLink(ctx, link, diag)
+	value := cmlschema.NewLink(ctx, link, diag)
 	t.Logf("value: %+v", value)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
 
-	var newLink schema.LinkModel
+	var newLink cmlschema.LinkModel
 	diag.Append(tfsdk.ValueAs(ctx, value, &newLink)...)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
 }
 
 func TestLinkAttrs(t *testing.T) {
-	schema := tfsdk.Schema{
-		Attributes: schema.Link(),
+	linkschema := schema.Schema{
+		Attributes: cmlschema.Link(),
 	}
 
-	got, diag := schema.TypeAtPath(context.TODO(), path.Root("id"))
+	got, diag := linkschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 11, len(schema.Attributes))
+	assert.Equal(t, 11, len(linkschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }

@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data *schema.LabLifecycleModel
+	var data *cmlschema.LabLifecycleModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 

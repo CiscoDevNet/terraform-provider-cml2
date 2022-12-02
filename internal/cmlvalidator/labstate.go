@@ -1,14 +1,15 @@
-package validator
+package cmlvalidator
 
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-var _ tfsdk.AttributeValidator = LabState{}
+var _ validator.String = LabState{}
 
 type LabState struct{}
 
@@ -24,10 +25,10 @@ func (v LabState) MarkdownDescription(ctx context.Context) string {
 
 // Validate runs the main validation logic of the validator, reading
 // configuration data out of `req` and updating `resp` with diagnostics.
-func (v LabState) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
+func (v LabState) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	var labState types.String
 
-	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.AttributeConfig, &labState)...)
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.ConfigValue, &labState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -40,7 +41,7 @@ func (v LabState) Validate(ctx context.Context, req tfsdk.ValidateAttributeReque
 		labState.ValueString() != cmlclient.LabStateStopped &&
 		labState.ValueString() != cmlclient.LabStateStarted {
 		resp.Diagnostics.AddAttributeError(
-			req.AttributePath,
+			req.Path,
 			"Invalid lab state",
 			"valid states are DEFINED_ON_CORE, STOPPED and STARTED.",
 		)

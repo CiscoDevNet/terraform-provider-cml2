@@ -1,11 +1,15 @@
-package schema
+package cmlschema
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
@@ -31,66 +35,57 @@ var InterfaceAttrType = map[string]attr.Type{
 	"ip6":          types.ListType{ElemType: types.StringType},
 }
 
-func Interface() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
+func Interface() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
 			Description: "Interface ID (UUID).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"label": {
+		"label": schema.StringAttribute{
 			Description: "Interface label.",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"mac_address": {
+		"mac_address": schema.StringAttribute{
 			Description: "MAC address.",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"is_connected": {
+		"is_connected": schema.BoolAttribute{
 			Description: "Is the interface connected to a link?",
-			Type:        types.BoolType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"state": {
+		"state": schema.StringAttribute{
 			MarkdownDescription: "interface state (`UP` or `DOWN`).",
-			Type:                types.StringType,
 			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"ip4": {
+		"ip4": schema.ListAttribute{
 			Description: "IPv4 address list.",
 			Computed:    true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			ElementType: types.StringType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"ip6": {
+		"ip6": schema.ListAttribute{
 			Description: "IPv6 address list.",
 			Computed:    true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			ElementType: types.StringType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}

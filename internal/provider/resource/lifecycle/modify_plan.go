@@ -10,12 +10,12 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var configData, planData, stateData schema.LabLifecycleModel
+	var configData, planData, stateData cmlschema.LabLifecycleModel
 
 	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN")
 
@@ -75,19 +75,19 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	if changeNeeded {
 		tflog.Info(ctx, "ModifyPlan: change detected")
 
-		var nodes map[string]schema.NodeModel
+		var nodes map[string]cmlschema.NodeModel
 
-		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, planData.Nodes, &nodes)...)
+		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, stateData.Nodes, &nodes)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
+		planState := planData.State.ValueString()
+
 		for id, node := range nodes {
 
-			planState := planData.State.ValueString()
-
 			if planData.State.ValueString() == cmlclient.LabStateDefined {
-				node.SerialDevices = types.ListNull(schema.SerialDevicesAttrType)
+				node.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringNull()
 				node.ComputeID = types.StringNull()
 				node.DataVolume = types.Int64Null()
@@ -97,7 +97,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.State = types.StringValue(cmlclient.NodeStateDefined)
 			}
 			if planData.State.ValueString() == cmlclient.LabStateStarted {
-				node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
+				node.SerialDevices = types.ListUnknown(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringUnknown()
 				node.ComputeID = types.StringUnknown()
 				node.DataVolume = types.Int64Unknown()
@@ -122,7 +122,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.Configuration = types.StringUnknown()
 			}
 
-			var ifaces []schema.InterfaceModel
+			var ifaces []cmlschema.InterfaceModel
 			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, node.Interfaces, &ifaces)...)
 			if resp.Diagnostics.HasError() {
 				return
@@ -157,7 +157,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				tfsdk.ValueFrom(
 					ctx,
 					ifaces,
-					types.ListType{ElemType: types.ObjectType{AttrTypes: schema.InterfaceAttrType}},
+					types.ListType{ElemType: types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType}},
 					&node.Interfaces,
 				)...,
 			)
@@ -171,7 +171,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			tfsdk.ValueFrom(
 				ctx,
 				nodes,
-				types.MapType{ElemType: types.ObjectType{AttrTypes: schema.NodeAttrType}},
+				types.MapType{ElemType: types.ObjectType{AttrTypes: cmlschema.NodeAttrType}},
 				&planData.Nodes,
 			)...,
 		)

@@ -11,13 +11,13 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data schema.NodeModel
+		data cmlschema.NodeModel
 		err  error
 	)
 
@@ -85,8 +85,8 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, newNode, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,
 	)

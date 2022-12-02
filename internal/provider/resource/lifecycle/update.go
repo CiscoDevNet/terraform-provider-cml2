@@ -10,13 +10,13 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
-		configData, planData, stateData *schema.LabLifecycleModel
+		configData, planData, stateData *cmlschema.LabLifecycleModel
 		err                             error
 	)
 

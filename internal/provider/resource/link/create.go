@@ -11,13 +11,13 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data schema.LinkModel
+		data cmlschema.LinkModel
 		err  error
 	)
 
@@ -75,8 +75,8 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLink(ctx, newLink, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LinkAttrType},
+			cmlschema.NewLink(ctx, newLink, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,
 	)

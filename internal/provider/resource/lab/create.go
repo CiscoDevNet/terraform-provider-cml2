@@ -11,13 +11,13 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data *schema.LabModel
+		data *cmlschema.LabModel
 		err  error
 	)
 
@@ -51,8 +51,8 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLab(ctx, newLab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LabAttrType},
+			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&data,
 		)...,
 	)

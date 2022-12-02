@@ -9,11 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data schema.NodeModel
+	var data cmlschema.NodeModel
 
 	tflog.Info(ctx, "Resource Node: READ")
 
@@ -39,8 +39,8 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, node, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, node, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,
 	)

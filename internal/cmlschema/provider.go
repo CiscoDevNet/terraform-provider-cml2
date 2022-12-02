@@ -1,7 +1,7 @@
-package schema
+package cmlschema
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -16,45 +16,38 @@ type ProviderModel struct {
 	UseCache   types.Bool   `tfsdk:"use_cache"`
 }
 
-func Provider() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
+func Provider() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
 
-		"address": {
+		"address": schema.StringAttribute{
 			MarkdownDescription: "CML2 controller address, must start with `https://`.",
 			Required:            true,
-			Type:                types.StringType,
 		},
-		"username": {
+		"username": schema.StringAttribute{
 			Description: "CML2 username.",
 			Optional:    true,
-			Type:        types.StringType,
 		},
-		"password": {
+		"password": schema.StringAttribute{
 			Description: "CML2 password.",
 			Optional:    true,
-			Type:        types.StringType,
 			Sensitive:   true,
 		},
-		"token": {
+		"token": schema.StringAttribute{
 			Description: "CML2 API token (JWT).",
 			Optional:    true,
-			Type:        types.StringType,
 			Sensitive:   true,
 		},
-		"cacert": {
+		"cacert": schema.StringAttribute{
 			Description: "A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.",
 			Optional:    true,
-			Type:        types.StringType,
 		},
-		"skip_verify": {
+		"skip_verify": schema.BoolAttribute{
 			Description: "Disables TLS certificate verification.",
 			Optional:    true,
-			Type:        types.BoolType,
 		},
-		"use_cache": {
+		"use_cache": schema.BoolAttribute{
 			Description: "Enables the client cache, this is considered experimental.",
 			Optional:    true,
-			Type:        types.BoolType,
 		},
 	}
 }

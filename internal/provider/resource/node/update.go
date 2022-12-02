@@ -9,13 +9,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		stateData, planData schema.NodeModel
+		stateData, planData cmlschema.NodeModel
 		err                 error
 	)
 
@@ -96,8 +96,8 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, newNode, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&planData,
 		)...,
 	)

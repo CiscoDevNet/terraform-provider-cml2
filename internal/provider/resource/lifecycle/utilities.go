@@ -14,8 +14,8 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func getTimeouts(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostics) *labLifecycleTimeouts {
@@ -126,7 +126,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 	}
 }
 
-func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *schema.LabLifecycleModel, diags *diag.Diagnostics) {
+func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *cmlschema.LabLifecycleModel, diags *diag.Diagnostics) {
 	tflog.Info(ctx, "injectConfigs")
 
 	if data.Configs.IsNull() {
@@ -169,10 +169,10 @@ func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *cmlclient
 	})
 	valueMap := make(map[string]attr.Value, 0)
 	for _, node := range nodeList {
-		valueMap[node.ID] = schema.NewNode(ctx, node, diags)
+		valueMap[node.ID] = cmlschema.NewNode(ctx, node, diags)
 	}
 	nodes, _ := types.MapValue(
-		types.ObjectType{AttrTypes: schema.NodeAttrType},
+		types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 		valueMap,
 	)
 	return nodes

@@ -3,16 +3,14 @@ package lifecycle
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 const CML2ErrorLabel = "CML2 Provider Error"
@@ -44,19 +42,12 @@ type startData struct {
 	timeouts *labLifecycleTimeouts
 }
 
-func (t *LabLifecycleResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the language server.
-		Description: "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.  This is a synthetic resource which \"glues\" other actual resources like labs, nodes and links together.",
-
-		// Attributes are preferred over Blocks. Blocks should typically be used
-		// for configuration compatibility with previously existing schemas from
-		// an older Terraform Plugin SDK. Efforts should be made to convert from
-		// Blocks to Attributes as a breaking change for practitioners.
-
-		Attributes: schema.Lifecycle(),
-	}, nil
+func (r *LabLifecycleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	// This description is used by the documentation generator and the language
+	// server.
+	resp.Schema.Description = "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity. This is a synthetic resource which \"glues\" other actual resources like labs, nodes and links together."
+	resp.Schema.Attributes = cmlschema.Lifecycle()
+	resp.Diagnostics = nil
 }
 
 func (r *LabLifecycleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -68,7 +59,7 @@ func (r *LabLifecycleResource) Metadata(ctx context.Context, req resource.Metada
 }
 
 func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
-	var data schema.LabLifecycleModel
+	var data cmlschema.LabLifecycleModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {

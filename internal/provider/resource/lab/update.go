@@ -9,13 +9,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		planData schema.LabModel
+		planData cmlschema.LabModel
 		err      error
 	)
 
@@ -45,8 +45,8 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLab(ctx, newLab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LabAttrType},
+			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&planData,
 		)...,
 	)

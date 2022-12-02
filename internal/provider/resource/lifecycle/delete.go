@@ -9,11 +9,11 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data *schema.LabLifecycleModel
+	var data *cmlschema.LabLifecycleModel
 
 	tflog.Info(ctx, "Resource Lifecycle DELETE")
 

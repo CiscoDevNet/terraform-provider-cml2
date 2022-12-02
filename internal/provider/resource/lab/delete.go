@@ -9,14 +9,14 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 
 	var (
-		data *schema.LabModel
+		data *cmlschema.LabModel
 		err  error
 	)
 
