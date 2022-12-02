@@ -58,7 +58,7 @@ resource "cml2_lab" "example" {
 
 }
 
-# the below will output the first IPv4 address on the first interface of the 
+# the below will output the first IPv4 address on the first interface of the
 # node with the label "server-0" when the lab state is STARTED.
 output "server0ip" {
   value = (cml2_lifecycle.this.state == "STARTED") ? [for k, v in cml2_lifecycle.this.nodes : v.interfaces[0].ip4[0] if v.label == "server-0"][0] : ""

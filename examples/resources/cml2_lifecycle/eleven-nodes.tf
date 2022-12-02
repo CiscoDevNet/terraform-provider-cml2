@@ -200,6 +200,10 @@ resource "cml2_link" "l10" {
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
   elements = [
+    # Note that referencing all elements is not strictly
+    # required. As an alternative, a single "sentinel"
+    # node could be used which is started at the very end
+    # based on its tag. In particular, links could be ommited.
     cml2_node.ext.id,
     cml2_node.ums1.id,
     cml2_node.ios.id,
