@@ -1,14 +1,14 @@
-[![CodeQL](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml) [![Go](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml/badge.svg)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml) [![Coverage Status](https://coveralls.io/repos/github/CiscoDevNet/terraform-provider-cml2/badge.svg?branch=main)](https://coveralls.io/github/CiscoDevNet/terraform-provider-cml2?branch=main)
+[![CodeQL](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml/badge.svg?branch=main)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/codeql-analysis.yml) [![Go](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml/badge.svg)](https://github.com/ciscodevnet/terraform-provider-cml2/actions/workflows/test.yml) [![Coverage Status](https://coveralls.io/repos/github/CiscoDevNet/terraform-provider-cml2/badge.svg?branch=main)](https://coveralls.io/github/CiscoDevNet/terraform-provider-cml2?branch=main)
 
 # Terraform Provider for Cisco CML2
 
-This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.3 and later. It's current state is "beta". Changes can be expected, for example:
+This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.4 and later. It's current state is "beta". Changes can be expected, for example:
 
 - configuration (provider, resources, data-sources)
 - provider behavior
 - features (additional resources, ...)
 
-> **Note:** While it should work with 2.3, it has only been tested with 2.4 at the moment.  If there's an issue with 2.3 then please open an issue on Github, providing details.  Older versions are blocked within by the `gocmlclient`.
+> **Note:** The provider needs CML 2.4 or newer. This is due to some additional API capabilities which were introduced with 2.4.0. Older versions are blocked within by the `gocmlclient`.
 
 The current implementation provides:
 
@@ -26,7 +26,7 @@ The current implementation provides:
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.18
-- [CML2](https://cisco.com/go/cml) >= 2.3.0
+- [CML2](https://cisco.com/go/cml) >= 2.4.0
 
 ## Building The Provider
 

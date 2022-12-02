@@ -2,6 +2,9 @@
 
 # set -x
 
+# gh CLI from https://cli.github.com/
+# ghsecret from https://github.com/rschmied/ghsecret
+#
 # change these two to local requirements:
 
 REPO="ciscodevnet/terraform-provider-cml2"
