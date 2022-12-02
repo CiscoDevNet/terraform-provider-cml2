@@ -9,9 +9,8 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.2
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
-	github.com/rschmied/gocmlclient v0.0.6
+	github.com/rschmied/gocmlclient v0.0.7
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.3.0
 )
 
 require (
@@ -63,6 +62,7 @@ require (
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
 	github.com/zclconf/go-cty v1.12.1 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
