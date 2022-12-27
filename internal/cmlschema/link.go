@@ -163,11 +163,11 @@ func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics)
 		NodeBslot: types.Int64Value(-1),
 	}
 
-	if link.SrcSlot != nil {
-		newLink.NodeAslot = types.Int64Value(int64(*link.SrcSlot))
+	if link.SrcSlot >= 0 {
+		newLink.NodeAslot = types.Int64Value(int64(link.SrcSlot))
 	}
-	if link.DstSlot != nil {
-		newLink.NodeBslot = types.Int64Value(int64(*link.DstSlot))
+	if link.DstSlot >= 0 {
+		newLink.NodeBslot = types.Int64Value(int64(link.DstSlot))
 	}
 
 	var value attr.Value

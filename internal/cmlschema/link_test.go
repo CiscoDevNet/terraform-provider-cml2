@@ -24,18 +24,16 @@ var link *cmlclient.Link = &cmlclient.Link{
 	DstID:   "6205678a-34b3-40f7-ad39-8133533b954b",
 	SrcNode: "4dcd3095-349e-49e4-9ea2-1ad20207877f",
 	DstNode: "fcf6ba6f-7db9-45b0-a6ca-c383f504aa2e",
-	SrcSlot: nil,
-	DstSlot: nil,
+	SrcSlot: -1,
+	DstSlot: -1,
 }
 
 func TestNewLink(t *testing.T) {
 	diag := &diag.Diagnostics{}
 	ctx := context.Background()
 
-	slot1 := int(0)
-	slot2 := int(0)
-	link.SrcSlot = &slot1
-	link.DstSlot = &slot2
+	link.SrcSlot = 0
+	link.DstSlot = 0
 
 	value := cmlschema.NewLink(ctx, link, diag)
 	t.Logf("value: %+v", value)
