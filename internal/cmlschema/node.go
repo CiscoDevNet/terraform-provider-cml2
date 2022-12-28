@@ -349,29 +349,27 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 	tags, _ := types.ListValue(types.StringType, valueList)
 
 	newNode := NodeModel{
-		ID:              types.StringValue(node.ID),
-		LabID:           types.StringValue(node.LabID),
-		Label:           types.StringValue(node.Label),
-		State:           types.StringValue(node.State),
-		NodeDefinition:  types.StringValue(node.NodeDefinition),
-		ImageDefinition: types.StringValue(node.ImageDefinition),
-		Configuration:   types.StringValue(node.Configuration),
-		Interfaces:      ifaces,
-		Tags:            tags,
-		X:               types.Int64Value(int64(node.X)),
-		Y:               types.Int64Value(int64(node.Y)),
-		SerialDevices:   newSerialDevices(ctx, node, diags),
-		CPUlimit:        types.Int64Value(int64(node.CPUlimit)),
+		ID:             types.StringValue(node.ID),
+		LabID:          types.StringValue(node.LabID),
+		Label:          types.StringValue(node.Label),
+		State:          types.StringValue(node.State),
+		NodeDefinition: types.StringValue(node.NodeDefinition),
+		Configuration:  types.StringValue(node.Configuration),
+		Interfaces:     ifaces,
+		Tags:           tags,
+		X:              types.Int64Value(int64(node.X)),
+		Y:              types.Int64Value(int64(node.Y)),
+		SerialDevices:  newSerialDevices(ctx, node, diags),
+		CPUlimit:       types.Int64Value(int64(node.CPUlimit)),
+		VNCkey:         types.StringValue(node.VNCkey),
+		RAM:            types.Int64Value(int64(node.RAM)),
+		CPUs:           types.Int64Value(int64(node.CPUs)),
 
-		// these values are null if there's no compute ID
-		ComputeID: types.StringNull(),
-		VNCkey:    types.StringNull(),
-	}
-
-	// set them, if there IS a compute ID
-	if len(node.ComputeID) > 0 {
-		newNode.ComputeID = types.StringValue(node.ComputeID)
-		newNode.VNCkey = types.StringValue(node.VNCkey)
+		// these values are null if unset
+		ImageDefinition: types.StringNull(),
+		ComputeID:       types.StringNull(),
+		BootDiskSize:    types.Int64Null(),
+		DataVolume:      types.Int64Null(),
 	}
 
 	if node.BootDiskSize > 0 {
@@ -380,11 +378,11 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 	if node.DataVolume > 0 {
 		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
 	}
-	if node.CPUs > 0 {
-		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+	if len(node.ComputeID) > 0 {
+		newNode.ComputeID = types.StringValue(node.ComputeID)
 	}
-	if node.RAM > 0 {
-		newNode.RAM = types.Int64Value(int64(node.RAM))
+	if len(node.ImageDefinition) > 0 {
+		newNode.ImageDefinition = types.StringValue(node.ImageDefinition)
 	}
 
 	var value attr.Value

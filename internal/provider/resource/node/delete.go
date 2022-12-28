@@ -57,5 +57,5 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		)
 		return
 	}
-	tflog.Info(ctx, "Resource Node DELETE: done")
+	tflog.Info(ctx, "Resource Node DELETE done")
 }

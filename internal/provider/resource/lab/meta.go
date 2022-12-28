@@ -15,6 +15,7 @@ const CML2ErrorLabel string = "resource lab"
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &LabResource{}
 var _ resource.ResourceWithImportState = &LabResource{}
+var _ resource.ResourceWithModifyPlan = &LabResource{}
 
 type LabResource struct {
 	cfg *common.ProviderConfig

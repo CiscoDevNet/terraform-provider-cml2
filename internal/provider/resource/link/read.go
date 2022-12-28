@@ -14,7 +14,7 @@ import (
 func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data cmlschema.LinkModel
 
-	tflog.Info(ctx, "Resource Link: READ")
+	tflog.Info(ctx, "Resource Link READ")
 
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -45,5 +45,5 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Link READ: done")
+	tflog.Info(ctx, "Resource Link READ done")
 }

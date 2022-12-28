@@ -16,9 +16,11 @@ import (
 
 func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
-		configData, planData, stateData *cmlschema.LabLifecycleModel
+		configData, planData, stateData cmlschema.LabLifecycleModel
 		err                             error
 	)
+
+	tflog.Info(ctx, "Resource LabLifecycle UPDATE")
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
 	if resp.Diagnostics.HasError() {
@@ -113,5 +115,5 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	planData.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)
-	tflog.Info(ctx, "Update: done")
+	tflog.Info(ctx, "Resource LabLifecycle UPDATE done")
 }

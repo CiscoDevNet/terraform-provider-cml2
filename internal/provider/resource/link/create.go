@@ -80,5 +80,5 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Link CREATE: done")
+	tflog.Info(ctx, "Resource Link CREATE done")
 }

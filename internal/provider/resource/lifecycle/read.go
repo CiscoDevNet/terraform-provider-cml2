@@ -12,18 +12,14 @@ import (
 )
 
 func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data *cmlschema.LabLifecycleModel
+	var data cmlschema.LabLifecycleModel
+
+	tflog.Info(ctx, "Resource LabLifecycle READ")
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	// tflog.Info(ctx, "state:", map[string]any{"data": data})
-
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "Read: errors!")
 		return
 	}
-
-	tflog.Info(ctx, "Read: start")
 
 	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 	if err != nil {
@@ -43,8 +39,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "Read: errors!")
 		return
 	}
-	tflog.Info(ctx, "Read: done")
+	tflog.Info(ctx, "Resource LabLifecycle READ done")
 }

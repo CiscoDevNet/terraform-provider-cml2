@@ -85,5 +85,5 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	tflog.Info(ctx, "Resource Lifecycle CREATE: done")
+	tflog.Info(ctx, "Resource Lifecycle CREATE done")
 }

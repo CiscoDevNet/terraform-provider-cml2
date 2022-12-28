@@ -43,5 +43,5 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
-	tflog.Info(ctx, "Resource Link MODIFYPLAN: done")
+	tflog.Info(ctx, "Resource Link MODIFYPLAN done")
 }

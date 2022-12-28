@@ -16,7 +16,7 @@ import (
 func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 
 	var (
-		data *cmlschema.LabModel
+		data cmlschema.LabModel
 		err  error
 	)
 
@@ -77,5 +77,5 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	tflog.Info(ctx, "Resource Lab DELETE: done")
+	tflog.Info(ctx, "Resource Lab DELETE done")
 }

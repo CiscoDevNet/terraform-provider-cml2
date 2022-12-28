@@ -38,5 +38,5 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		planData.Modified = types.StringUnknown()
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
-	tflog.Info(ctx, "Resource Lab MODIFYPLAN: done")
+	tflog.Info(ctx, "Resource Lab MODIFYPLAN done")
 }

@@ -15,7 +15,7 @@ import (
 func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data cmlschema.NodeModel
 
-	tflog.Info(ctx, "Resource Node: READ")
+	tflog.Info(ctx, "Resource Node READ")
 
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -48,5 +48,5 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Node READ: done")
+	tflog.Info(ctx, "Resource Node READ done")
 }

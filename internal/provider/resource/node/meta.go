@@ -15,6 +15,7 @@ const CML2ErrorLabel string = "CML resource node"
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &NodeResource{}
 var _ resource.ResourceWithImportState = &NodeResource{}
+var _ resource.ResourceWithModifyPlan = &NodeResource{}
 
 type NodeResource struct {
 	cfg *common.ProviderConfig

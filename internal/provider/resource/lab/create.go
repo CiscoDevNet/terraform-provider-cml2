@@ -17,26 +17,26 @@ import (
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data *cmlschema.LabModel
-		err  error
+		labModel cmlschema.LabModel
+		err      error
 	)
 
 	tflog.Info(ctx, "Resource Lab CREATE")
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &labModel)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	lab := cmlclient.Lab{}
-	if !data.Notes.IsNull() {
-		lab.Notes = data.Notes.ValueString()
+	if !labModel.Notes.IsNull() {
+		lab.Notes = labModel.Notes.ValueString()
 	}
-	if !data.Description.IsNull() {
-		lab.Description = data.Description.ValueString()
+	if !labModel.Description.IsNull() {
+		lab.Description = labModel.Description.ValueString()
 	}
-	if !data.Title.IsNull() {
-		lab.Title = data.Title.ValueString()
+	if !labModel.Title.IsNull() {
+		lab.Title = labModel.Title.ValueString()
 	}
 
 	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
@@ -53,10 +53,10 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 			ctx,
 			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
-			&data,
+			&labModel,
 		)...,
 	)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &labModel)...)
 
-	tflog.Info(ctx, "Resource Lab CREATE: done")
+	tflog.Info(ctx, "Resource Lab CREATE done")
 }

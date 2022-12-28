@@ -92,5 +92,5 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Node CREATE: done")
+	tflog.Info(ctx, "Resource Node CREATE done")
 }

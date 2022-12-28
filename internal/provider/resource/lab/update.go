@@ -15,22 +15,22 @@ import (
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		planData cmlschema.LabModel
-		err      error
+		data cmlschema.LabModel
+		err  error
 	)
 
 	tflog.Info(ctx, "Resource Lab UPDATE")
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	lab := cmlclient.Lab{
-		ID:          planData.ID.ValueString(),
-		Notes:       planData.Notes.ValueString(),
-		Description: planData.Description.ValueString(),
-		Title:       planData.Title.ValueString(),
+		ID:          data.ID.ValueString(),
+		Notes:       data.Notes.ValueString(),
+		Description: data.Description.ValueString(),
+		Title:       data.Title.ValueString(),
 	}
 
 	newLab, err := r.cfg.Client().LabUpdate(ctx, lab)
@@ -47,11 +47,11 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 			ctx,
 			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
-			&planData,
+			&data,
 		)...,
 	)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &planData)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Lab UPDATE: done")
+	tflog.Info(ctx, "Resource Lab UPDATE done")
 }

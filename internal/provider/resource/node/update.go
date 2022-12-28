@@ -104,5 +104,5 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planData)...)
 
-	tflog.Info(ctx, "Resource Node UPDATE: done")
+	tflog.Info(ctx, "Resource Node UPDATE done")
 }

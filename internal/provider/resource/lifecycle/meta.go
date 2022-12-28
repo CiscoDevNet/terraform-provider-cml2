@@ -19,6 +19,7 @@ const CML2ErrorLabel = "CML2 Provider Error"
 var _ resource.Resource = &LabLifecycleResource{}
 var _ resource.ResourceWithImportState = &LabLifecycleResource{}
 var _ resource.ResourceWithValidateConfig = &LabLifecycleResource{}
+var _ resource.ResourceWithModifyPlan = &LabLifecycleResource{}
 
 type LabLifecycleResource struct {
 	cfg *common.ProviderConfig

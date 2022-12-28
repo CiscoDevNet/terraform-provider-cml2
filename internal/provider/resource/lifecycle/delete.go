@@ -13,7 +13,7 @@ import (
 )
 
 func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data *cmlschema.LabLifecycleModel
+	var data cmlschema.LabLifecycleModel
 
 	tflog.Info(ctx, "Resource Lifecycle DELETE")
 
@@ -51,5 +51,5 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 		)
 		return
 	}
-	tflog.Info(ctx, "Resource Lifecycle DELETE: done")
+	tflog.Info(ctx, "Resource Lifecycle DELETE done")
 }
