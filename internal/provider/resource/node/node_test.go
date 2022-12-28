@@ -53,7 +53,7 @@ func TestAccNodeResource(t *testing.T) {
 				Config: testAccNodeResourceConfig2(cfg.Cfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "imagedefinition", "alpine-3-13-2-base"),
+					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "ram", "1024"),
@@ -125,7 +125,7 @@ resource "cml2_node" "r1" {
 func testAccNodeResourceConfig2(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
-data "cml2_image" "test" {
+data "cml2_images" "test" {
 	node_definition = "alpine"
 }
 resource "cml2_lab" "test" {
@@ -138,7 +138,7 @@ resource "cml2_node" "r1" {
 	ram             = 1024
 	cpus            = 2
 	nodedefinition  = "alpine"
-	imagedefinition = element(data.cml2_image.test.images, 0)
+	imagedefinition = element(data.cml2_images.test.image_list, 0).id
 	boot_disk_size  = 64
 	data_volume     = 64
 	tags            = ["test", "someothertag"]

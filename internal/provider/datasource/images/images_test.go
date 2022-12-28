@@ -31,7 +31,7 @@ func TestImageDataSource(t *testing.T) {
 			{
 				Config: testImageDataSourceConfig(cfg.Cfg, ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrWith("data.cml2_image.test", "images.#", func(value string) error {
+					resource.TestCheckResourceAttrWith("data.cml2_images.test", "image_list.#", func(value string) error {
 						num, err := strconv.Atoi(value)
 						if err == nil && num < 10 {
 							return fmt.Errorf("expected at least 10 image definitions, got %d", num)
@@ -57,11 +57,11 @@ func testImageDataSourceConfig(cfg, nd string) string {
 	}
 	return fmt.Sprintf(`
 	%[1]s
-	data "cml2_image" "test" {
+	data "cml2_images" "test" {
 		%[2]s
 	}
 	locals {
-		il = data.cml2_image.test.images
+		il = data.cml2_images.test.image_list
 	}
 	output "bla" {
 		value = element(local.il, length(local.il)-1).node_definition_id
