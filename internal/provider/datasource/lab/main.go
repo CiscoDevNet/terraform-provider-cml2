@@ -15,8 +15,6 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
-const CML2ErrorLabel = "CML2 Provider Error"
-
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &LabDataSource{}
 var _ datasource.DataSourceWithValidateConfig = &LabDataSource{}
@@ -73,7 +71,7 @@ func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.Valid
 	}
 	if data.ID.IsNull() && data.Title.IsNull() {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			"need to provide either title to search for or a lab ID",
 		)
 		return
@@ -102,7 +100,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -27,7 +28,7 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get link, got error: %s", err),
 		)
 		return

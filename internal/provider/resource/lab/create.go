@@ -12,6 +12,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -42,7 +43,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to create lab, got error: %s", err),
 		)
 		return

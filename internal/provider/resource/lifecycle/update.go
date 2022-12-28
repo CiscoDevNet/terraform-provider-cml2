@@ -50,7 +50,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		start.lab, err = r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 			)
 			return
@@ -104,7 +104,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	lab, err := r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 		)
 		return

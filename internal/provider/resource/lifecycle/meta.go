@@ -13,8 +13,6 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
-const CML2ErrorLabel = "CML2 Provider Error"
-
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &LabLifecycleResource{}
 var _ resource.ResourceWithImportState = &LabLifecycleResource{}

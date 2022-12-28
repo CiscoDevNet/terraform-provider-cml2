@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -87,7 +88,7 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	newNode, err := r.cfg.Client().NodeUpdate(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to update node, got error: %s", err),
 		)
 		return

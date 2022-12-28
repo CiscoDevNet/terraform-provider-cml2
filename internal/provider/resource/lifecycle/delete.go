@@ -10,6 +10,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -30,7 +31,7 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to read CML2 lab, got error: %s", err),
 		)
 		return
@@ -46,7 +47,7 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 	err = r.cfg.Client().LabDestroy(ctx, data.LabID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy CML2 lab, got error: %s", err),
 		)
 		return

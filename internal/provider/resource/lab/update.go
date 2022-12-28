@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -36,7 +37,7 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	newLab, err := r.cfg.Client().LabUpdate(ctx, lab)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to update lab, got error: %s", err),
 		)
 		return

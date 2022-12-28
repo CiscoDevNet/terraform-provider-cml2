@@ -42,6 +42,7 @@ func TestAccNodeResource(t *testing.T) {
 				Config: testAccNodeResourceConfig(cfg.Cfg, "alpine"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "98"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "99"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "1"),
@@ -52,8 +53,13 @@ func TestAccNodeResource(t *testing.T) {
 				Config: testAccNodeResourceConfig2(cfg.Cfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "imagedefinition", "alpine-3-13-2-base"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "ram", "1024"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "cpus", "2"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "boot_disk_size", "64"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "data_volume", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "someothertag"),
@@ -119,15 +125,23 @@ resource "cml2_node" "r1" {
 func testAccNodeResourceConfig2(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
+data "cml2_image" "test" {
+	node_definition = "alpine"
+}
 resource "cml2_lab" "test" {
 }
 resource "cml2_node" "r1" {
-	lab_id         = cml2_lab.test.id
-	label          = "r1"
-	x              = 100
-	y              = 200
-	nodedefinition = "alpine"
-	tags           = ["test", "someothertag"]
+	lab_id          = cml2_lab.test.id
+	label           = "r1"
+	x               = 100
+	y               = 200
+	ram             = 1024
+	cpus            = 2
+	nodedefinition  = "alpine"
+	imagedefinition = element(data.cml2_image.test.images, 0)
+	boot_disk_size  = 64
+	data_volume     = 64
+	tags            = ["test", "someothertag"]
 }
 `, cfg)
 }
@@ -143,7 +157,6 @@ resource "cml2_node" "r1" {
   label          = "R1"
   ram            = 512
   boot_disk_size = 64
-  data_volume    = 64
   cpus           = 2
   cpu_limit      = 80
   nodedefinition = "alpine"

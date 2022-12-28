@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -24,7 +25,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 		)
 		return

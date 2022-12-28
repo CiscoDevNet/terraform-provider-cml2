@@ -13,6 +13,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	d_images "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/images"
 	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
 	d_node "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/node"
 	r_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lab"
@@ -25,8 +26,6 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ provider.Provider = &CML2Provider{}
-
-const CML2ErrorLabel = "CML2 Provider Error"
 
 // CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
 type CML2Provider struct {
@@ -139,6 +138,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		d_lab.NewDataSource,
 		d_node.NewDataSource,
+		d_images.NewDataSource,
 	}
 }
 

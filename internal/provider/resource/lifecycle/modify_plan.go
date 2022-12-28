@@ -11,6 +11,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -48,14 +49,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	if planData.State.ValueString() == cmlclient.LabStateStopped {
 		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				"can't transition from DEFINED_ON_CORE to STOPPED",
 			)
 			return
 		}
 		if noState && planData.State.ValueString() == cmlclient.LabStateStopped {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				"can't transition from no state to STOPPED",
 			)
 			return

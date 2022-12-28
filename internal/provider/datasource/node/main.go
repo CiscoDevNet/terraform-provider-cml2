@@ -15,8 +15,6 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
-const CML2ErrorLabel = "CML2 Provider Error"
-
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &NodeDataSource{}
 
@@ -78,7 +76,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true) // deep!
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return
@@ -87,7 +85,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	node, found := lab.Nodes[data.ID.ValueString()]
 	if !found {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("requested node %s not found", data.Node),
 		)
 		return

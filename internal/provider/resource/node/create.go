@@ -12,6 +12,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -76,7 +77,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to create node, got error: %s", err),
 		)
 		return

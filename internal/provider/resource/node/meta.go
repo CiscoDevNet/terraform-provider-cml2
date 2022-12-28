@@ -10,8 +10,6 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
-const CML2ErrorLabel string = "CML resource node"
-
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &NodeResource{}
 var _ resource.ResourceWithImportState = &NodeResource{}

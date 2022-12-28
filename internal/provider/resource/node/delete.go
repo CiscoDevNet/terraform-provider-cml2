@@ -10,6 +10,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -34,7 +35,7 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	err = r.cfg.Client().NodeStop(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to stop node, got error: %s", err),
 		)
 		return
@@ -43,7 +44,7 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	err = r.cfg.Client().NodeWipe(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to wipe node, got error: %s", err),
 		)
 		return
@@ -52,7 +53,7 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	err = r.cfg.Client().NodeDestroy(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy node, got error: %s", err),
 		)
 		return

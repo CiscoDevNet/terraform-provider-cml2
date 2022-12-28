@@ -11,8 +11,6 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-const CML2ErrorLabel string = "cml provider converge"
-
 func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnostics, id string, timeout string) {
 	converged := false
 	waited := 0
@@ -32,7 +30,7 @@ func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnos
 		converged, err = client.HasLabConverged(ctx, id)
 		if err != nil {
 			diags.AddError(
-				CML2ErrorLabel,
+				ErrorLabel,
 				fmt.Sprintf("Wait for convergence of lab, got error: %s", err),
 			)
 			return
@@ -47,7 +45,7 @@ func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnos
 			return
 		}
 		if time.Now().After(endTime) {
-			diags.AddError(CML2ErrorLabel, fmt.Sprintf("ran into timeout (max %s)", timeout))
+			diags.AddError(ErrorLabel, fmt.Sprintf("ran into timeout (max %s)", timeout))
 			return
 		}
 		waited++

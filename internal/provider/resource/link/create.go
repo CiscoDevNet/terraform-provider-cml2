@@ -12,6 +12,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -58,7 +59,7 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	newLink, err := r.cfg.Client().LinkCreate(ctx, &link)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to create link, got error: %s", err),
 		)
 		return
