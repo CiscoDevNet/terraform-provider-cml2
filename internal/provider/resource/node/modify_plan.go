@@ -62,6 +62,15 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	if planData.SerialDevices.IsUnknown() {
 		planData.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
 	}
+	if planData.RAM.IsUnknown() {
+		planData.RAM = types.Int64Null()
+	}
+	if planData.CPUs.IsUnknown() {
+		planData.CPUs = types.Int64Null()
+	}
+	if planData.VNCkey.IsUnknown() {
+		planData.VNCkey = types.StringNull()
+	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 

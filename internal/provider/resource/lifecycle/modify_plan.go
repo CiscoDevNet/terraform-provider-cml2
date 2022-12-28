@@ -88,11 +88,11 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 
 			if plannedState == cmlclient.LabStateDefined {
 				node.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
-				// node.VNCkey = types.StringNull()
+				node.VNCkey = types.StringNull()
 				node.ComputeID = types.StringNull()
 				node.DataVolume = types.Int64Null()
-				// node.CPUs = types.Int64Null()
-				// node.RAM = types.Int64Null()
+				node.CPUs = types.Int64Null()
+				node.RAM = types.Int64Null()
 				node.BootDiskSize = types.Int64Null()
 				node.State = types.StringValue(cmlclient.NodeStateDefined)
 			}

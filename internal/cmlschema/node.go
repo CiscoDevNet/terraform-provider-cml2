@@ -361,15 +361,25 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		Y:              types.Int64Value(int64(node.Y)),
 		SerialDevices:  newSerialDevices(ctx, node, diags),
 		CPUlimit:       types.Int64Value(int64(node.CPUlimit)),
-		VNCkey:         types.StringValue(node.VNCkey),
-		RAM:            types.Int64Value(int64(node.RAM)),
-		CPUs:           types.Int64Value(int64(node.CPUs)),
 
 		// these values are null if unset
+		VNCkey:          types.StringNull(),
+		RAM:             types.Int64Null(),
+		CPUs:            types.Int64Null(),
 		ImageDefinition: types.StringNull(),
 		ComputeID:       types.StringNull(),
 		BootDiskSize:    types.Int64Null(),
 		DataVolume:      types.Int64Null(),
+	}
+
+	if node.RAM > 0 {
+		newNode.RAM = types.Int64Value(int64(node.RAM))
+	}
+	if node.CPUs > 0 {
+		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+	}
+	if len(node.VNCkey) > 0 {
+		newNode.VNCkey = types.StringValue(node.VNCkey)
 	}
 
 	if node.BootDiskSize > 0 {
