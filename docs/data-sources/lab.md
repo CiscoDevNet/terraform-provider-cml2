@@ -34,8 +34,8 @@ output "result" {
 
 ### Optional
 
-- `id` (String) lab id
-- `title` (String) lab title
+- `id` (String) Lab ID that identifies the lab
+- `title` (String) Lab title. If not unique, it will return the first one that matches. Use ID for labs with non-unique titles.
 
 ### Read-Only
 

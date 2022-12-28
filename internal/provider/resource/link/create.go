@@ -11,13 +11,14 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data schema.LinkModel
+		data cmlschema.LinkModel
 		err  error
 	)
 
@@ -49,38 +50,36 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	link.SrcNode = data.NodeA.ValueString()
 	link.DstNode = data.NodeB.ValueString()
 	if !data.NodeAslot.IsUnknown() {
-		slot := int(data.NodeAslot.ValueInt64())
-		link.SrcSlot = &slot
+		link.SrcSlot = int(data.NodeAslot.ValueInt64())
 	}
 	if !data.NodeBslot.IsUnknown() {
-		slot := int(data.NodeBslot.ValueInt64())
-		link.DstSlot = &slot
+		link.DstSlot = int(data.NodeBslot.ValueInt64())
 	}
 
 	newLink, err := r.cfg.Client().LinkCreate(ctx, &link)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to create link, got error: %s", err),
 		)
 		return
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("src slot %d", *newLink.SrcSlot))
-	tflog.Info(ctx, fmt.Sprintf("dst slot %d", *newLink.DstSlot))
+	tflog.Info(ctx, fmt.Sprintf("src slot %d", newLink.SrcSlot))
+	tflog.Info(ctx, fmt.Sprintf("dst slot %d", newLink.DstSlot))
 
-	data.NodeAslot = types.Int64Value(int64(*newLink.SrcSlot))
-	data.NodeBslot = types.Int64Value(int64(*newLink.DstSlot))
+	data.NodeAslot = types.Int64Value(int64(newLink.SrcSlot))
+	data.NodeBslot = types.Int64Value(int64(newLink.DstSlot))
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLink(ctx, newLink, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LinkAttrType},
+			cmlschema.NewLink(ctx, newLink, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Link CREATE: done")
+	tflog.Info(ctx, "Resource Link CREATE done")
 }

@@ -1,11 +1,15 @@
-package schema
+package cmlschema
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
@@ -138,179 +142,159 @@ var (
 	}
 )
 
-func Node() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
+func Node() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
 			Description: "Node ID (UUID).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"lab_id": {
+		"lab_id": schema.StringAttribute{
 			Description: "Lab ID containing the node (UUID).",
-			Type:        types.StringType,
 			Required:    true,
 		},
-		"label": {
+		"label": schema.StringAttribute{
 			Description: "Node label.",
-			Type:        types.StringType,
 			Required:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"state": {
+		"state": schema.StringAttribute{
 			MarkdownDescription: "Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).",
-			Type:                types.StringType,
 			Computed:            true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"nodedefinition": {
+		"nodedefinition": schema.StringAttribute{
 			Description: "Node definition / type.",
-			Type:        types.StringType,
 			Required:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"imagedefinition": {
+		"imagedefinition": schema.StringAttribute{
 			Description: "Image definition, must match the node type.",
-			Type:        types.StringType,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"interfaces": {
+		"interfaces": schema.ListNestedAttribute{
 			Description: "List of interfaces on the node.",
 			Computed:    true,
-			Attributes: tfsdk.ListNestedAttributes(
-				Interface(),
-			),
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: Interface(),
+			},
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"tags": {
+		"tags": schema.ListAttribute{
 			Description: "List of tags of the node.",
 			Computed:    true,
 			Optional:    true,
-			Type: types.ListType{
-				ElemType: types.StringType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			ElementType: types.StringType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"configuration": {
+		"configuration": schema.StringAttribute{
 			Description: "Node configuration.",
-			Type:        types.StringType,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"x": {
+		"x": schema.Int64Attribute{
 			Description: "X coordinate on the topology canvas.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
 		},
-		"y": {
+		"y": schema.Int64Attribute{
 			Description: "Y coordinate on the topology canvas.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
 		},
-		"ram": {
+		"ram": schema.Int64Attribute{
 			Description: "Amount of RAM, megabytes.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"cpus": {
+		"cpus": schema.Int64Attribute{
 			Description: "Number of CPUs.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"cpu_limit": {
+		"cpu_limit": schema.Int64Attribute{
 			Description: "CPU limit in %, 20-100.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"boot_disk_size": {
+		"boot_disk_size": schema.Int64Attribute{
 			Description: "Size of boot disk volume, in GB.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"data_volume": {
+		"data_volume": schema.Int64Attribute{
 			Description: "Size of data volume, in GB.",
-			Type:        types.Int64Type,
 			Computed:    true,
 			Optional:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"serial_devices": {
+		"serial_devices": schema.ListAttribute{
 			Description: "List of serial devices (consoles).",
 			Computed:    true,
-			Type: types.ListType{
-				ElemType: SerialDevicesAttrType,
-			},
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			ElementType: SerialDevicesAttrType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"vnc_key": {
+		"vnc_key": schema.StringAttribute{
 			Description: "VNC key of console, a UUID4.",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"compute_id": {
+		"compute_id": schema.StringAttribute{
 			Description: "ID of a compute this node is on, a UUID4.",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}
@@ -365,28 +349,36 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 	tags, _ := types.ListValue(types.StringType, valueList)
 
 	newNode := NodeModel{
-		ID:              types.StringValue(node.ID),
-		LabID:           types.StringValue(node.LabID),
-		Label:           types.StringValue(node.Label),
-		State:           types.StringValue(node.State),
-		NodeDefinition:  types.StringValue(node.NodeDefinition),
-		ImageDefinition: types.StringValue(node.ImageDefinition),
-		Configuration:   types.StringValue(node.Configuration),
-		Interfaces:      ifaces,
-		Tags:            tags,
-		X:               types.Int64Value(int64(node.X)),
-		Y:               types.Int64Value(int64(node.Y)),
-		SerialDevices:   newSerialDevices(ctx, node, diags),
-		CPUlimit:        types.Int64Value(int64(node.CPUlimit)),
+		ID:             types.StringValue(node.ID),
+		LabID:          types.StringValue(node.LabID),
+		Label:          types.StringValue(node.Label),
+		State:          types.StringValue(node.State),
+		NodeDefinition: types.StringValue(node.NodeDefinition),
+		Configuration:  types.StringValue(node.Configuration),
+		Interfaces:     ifaces,
+		Tags:           tags,
+		X:              types.Int64Value(int64(node.X)),
+		Y:              types.Int64Value(int64(node.Y)),
+		SerialDevices:  newSerialDevices(ctx, node, diags),
+		CPUlimit:       types.Int64Value(int64(node.CPUlimit)),
 
-		// these values are null if there's no compute ID
-		ComputeID: types.StringNull(),
-		VNCkey:    types.StringNull(),
+		// these values are null if unset
+		VNCkey:          types.StringNull(),
+		RAM:             types.Int64Null(),
+		CPUs:            types.Int64Null(),
+		ImageDefinition: types.StringNull(),
+		ComputeID:       types.StringNull(),
+		BootDiskSize:    types.Int64Null(),
+		DataVolume:      types.Int64Null(),
 	}
 
-	// set them, if there IS a compute ID
-	if len(node.ComputeID) > 0 {
-		newNode.ComputeID = types.StringValue(node.ComputeID)
+	if node.RAM > 0 {
+		newNode.RAM = types.Int64Value(int64(node.RAM))
+	}
+	if node.CPUs > 0 {
+		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+	}
+	if len(node.VNCkey) > 0 {
 		newNode.VNCkey = types.StringValue(node.VNCkey)
 	}
 
@@ -396,11 +388,11 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 	if node.DataVolume > 0 {
 		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
 	}
-	if node.CPUs > 0 {
-		newNode.CPUs = types.Int64Value(int64(node.CPUs))
+	if len(node.ComputeID) > 0 {
+		newNode.ComputeID = types.StringValue(node.ComputeID)
 	}
-	if node.RAM > 0 {
-		newNode.RAM = types.Int64Value(int64(node.RAM))
+	if len(node.ImageDefinition) > 0 {
+		newNode.ImageDefinition = types.StringValue(node.ImageDefinition)
 	}
 
 	var value attr.Value

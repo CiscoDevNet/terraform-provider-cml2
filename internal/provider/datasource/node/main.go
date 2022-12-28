@@ -5,16 +5,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
-
-const CML2ErrorLabel = "CML2 Provider Error"
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &NodeDataSource{}
@@ -43,31 +42,24 @@ func (d *NodeDataSource) Configure(ctx context.Context, req datasource.Configure
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
-func (d *NodeDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as \"optional\".",
-
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Description: "node id",
-				Required:    true,
-				Type:        types.StringType,
-			},
-			"lab_id": {
-				Description: "lab id",
-				Required:    true,
-				Type:        types.StringType,
-			},
-			"node": {
-				Description: "node data",
-				Attributes: tfsdk.SingleNestedAttributes(
-					schema.Node(),
-				),
-				Computed: true,
-			},
+func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema.Attributes = map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: "Node ID to identify the node",
+			Required:    true,
 		},
-	}, nil
+		"lab_id": schema.StringAttribute{
+			Description: "Lab ID to identify the lab that contains the node",
+			Required:    true,
+		},
+		"node": schema.SingleNestedAttribute{
+			Description: "node data",
+			Attributes:  cmlschema.Converter(cmlschema.Node()),
+			Computed:    true,
+		},
+	}
+	resp.Schema.MarkdownDescription = "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as \"optional\"."
+	resp.Diagnostics = nil
 }
 
 func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -84,7 +76,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true) // deep!
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return
@@ -93,7 +85,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	node, found := lab.Nodes[data.ID.ValueString()]
 	if !found {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("requested node %s not found", data.Node),
 		)
 		return
@@ -102,8 +94,8 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, node, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, node, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data.Node,
 		)...,
 	)

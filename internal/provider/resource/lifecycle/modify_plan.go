@@ -10,12 +10,13 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var configData, planData, stateData schema.LabLifecycleModel
+	var configData, planData, stateData cmlschema.LabLifecycleModel
 
 	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN")
 
@@ -48,14 +49,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	if planData.State.ValueString() == cmlclient.LabStateStopped {
 		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				"can't transition from DEFINED_ON_CORE to STOPPED",
 			)
 			return
 		}
 		if noState && planData.State.ValueString() == cmlclient.LabStateStopped {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				"can't transition from no state to STOPPED",
 			)
 			return
@@ -75,19 +76,19 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	if changeNeeded {
 		tflog.Info(ctx, "ModifyPlan: change detected")
 
-		var nodes map[string]schema.NodeModel
+		var nodes map[string]cmlschema.NodeModel
 
-		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, planData.Nodes, &nodes)...)
+		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, stateData.Nodes, &nodes)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
+		plannedState := planData.State.ValueString()
+
 		for id, node := range nodes {
 
-			planState := planData.State.ValueString()
-
-			if planData.State.ValueString() == cmlclient.LabStateDefined {
-				node.SerialDevices = types.ListNull(schema.SerialDevicesAttrType)
+			if plannedState == cmlclient.LabStateDefined {
+				node.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringNull()
 				node.ComputeID = types.StringNull()
 				node.DataVolume = types.Int64Null()
@@ -96,8 +97,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.BootDiskSize = types.Int64Null()
 				node.State = types.StringValue(cmlclient.NodeStateDefined)
 			}
-			if planData.State.ValueString() == cmlclient.LabStateStarted {
-				node.SerialDevices = types.ListUnknown(schema.SerialDevicesAttrType)
+			if plannedState == cmlclient.LabStateStarted {
+				node.SerialDevices = types.ListUnknown(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringUnknown()
 				node.ComputeID = types.StringUnknown()
 				node.DataVolume = types.Int64Unknown()
@@ -106,7 +107,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.BootDiskSize = types.Int64Unknown()
 				node.State = types.StringUnknown()
 			}
-			if planData.State.ValueString() == cmlclient.LabStateStopped {
+			if plannedState == cmlclient.LabStateStopped {
 				if node.State.ValueString() != cmlclient.NodeStateDefined {
 					node.State = types.StringValue(cmlclient.NodeStateStopped)
 				}
@@ -122,14 +123,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.Configuration = types.StringUnknown()
 			}
 
-			var ifaces []schema.InterfaceModel
+			var ifaces []cmlschema.InterfaceModel
 			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, node.Interfaces, &ifaces)...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 
 			for idx := range ifaces {
-				if planState == cmlclient.LabStateStarted {
+				if plannedState == cmlclient.LabStateStarted {
 					ifaces[idx].IP4 = types.ListUnknown(types.StringType)
 					ifaces[idx].IP6 = types.ListUnknown(types.StringType)
 					// MACaddresses won't change at state change if one was assigned
@@ -138,15 +139,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 					}
 					ifaces[idx].State = types.StringUnknown()
 				}
-				if planState == cmlclient.LabStateDefined || planState == cmlclient.LabStateStopped {
+				if plannedState == cmlclient.LabStateDefined || plannedState == cmlclient.LabStateStopped {
 					ifaces[idx].IP4 = types.ListNull(types.StringType)
 					ifaces[idx].IP6 = types.ListNull(types.StringType)
 				}
-				if planState == cmlclient.LabStateDefined {
+				if plannedState == cmlclient.LabStateDefined {
 					ifaces[idx].MACaddress = types.StringNull()
 					ifaces[idx].State = types.StringValue(cmlclient.IfaceStateDefined)
 				}
-				if planState == cmlclient.LabStateStopped {
+				if plannedState == cmlclient.LabStateStopped {
 					if ifaces[idx].State.ValueString() != cmlclient.IfaceStateDefined {
 						ifaces[idx].State = types.StringValue(cmlclient.IfaceStateStopped)
 					}
@@ -157,7 +158,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				tfsdk.ValueFrom(
 					ctx,
 					ifaces,
-					types.ListType{ElemType: types.ObjectType{AttrTypes: schema.InterfaceAttrType}},
+					types.ListType{ElemType: types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType}},
 					&node.Interfaces,
 				)...,
 			)
@@ -171,7 +172,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			tfsdk.ValueFrom(
 				ctx,
 				nodes,
-				types.MapType{ElemType: types.ObjectType{AttrTypes: schema.NodeAttrType}},
+				types.MapType{ElemType: types.ObjectType{AttrTypes: cmlschema.NodeAttrType}},
 				&planData.Nodes,
 			)...,
 		)
@@ -189,5 +190,5 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 
-	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN: done")
+	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN done")
 }

@@ -1,4 +1,4 @@
-package schema_test
+package cmlschema_test
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,25 +39,25 @@ func TestNewLab(t *testing.T) {
 	diag := &diag.Diagnostics{}
 	ctx := context.Background()
 
-	value := schema.NewLab(ctx, lab, diag)
+	value := cmlschema.NewLab(ctx, lab, diag)
 	t.Logf("value: %+v", value)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
 
-	var newLab schema.LabModel
+	var newLab cmlschema.LabModel
 	diag.Append(tfsdk.ValueAs(ctx, value, &newLab)...)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
 }
 
 func TestLabAttrs(t *testing.T) {
-	schema := tfsdk.Schema{
-		Attributes: schema.Lab(),
+	labschema := schema.Schema{
+		Attributes: cmlschema.Lab(),
 	}
 
-	got, diag := schema.TypeAtPath(context.TODO(), path.Root("id"))
+	got, diag := labschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 11, len(schema.Attributes))
+	assert.Equal(t, 11, len(labschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }

@@ -1,11 +1,14 @@
-package schema
+package cmlschema
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
@@ -60,95 +63,84 @@ var LinkAttrType = map[string]attr.Type{
 	"node_b_slot":      types.Int64Type,
 }
 
-func Link() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
+func Link() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
 			Description: "Link ID (UUID).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"interface_a": {
+		"interface_a": schema.StringAttribute{
 			Description: "Interface ID containing the node (UUID).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"interface_b": {
+		"interface_b": schema.StringAttribute{
 			Description: "Interface ID containing the node (UUID).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"lab_id": {
+		"lab_id": schema.StringAttribute{
 			Description: "Lab ID containing the link (UUID).",
-			Type:        types.StringType,
 			Required:    true,
 		},
-		"label": {
+		"label": schema.StringAttribute{
 			Description: "link label (auto generated).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"link_capture_key": {
+		"link_capture_key": schema.StringAttribute{
 			Description: "link capture key (when running).",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"node_a": {
+		"node_a": schema.StringAttribute{
 			Description: "Node (A) attached to link.",
-			Type:        types.StringType,
 			Required:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"node_b": {
+		"node_b": schema.StringAttribute{
 			Description: "Node (B) attached to link.",
-			Type:        types.StringType,
 			Required:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"node_a_slot": {
+		"node_a_slot": schema.Int64Attribute{
 			Description: "Optional interface slot on node A (src), if not provided use next free.",
-			Type:        types.Int64Type,
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"node_b_slot": {
+		"node_b_slot": schema.Int64Attribute{
 			Description: "Optional interface slot on node B (dst), if not provided use next free.",
-			Type:        types.Int64Type,
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
-				resource.RequiresReplace(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
+				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"state": {
+		"state": schema.StringAttribute{
 			Description: "Link state.",
-			Type:        types.StringType,
 			Computed:    true,
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}
@@ -166,13 +158,16 @@ func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics)
 		InterfaceB: types.StringValue(link.DstID),
 		NodeA:      types.StringValue(link.SrcNode),
 		NodeB:      types.StringValue(link.DstNode),
+		// -1 is "don't care, use next free"
+		NodeAslot: types.Int64Value(-1),
+		NodeBslot: types.Int64Value(-1),
 	}
 
-	if link.SrcSlot != nil {
-		newLink.NodeAslot = types.Int64Value(int64(*link.SrcSlot))
+	if link.SrcSlot >= 0 {
+		newLink.NodeAslot = types.Int64Value(int64(link.SrcSlot))
 	}
-	if link.DstSlot != nil {
-		newLink.NodeBslot = types.Int64Value(int64(*link.DstSlot))
+	if link.DstSlot >= 0 {
+		newLink.NodeBslot = types.Int64Value(int64(link.DstSlot))
 	}
 
 	var value attr.Value

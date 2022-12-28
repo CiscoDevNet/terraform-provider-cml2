@@ -10,12 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
-		data schema.LabLifecycleModel
+		data cmlschema.LabLifecycleModel
 		err  error
 	)
 
@@ -42,7 +43,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to import lab, got error: %s", err),
 			)
 			return
@@ -51,7 +52,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		start.lab, err = r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to get lab, got error: %s", err),
 			)
 			return
@@ -73,7 +74,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	lab, err := r.cfg.Client().LabGet(ctx, start.lab.ID, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return
@@ -85,5 +86,5 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
-	tflog.Info(ctx, "Resource Lifecycle CREATE: done")
+	tflog.Info(ctx, "Resource Lifecycle CREATE done")
 }

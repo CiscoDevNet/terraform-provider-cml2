@@ -9,13 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data schema.LabModel
+	var data cmlschema.LabModel
 
-	tflog.Info(ctx, "Resource Lab: READ")
+	tflog.Info(ctx, "Resource Lab READ")
 
 	// Read Terraform configuration data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -27,10 +28,11 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		lab *cmlclient.Lab
 		err error
 	)
+
 	lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return
@@ -39,8 +41,8 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLab(ctx, lab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LabAttrType},
+			cmlschema.NewLab(ctx, lab, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&data,
 		)...,
 	)
@@ -48,5 +50,5 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Lab READ: done")
+	tflog.Info(ctx, "Resource Lab READ done")
 }

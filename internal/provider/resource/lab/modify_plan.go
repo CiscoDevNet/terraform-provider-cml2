@@ -7,12 +7,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
-	var stateData, planData schema.LabModel
+	var stateData, planData cmlschema.LabModel
 
 	tflog.Info(ctx, "Resource Lab MODIFYPLAN")
 
@@ -38,5 +38,5 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		planData.Modified = types.StringUnknown()
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
-	tflog.Info(ctx, "Resource Lab MODIFYPLAN: done")
+	tflog.Info(ctx, "Resource Lab MODIFYPLAN done")
 }

@@ -8,13 +8,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data schema.LinkModel
+	var data cmlschema.LinkModel
 
-	tflog.Info(ctx, "Resource Link: READ")
+	tflog.Info(ctx, "Resource Link READ")
 
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -27,7 +28,7 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get link, got error: %s", err),
 		)
 		return
@@ -36,8 +37,8 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLink(ctx, link, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LinkAttrType},
+			cmlschema.NewLink(ctx, link, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,
 	)
@@ -45,5 +46,5 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Link READ: done")
+	tflog.Info(ctx, "Resource Link READ done")
 }

@@ -9,14 +9,14 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 
 	var (
-		data *schema.LabModel
+		data cmlschema.LabModel
 		err  error
 	)
 
@@ -38,7 +38,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	lab, err := r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
 	if err != nil {
 		resp.Diagnostics.AddWarning(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to read CML2 lab, got error: %s", err),
 		)
 		return
@@ -48,7 +48,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		err = r.cfg.Client().LabStop(ctx, data.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddWarning(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to stop CML2 lab, got error: %s", err),
 			)
 			return
@@ -56,7 +56,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		err = r.cfg.Client().LabWipe(ctx, data.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddWarning(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to wipe CML2 lab, got error: %s", err),
 			)
 			return
@@ -64,18 +64,18 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 
 	if lab.State != cmlclient.LabStateDefined {
-		resp.Diagnostics.AddError(CML2ErrorLabel, "lab is not in DEFINED_ON_CORE state")
+		resp.Diagnostics.AddError(common.ErrorLabel, "lab is not in DEFINED_ON_CORE state")
 		return
 	}
 
 	err = r.cfg.Client().LabDestroy(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy lab, got error: %s", err),
 		)
 		return
 	}
 
-	tflog.Info(ctx, "Resource Lab DELETE: done")
+	tflog.Info(ctx, "Resource Lab DELETE done")
 }

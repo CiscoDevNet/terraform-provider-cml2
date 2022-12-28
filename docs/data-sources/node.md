@@ -30,8 +30,8 @@ output "result" {
 
 ### Required
 
-- `id` (String) node id
-- `lab_id` (String) lab id
+- `id` (String) Node ID to identify the node
+- `lab_id` (String) Lab ID to identify the lab that contains the node
 
 ### Read-Only
 
@@ -39,12 +39,6 @@ output "result" {
 
 <a id="nestedatt--node"></a>
 ### Nested Schema for `node`
-
-Required:
-
-- `lab_id` (String) Lab ID containing the node (UUID).
-- `label` (String) Node label.
-- `nodedefinition` (String) Node definition / type.
 
 Optional:
 
@@ -64,6 +58,9 @@ Read-Only:
 - `compute_id` (String) ID of a compute this node is on, a UUID4.
 - `id` (String) Node ID (UUID).
 - `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--node--interfaces))
+- `lab_id` (String) Lab ID containing the node (UUID).
+- `label` (String) Node label.
+- `nodedefinition` (String) Node definition / type.
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--node--serial_devices))
 - `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
 - `vnc_key` (String) VNC key of console, a UUID4.

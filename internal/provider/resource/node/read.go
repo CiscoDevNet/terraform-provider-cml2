@@ -9,13 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data schema.NodeModel
+	var data cmlschema.NodeModel
 
-	tflog.Info(ctx, "Resource Node: READ")
+	tflog.Info(ctx, "Resource Node READ")
 
 	// Read Terraform state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
@@ -30,7 +31,7 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	node, err := r.cfg.Client().NodeGet(ctx, node, false)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get node, got error: %s", err),
 		)
 		return
@@ -39,8 +40,8 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, node, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, node, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,
 	)
@@ -48,5 +49,5 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Node READ: done")
+	tflog.Info(ctx, "Resource Node READ done")
 }

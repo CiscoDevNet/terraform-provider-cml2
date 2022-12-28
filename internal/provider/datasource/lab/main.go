@@ -5,18 +5,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	cmlclient "github.com/rschmied/gocmlclient"
-
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
-
-const CML2ErrorLabel = "CML2 Provider Error"
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &LabDataSource{}
@@ -45,35 +42,27 @@ func (d *LabDataSource) Configure(ctx context.Context, req datasource.ConfigureR
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
-func (d *LabDataSource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the
-		// language server.
-		MarkdownDescription: "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as \"optional\".",
-		Attributes: map[string]tfsdk.Attribute{
-			"id": {
-				Description: "lab id",
-				Optional:    true,
-				Type:        types.StringType,
-			},
-			"title": {
-				Description: "lab title",
-				Optional:    true,
-				Type:        types.StringType,
-			},
-			"lab": {
-				Description: "lab data",
-				Attributes: tfsdk.SingleNestedAttributes(
-					schema.Lab(),
-				),
-				Computed: true,
-			},
+func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema.Attributes = map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: "Lab ID that identifies the lab",
+			Optional:    true,
 		},
-	}, nil
+		"title": schema.StringAttribute{
+			Description: "Lab title. If not unique, it will return the first one that matches. Use ID for labs with non-unique titles.",
+			Optional:    true,
+		},
+		"lab": schema.SingleNestedAttribute{
+			Description: "lab data",
+			Attributes:  cmlschema.Converter(cmlschema.Lab()),
+			Computed:    true,
+		},
+	}
+	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as \"optional\"."
+	resp.Diagnostics = nil
 }
 
 func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
-
 	var data LabDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
@@ -82,7 +71,7 @@ func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.Valid
 	}
 	if data.ID.IsNull() && data.Title.IsNull() {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			"need to provide either title to search for or a lab ID",
 		)
 		return
@@ -111,7 +100,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),
 		)
 		return
@@ -120,8 +109,8 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewLab(ctx, lab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.LabAttrType},
+			cmlschema.NewLab(ctx, lab, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&data.Lab,
 		)...,
 	)

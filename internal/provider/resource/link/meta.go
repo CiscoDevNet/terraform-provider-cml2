@@ -3,20 +3,17 @@ package link
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
-
-const CML2ErrorLabel string = "CML resource link"
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ resource.Resource = &LinkResource{}
 var _ resource.ResourceWithImportState = &LinkResource{}
+var _ resource.ResourceWithModifyPlan = &LinkResource{}
 
 type LinkResource struct {
 	cfg *common.ProviderConfig
@@ -32,13 +29,12 @@ func (r *LinkResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
-func (r *LinkResource) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		// This description is used by the documentation generator and the
-		// language server.
-		Description: "A link resource represents a CML link. At create time, the lab ID, source and destination node ID are required.  Interface slots are optional.  By default, the next free interface slot is used.",
-		Attributes:  schema.Link(),
-	}, nil
+func (r *LinkResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	// This description is used by the documentation generator and the language
+	// server.
+	resp.Schema.Description = "A link resource represents a CML link. At create time, the lab ID, source and destination node ID are required.  Interface slots are optional.  By default, the next free interface slot is used."
+	resp.Schema.Attributes = cmlschema.Link()
+	resp.Diagnostics = nil
 }
 
 func (r *LinkResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

@@ -14,8 +14,8 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func getTimeouts(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostics) *labLifecycleTimeouts {
@@ -51,7 +51,7 @@ func (r *LabLifecycleResource) stop(ctx context.Context, diags diag.Diagnostics,
 	err := r.cfg.Client().LabStop(ctx, id)
 	if err != nil {
 		diags.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to stop CML2 lab, got error: %s", err),
 		)
 		return
@@ -64,7 +64,7 @@ func (r *LabLifecycleResource) wipe(ctx context.Context, diags diag.Diagnostics,
 	err := r.cfg.Client().LabWipe(ctx, id)
 	if err != nil {
 		diags.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy CML2 lab, got error: %s", err),
 		)
 		return
@@ -77,7 +77,7 @@ func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Di
 	err := r.cfg.Client().LabStart(ctx, start.lab.ID)
 	if err != nil {
 		diags.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to start lab, got error: %s", err),
 		)
 	}
@@ -106,7 +106,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 					err := r.cfg.Client().NodeStart(ctx, node)
 					if err != nil {
 						diags.AddError(
-							CML2ErrorLabel,
+							common.ErrorLabel,
 							fmt.Sprintf("Unable to start node %s, got error: %s", node.Label, err),
 						)
 					}
@@ -126,7 +126,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 	}
 }
 
-func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *schema.LabLifecycleModel, diags *diag.Diagnostics) {
+func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *cmlschema.LabLifecycleModel, diags *diag.Diagnostics) {
 	tflog.Info(ctx, "injectConfigs")
 
 	if data.Configs.IsNull() {
@@ -140,11 +140,11 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 			node = lab.Nodes[nodeID]
 		}
 		if node == nil {
-			diags.AddError(CML2ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
+			diags.AddError(common.ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
 			continue
 		}
 		if node.State != cmlclient.NodeStateDefined {
-			diags.AddError(CML2ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
+			diags.AddError(common.ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
 			continue
 		}
 		config_string := config.(types.String).ValueString()
@@ -169,10 +169,10 @@ func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *cmlclient
 	})
 	valueMap := make(map[string]attr.Value, 0)
 	for _, node := range nodeList {
-		valueMap[node.ID] = schema.NewNode(ctx, node, diags)
+		valueMap[node.ID] = cmlschema.NewNode(ctx, node, diags)
 	}
 	nodes, _ := types.MapValue(
-		types.ObjectType{AttrTypes: schema.NodeAttrType},
+		types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 		valueMap,
 	)
 	return nodes

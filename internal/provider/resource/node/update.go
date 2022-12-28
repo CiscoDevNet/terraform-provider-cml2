@@ -9,13 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 
 	var (
-		stateData, planData schema.NodeModel
+		stateData, planData cmlschema.NodeModel
 		err                 error
 	)
 
@@ -87,7 +88,7 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	newNode, err := r.cfg.Client().NodeUpdate(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to update node, got error: %s", err),
 		)
 		return
@@ -96,13 +97,13 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, newNode, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&planData,
 		)...,
 	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planData)...)
 
-	tflog.Info(ctx, "Resource Node UPDATE: done")
+	tflog.Info(ctx, "Resource Node UPDATE done")
 }

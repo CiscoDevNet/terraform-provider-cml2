@@ -1,19 +1,19 @@
-package schema_test
+package cmlschema_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	tfschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestProviderAttrs(t *testing.T) {
-	schema := tfsdk.Schema{
-		Attributes: schema.Provider(),
+	schema := tfschema.Schema{
+		Attributes: cmlschema.Provider(),
 	}
 
 	got, diag := schema.TypeAtPath(context.TODO(), path.Root("address"))

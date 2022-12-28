@@ -1,4 +1,4 @@
-package schema_test
+package cmlschema_test
 
 import (
 	"context"
@@ -6,10 +6,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	// "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,12 +48,12 @@ func TestNewNode(t *testing.T) {
 	diag := &diag.Diagnostics{}
 	ctx := context.Background()
 
-	value := schema.NewNode(ctx, node, diag)
+	value := cmlschema.NewNode(ctx, node, diag)
 	t.Logf("value: %+v", value)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
 
-	var newNode schema.NodeModel
+	var newNode cmlschema.NodeModel
 	diag.Append(tfsdk.ValueAs(ctx, value, &newNode)...)
 	t.Logf("errors: %+v", diag.Errors())
 	assert.False(t, diag.HasError())
@@ -58,13 +61,13 @@ func TestNewNode(t *testing.T) {
 }
 
 func TestNodeAttrs(t *testing.T) {
-	schema := tfsdk.Schema{
-		Attributes: schema.Node(),
+	nodeschema := schema.Schema{
+		Attributes: cmlschema.Node(),
 	}
 
-	got, diag := schema.TypeAtPath(context.TODO(), path.Root("id"))
+	got, diag := nodeschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 19, len(schema.Attributes))
+	assert.Equal(t, 19, len(nodeschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }

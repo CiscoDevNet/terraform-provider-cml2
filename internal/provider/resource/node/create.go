@@ -11,13 +11,14 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 
 	var (
-		data schema.NodeModel
+		data cmlschema.NodeModel
 		err  error
 	)
 
@@ -76,7 +77,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to create node, got error: %s", err),
 		)
 		return
@@ -85,12 +86,12 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			schema.NewNode(ctx, newNode, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: schema.NodeAttrType},
+			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
-	tflog.Info(ctx, "Resource Node CREATE: done")
+	tflog.Info(ctx, "Resource Node CREATE done")
 }

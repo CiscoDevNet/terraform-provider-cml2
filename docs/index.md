@@ -3,12 +3,12 @@
 page_title: "cml2 Provider"
 subcategory: ""
 description: |-
-  
+  provider schema description
 ---
 
 # cml2 Provider
 
-
+provider schema description
 
 ## Example Usage
 

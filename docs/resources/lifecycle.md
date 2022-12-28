@@ -3,12 +3,12 @@
 page_title: "cml2_lifecycle Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.  This is a synthetic resource which "glues" other actual resources like labs, nodes and links together.
+  A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity. This is a synthetic resource which "glues" other actual resources like labs, nodes and links together.
 ---
 
 # cml2_lifecycle (Resource)
 
-A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity.  This is a synthetic resource which "glues" other actual resources like labs, nodes and links together.
+A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity. This is a synthetic resource which "glues" other actual resources like labs, nodes and links together.
 
 ## Example Usage
 
@@ -143,7 +143,7 @@ output "r1_ip_address" {
 ### Optional
 
 - `configs` (Map of String) Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
-- `elements` (List of String) List of node and link IDs the lab consists of.  Works only when a (lab) ID is provided and no topology is configured.
+- `elements` (List of String) List of node and link IDs the lab consists of. Works only when a (lab) ID is provided and no topology is configured.
 - `lab_id` (String) Lab identifier, a UUID. If set, `elements` must be configured as well.
 - `staging` (Attributes) Defines in what sequence nodes are launched. (see [below for nested schema](#nestedatt--staging))
 - `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.

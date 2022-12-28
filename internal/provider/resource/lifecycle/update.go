@@ -10,15 +10,17 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
 )
 
 func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
-		configData, planData, stateData *schema.LabLifecycleModel
+		configData, planData, stateData cmlschema.LabLifecycleModel
 		err                             error
 	)
+
+	tflog.Info(ctx, "Resource LabLifecycle UPDATE")
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
 	if resp.Diagnostics.HasError() {
@@ -48,7 +50,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		start.lab, err = r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 		if err != nil {
 			resp.Diagnostics.AddError(
-				CML2ErrorLabel,
+				common.ErrorLabel,
 				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 			)
 			return
@@ -102,7 +104,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	lab, err := r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 		)
 		return
@@ -113,5 +115,5 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	planData.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)
-	tflog.Info(ctx, "Update: done")
+	tflog.Info(ctx, "Resource LabLifecycle UPDATE done")
 }

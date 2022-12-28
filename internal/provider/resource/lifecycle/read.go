@@ -8,27 +8,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
 func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data *schema.LabLifecycleModel
+	var data cmlschema.LabLifecycleModel
+
+	tflog.Info(ctx, "Resource LabLifecycle READ")
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	// tflog.Info(ctx, "state:", map[string]any{"data": data})
-
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "Read: errors!")
 		return
 	}
-
-	tflog.Info(ctx, "Read: start")
 
 	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			CML2ErrorLabel,
+			common.ErrorLabel,
 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),
 		)
 		return
@@ -43,8 +40,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "Read: errors!")
 		return
 	}
-	tflog.Info(ctx, "Read: done")
+	tflog.Info(ctx, "Resource LabLifecycle READ done")
 }

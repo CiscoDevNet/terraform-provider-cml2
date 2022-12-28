@@ -1,11 +1,15 @@
-package schema
+package cmlschema
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
@@ -46,116 +50,90 @@ var LabAttrType = map[string]attr.Type{
 }
 
 // Lab returns the schema for the Lab model
-func Lab() map[string]tfsdk.Attribute {
-	return map[string]tfsdk.Attribute{
-		"id": {
+func Lab() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
 			Computed:    true,
 			Description: "Lab identifier, a UUID.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"state": {
+		"state": schema.StringAttribute{
 			Computed:            true,
 			MarkdownDescription: "Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"created": {
+		"created": schema.StringAttribute{
 			Computed:    true,
 			Description: "Creation date/time string in ISO8601 format.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"modified": {
+		"modified": schema.StringAttribute{
 			Computed:    true,
 			Description: "Modification date/time string in ISO8601 format.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"title": {
+		"title": schema.StringAttribute{
 			Optional:    true,
 			Computed:    true,
 			Description: "Title of the lab.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"owner": {
+		"owner": schema.StringAttribute{
 			Computed:    true,
 			Description: "Owner of the lab, a UUID4.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"description": {
+		"description": schema.StringAttribute{
 			Optional:    true,
 			Computed:    true,
 			Description: "Lab description.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"node_count": {
+		"node_count": schema.Int64Attribute{
 			Computed:    true,
 			Description: "Number of nodes in the lab.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
-			Type: types.Int64Type,
 		},
-		"link_count": {
+		"link_count": schema.Int64Attribute{
 			Computed:    true,
 			Description: "Number of links in the lab.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
-			Type: types.Int64Type,
 		},
-		"notes": {
+		"notes": schema.StringAttribute{
 			Optional:    true,
 			Computed:    true,
 			Description: "Lab notes.",
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
-			Type: types.StringType,
 		},
-		"groups": {
+		"groups": schema.ListNestedAttribute{
 			Optional:    true,
 			Computed:    true,
 			Description: "Groups assigned to the lab.",
-			Attributes: tfsdk.ListNestedAttributes(
-				map[string]tfsdk.Attribute{
-					"id": {
-						Description: "Group ID (UUID).",
-						Type:        types.StringType,
-						Computed:    true,
-						PlanModifiers: tfsdk.AttributePlanModifiers{
-							resource.UseStateForUnknown(),
-						},
-					},
-					"permission": {
-						MarkdownDescription: "Permission, either `read_only` or `read_write`.",
-						Type:                types.StringType,
-						Computed:            true,
-						PlanModifiers: tfsdk.AttributePlanModifiers{
-							resource.UseStateForUnknown(),
-						},
-					},
-				}),
-			PlanModifiers: tfsdk.AttributePlanModifiers{
-				resource.UseStateForUnknown(),
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: Group(),
+			},
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}

@@ -1,14 +1,15 @@
-package validator
+package cmlvalidator
 
 import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ tfsdk.AttributeValidator = Duration{}
+var _ validator.String = Duration{}
 
 type Duration struct{}
 
@@ -24,10 +25,10 @@ func (v Duration) MarkdownDescription(ctx context.Context) string {
 
 // Validate runs the main validation logic of the validator, reading
 // configuration data out of `req` and updating `resp` with diagnostics.
-func (v Duration) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, resp *tfsdk.ValidateAttributeResponse) {
+func (v Duration) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 
 	var duration types.String
-	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.AttributeConfig, &duration)...)
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, req.ConfigValue, &duration)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -39,7 +40,7 @@ func (v Duration) Validate(ctx context.Context, req tfsdk.ValidateAttributeReque
 	_, err := time.ParseDuration(duration.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
-			req.AttributePath,
+			req.Path,
 			"Invalid duration",
 			err.Error(),
 		)

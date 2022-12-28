@@ -5,16 +5,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	d_images "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/images"
 	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
 	d_node "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/node"
 	r_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lab"
@@ -22,14 +21,11 @@ import (
 	r_link "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/link"
 	r_node "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/node"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/schema"
+	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
 var _ provider.Provider = &CML2Provider{}
-var _ provider.ProviderWithMetadata = &CML2Provider{}
-
-const CML2ErrorLabel = "CML2 Provider Error"
 
 // CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
 type CML2Provider struct {
@@ -42,7 +38,7 @@ func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataReques
 }
 
 func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data schema.ProviderModel
+	var data cmlschema.ProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -123,10 +119,10 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	resp.ResourceData = config
 }
 
-func (p *CML2Provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-		Attributes: schema.Provider(),
-	}, nil
+func (p *CML2Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema.Description = "provider schema description"
+	resp.Schema.Attributes = cmlschema.Provider()
+	resp.Diagnostics = nil
 }
 
 func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
@@ -142,6 +138,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 	return []func() datasource.DataSource{
 		d_lab.NewDataSource,
 		d_node.NewDataSource,
+		d_images.NewDataSource,
 	}
 }
 
