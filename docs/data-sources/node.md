@@ -3,12 +3,12 @@
 page_title: "cml2_node Data Source - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A node data source.  Both, the node id and the lab_id must be provided to retrieve the node data from the controller.  Note that all of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+  A node data source.  Both, the node id and the lab_id must be provided to retrieve the node data from the controller.
 ---
 
 # cml2_node (Data Source)
 
-A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as "optional".
+A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.
 
 ## Example Usage
 
@@ -40,30 +40,27 @@ output "result" {
 <a id="nestedatt--node"></a>
 ### Nested Schema for `node`
 
-Optional:
-
-- `boot_disk_size` (Number) Size of boot disk volume, in GB.
-- `configuration` (String) Node configuration.
-- `cpu_limit` (Number) CPU limit in %, 20-100.
-- `cpus` (Number) Number of CPUs.
-- `data_volume` (Number) Size of data volume, in GB.
-- `imagedefinition` (String) Image definition, must match the node type.
-- `ram` (Number) Amount of RAM, megabytes.
-- `tags` (List of String) List of tags of the node.
-- `x` (Number) X coordinate on the topology canvas.
-- `y` (Number) Y coordinate on the topology canvas.
-
 Read-Only:
 
+- `boot_disk_size` (Number) Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `compute_id` (String) ID of a compute this node is on, a UUID4.
+- `configuration` (String) Node configuration. Can be changed until the node is started once. Will require a replace in that case.
+- `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
+- `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
+- `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `id` (String) Node ID (UUID).
+- `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
 - `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--node--interfaces))
 - `lab_id` (String) Lab ID containing the node (UUID).
 - `label` (String) Node label.
-- `nodedefinition` (String) Node definition / type.
+- `nodedefinition` (String) Node definition / type. This can only be set at create time.
+- `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--node--serial_devices))
 - `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
+- `tags` (List of String) List of tags of the node.
 - `vnc_key` (String) VNC key of console, a UUID4.
+- `x` (Number) X coordinate on the topology canvas.
+- `y` (Number) Y coordinate on the topology canvas.
 
 <a id="nestedatt--node--interfaces"></a>
 ### Nested Schema for `node.interfaces`

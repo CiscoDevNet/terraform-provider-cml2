@@ -58,7 +58,7 @@ func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest
 			Computed:    true,
 		},
 	}
-	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller.  Note that **all** of the attributes of the lab element are read-only even though the auto-generated schema documentation lists some of them as \"optional\"."
+	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller."
 	resp.Diagnostics = nil
 }
 

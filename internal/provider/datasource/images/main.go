@@ -22,7 +22,7 @@ var _ datasource.DataSource = &ImagesDataSource{}
 
 type ImagesDataSourceModel struct {
 	ID        types.String `tfsdk:"id"`
-	NodeDef   types.String `tfsdk:"node_definition"`
+	NodeDef   types.String `tfsdk:"nodedefinition"`
 	ImageList types.List   `tfsdk:"image_list"`
 }
 
@@ -79,19 +79,17 @@ func (d *ImagesDataSource) Configure(ctx context.Context, req datasource.Configu
 }
 
 func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-	resp.Schema.Attributes = cmlschema.ImageDef()
-
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "A UUID. The attribute required by the framework.",
+			Description: "A UUID. The presence of the ID attribute is mandated by the framework. The attribute is a random UUID and has no actual significance.",
 			Computed:    true,
 		},
-		"node_definition": schema.StringAttribute{
+		"nodedefinition": schema.StringAttribute{
 			Description: "A node definition ID to filter the image list.",
 			Optional:    true,
 		},
 		"image_list": schema.ListNestedAttribute{
-			MarkdownDescription: "A list of all image definitions available on the controller, potentially filtered by the provided `node_definition` attribute.",
+			MarkdownDescription: "A list of all image definitions available on the controller, potentially filtered by the provided `nodedefinition` attribute.",
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: cmlschema.ImageDef(),
 			},
@@ -99,7 +97,7 @@ func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 		},
 	}
 
-	resp.Schema.MarkdownDescription = "A data source that retrieves image definitions from the controller. The optional `node_definition` ID can be provided to filter the list of image definitions for the specified node definition. If no node definition ID is provided, the complete image definition list known to the controller is returned."
+	resp.Schema.MarkdownDescription = "A data source that retrieves image definitions from the controller. The optional `nodedefinition` ID can be provided to filter the list of image definitions for the specified node definition. If no node definition ID is provided, the complete image definition list known to the controller is returned."
 	resp.Diagnostics = nil
 }
 

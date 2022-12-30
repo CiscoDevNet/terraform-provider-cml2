@@ -28,31 +28,44 @@ func testAccPreCheck(t *testing.T) {
 
 func TestAccNodeResource(t *testing.T) {
 	re1 := regexp.MustCompile(`Node Definition not found:`)
-	re2 := regexp.MustCompile(`expected "alpine", got "iosv"`)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config:      testAccNodeResourceConfig(cfg.Cfg, "doesntexist"),
+				Config:      testAccNodeResourceConfigNodeDefInvalid(cfg.Cfg),
 				ExpectError: re1,
 			},
 			{
-				Config: testAccNodeResourceConfig(cfg.Cfg, "alpine"),
+				Config: testAccNodeResourceConfig(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "x", "98"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "y", "99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "1"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
 				),
 			},
 			{
-				Config: testAccNodeResourceConfig2(cfg.Cfg),
+				// ExpectNonEmptyPlan: true,
+				Config: testAccNodeResourceConfig(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+				),
+			},
+			{
+				Config: testAccNodeResourceConfig(cfg.Cfg, 3),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
@@ -62,15 +75,8 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "data_volume", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "someothertag"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
 				),
-			},
-			{
-				Config: testAccNodeResourceConfig(cfg.Cfg, "iosv"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-				),
-				ExpectError: re2,
 			},
 			// ImportState testing
 			// {
@@ -91,22 +97,7 @@ func TestAccNodeResource(t *testing.T) {
 	})
 }
 
-func TestAccLifecycleNodeProps(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccNodeResourceRam(cfg.Cfg),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "ram", "512"),
-				),
-			},
-		},
-	})
-}
-
-func testAccNodeResourceConfig(cfg, node_def string) string {
+func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
@@ -114,52 +105,72 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "%[2]s"
-	x              = 98
-	y              = 99
-	tags           = ["test"]
-}
-`, cfg, node_def)
-}
-
-func testAccNodeResourceConfig2(cfg string) string {
-	return fmt.Sprintf(`
-%[1]s
-data "cml2_images" "test" {
-	node_definition = "alpine"
-}
-resource "cml2_lab" "test" {
-}
-resource "cml2_node" "r1" {
-	lab_id          = cml2_lab.test.id
-	label           = "r1"
-	x               = 100
-	y               = 200
-	ram             = 1024
-	cpus            = 2
-	nodedefinition  = "alpine"
-	imagedefinition = element(data.cml2_images.test.image_list, 0).id
-	boot_disk_size  = 64
-	data_volume     = 64
-	tags            = ["test", "someothertag"]
+	nodedefinition = "invalid"
 }
 `, cfg)
 }
 
-func testAccNodeResourceRam(cfg string) string {
-	return fmt.Sprintf(`
-%[1]s
-resource "cml2_lab" "test" {
+func testAccNodeResourceConfig(cfg string, step int) string {
+	if step == 1 {
+		return fmt.Sprintf(`
+		%[1]s
+		resource "cml2_lab" "test" {
+		}
+		resource "cml2_node" "r1" {
+			lab_id          = cml2_lab.test.id
+			label           = "alpine-0"
+			x               = 100
+			y               = 100
+			nodedefinition  = "alpine"
+			tags            = [ "test" ]
+		}
+		`, cfg)
+	}
+	if step == 2 {
+		return fmt.Sprintf(`
+		%[1]s
+		resource "cml2_lab" "test" {
+		}
+		resource "cml2_node" "r1" {
+			lab_id          = cml2_lab.test.id
+			label           = "alpine-99"
+			x               = 100
+			y               = 200
+			nodedefinition  = "alpine"
+			tags            = [ "test", "tag2" ]
+		}
+		`, cfg)
+	}
+	if step == 3 {
+		return fmt.Sprintf(`
+		%[1]s
+		data "cml2_images" "test" {
+			nodedefinition = "alpine"
+		}
+		resource "cml2_lab" "test" {
+		}
+		resource "cml2_node" "r1" {
+			lab_id          = cml2_lab.test.id
+			label           = "alpine-99"
+			x               = 100
+			y               = 200
+			nodedefinition  = "alpine"
+			imagedefinition = element(data.cml2_images.test.image_list, 0).id
+			ram             = 1024
+			cpus            = 2
+			boot_disk_size  = 64
+			data_volume     = 64
+			tags            = [ "test", "tag2" ]
+		}
+		`, cfg)
+	}
+	panic("undefined step!")
 }
 
-resource "cml2_node" "r1" {
-  lab_id         = cml2_lab.test.id
-  label          = "R1"
-  ram            = 512
-  boot_disk_size = 64
-  cpus           = 2
-  cpu_limit      = 80
-  nodedefinition = "alpine"
-}
-`, cfg)
-}
+// 	tagline := ""
+// 	if len(tags) > 0 {
+// 		for idx, tag := range tags {
+// 			tags[idx] = fmt.Sprintf("%q", tag)
+// 		}
+// 		tagline = fmt.Sprintf("tags = [%s]\n", strings.Join(tags, ","))
+// 	}

@@ -1,6 +1,6 @@
 data "cml2_images" "test" {
   # filter images for the Alpine node definition
-  node_definition = "alpine"
+  nodedefinition = "alpine"
 }
 
 locals {

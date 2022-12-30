@@ -170,7 +170,7 @@ func Node() map[string]schema.Attribute {
 			},
 		},
 		"nodedefinition": schema.StringAttribute{
-			Description: "Node definition / type.",
+			Description: "Node definition / type. This can only be set at create time.",
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
@@ -178,12 +178,13 @@ func Node() map[string]schema.Attribute {
 			},
 		},
 		"imagedefinition": schema.StringAttribute{
-			Description: "Image definition, must match the node type.",
+			Description: "Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
-				stringplanmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"interfaces": schema.ListNestedAttribute{
@@ -206,12 +207,13 @@ func Node() map[string]schema.Attribute {
 			},
 		},
 		"configuration": schema.StringAttribute{
-			Description: "Node configuration.",
+			Description: "Node configuration. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
-				stringplanmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"x": schema.Int64Attribute{
@@ -231,48 +233,53 @@ func Node() map[string]schema.Attribute {
 			},
 		},
 		"ram": schema.Int64Attribute{
-			Description: "Amount of RAM, megabytes.",
+			Description: "Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"cpus": schema.Int64Attribute{
-			Description: "Number of CPUs.",
+			Description: "Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"cpu_limit": schema.Int64Attribute{
-			Description: "CPU limit in %, 20-100.",
+			Description: "CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"boot_disk_size": schema.Int64Attribute{
-			Description: "Size of boot disk volume, in GB.",
+			Description: "Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"data_volume": schema.Int64Attribute{
-			Description: "Size of data volume, in GB.",
+			Description: "Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.",
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
+				// int64planmodifier.RequiresReplace(),
+				// replace is controlled in modify_plan()
 			},
 		},
 		"serial_devices": schema.ListAttribute{
@@ -300,53 +307,68 @@ func Node() map[string]schema.Attribute {
 	}
 }
 
-func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
-
-	if len(node.SerialDevices) == 0 {
-		return types.ListNull(SerialDevicesAttrType)
+func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag.Diagnostics) attr.Value {
+	newSerialDevice := serialDeviceModel{
+		ConsoleKey:   types.StringValue(sd.ConsoleKey),
+		DeviceNumber: types.Int64Value(int64(sd.DeviceNumber)),
 	}
 
-	valueList := make([]attr.Value, 0)
-	for _, serial_device := range node.SerialDevices {
-
-		newSerialDevice := serialDeviceModel{
-			ConsoleKey:   types.StringValue(serial_device.ConsoleKey),
-			DeviceNumber: types.Int64Value(int64(serial_device.DeviceNumber)),
-		}
-
-		var value attr.Value
-		diags.Append(tfsdk.ValueFrom(
-			ctx,
-			newSerialDevice,
-			SerialDevicesAttrType,
-			&value,
-		)...)
-		valueList = append(valueList, value)
-	}
-	serialDevices, _ := types.ListValue(
+	var value attr.Value
+	diags.Append(tfsdk.ValueFrom(
+		ctx,
+		newSerialDevice,
 		SerialDevicesAttrType,
-		valueList,
-	)
-	return serialDevices
+		&value,
+	)...)
+	return value
 }
 
-func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
-
-	valueList := make([]attr.Value, 0)
-	for _, iface := range node.Interfaces {
-		value := NewInterface(ctx, iface, diags)
-		valueList = append(valueList, value)
+func newTags(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+	if len(node.Tags) == 0 {
+		return types.ListNull(types.StringType)
 	}
-	ifaces, _ := types.ListValue(
-		types.ObjectType{AttrTypes: InterfaceAttrType},
-		valueList,
-	)
-
-	valueList = nil
+	valueList := make([]attr.Value, 0)
 	for _, tag := range node.Tags {
 		valueList = append(valueList, types.StringValue(tag))
 	}
-	tags, _ := types.ListValue(types.StringType, valueList)
+	tags, dia := types.ListValue(types.StringType, valueList)
+	diags.Append(dia...)
+	return tags
+}
+
+func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+	if len(node.SerialDevices) == 0 {
+		return types.ListNull(SerialDevicesAttrType)
+	}
+	valueList := make([]attr.Value, 0)
+	for _, serial_device := range node.SerialDevices {
+		valueList = append(valueList, newSerialDevice(ctx, serial_device, diags))
+	}
+	serialDevices, dia := types.ListValue(
+		SerialDevicesAttrType,
+		valueList,
+	)
+	diags.Append(dia...)
+	return serialDevices
+}
+
+func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+	if len(node.Interfaces) == 0 {
+		return types.ListNull(types.ObjectType{AttrTypes: InterfaceAttrType})
+	}
+	valueList := make([]attr.Value, 0)
+	for _, iface := range node.Interfaces {
+		valueList = append(valueList, NewInterface(ctx, iface, diags))
+	}
+	ifaces, dia := types.ListValue(
+		types.ObjectType{AttrTypes: InterfaceAttrType},
+		valueList,
+	)
+	diags.Append(dia...)
+	return ifaces
+}
+
+func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
 
 	newNode := NodeModel{
 		ID:             types.StringValue(node.ID),
@@ -355,33 +377,35 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
 		Configuration:  types.StringValue(node.Configuration),
-		Interfaces:     ifaces,
-		Tags:           tags,
+		Interfaces:     newInterfaces(ctx, node, diags),
+		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),
 		Y:              types.Int64Value(int64(node.Y)),
 		SerialDevices:  newSerialDevices(ctx, node, diags),
-		CPUlimit:       types.Int64Value(int64(node.CPUlimit)),
 
 		// these values are null if unset
 		VNCkey:          types.StringNull(),
 		RAM:             types.Int64Null(),
 		CPUs:            types.Int64Null(),
+		CPUlimit:        types.Int64Null(),
 		ImageDefinition: types.StringNull(),
 		ComputeID:       types.StringNull(),
 		BootDiskSize:    types.Int64Null(),
 		DataVolume:      types.Int64Null(),
 	}
 
+	if len(node.VNCkey) > 0 {
+		newNode.VNCkey = types.StringValue(node.VNCkey)
+	}
+	if node.CPUlimit > 0 {
+		newNode.CPUlimit = types.Int64Value(int64((node.CPUlimit)))
+	}
 	if node.RAM > 0 {
 		newNode.RAM = types.Int64Value(int64(node.RAM))
 	}
 	if node.CPUs > 0 {
 		newNode.CPUs = types.Int64Value(int64(node.CPUs))
 	}
-	if len(node.VNCkey) > 0 {
-		newNode.VNCkey = types.StringValue(node.VNCkey)
-	}
-
 	if node.BootDiskSize > 0 {
 		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
 	}

@@ -16,7 +16,7 @@ import (
 // the ones ommitted are irrelevant for TF operations (e.g. disk paths)
 type ImageDefinitionModel struct {
 	ID            types.String `tfsdk:"id"`
-	NodeDefID     types.String `tfsdk:"node_definition_id"`
+	NodeDefID     types.String `tfsdk:"nodedefinition"`
 	Description   types.String `tfsdk:"description"`
 	Label         types.String `tfsdk:"label"`
 	ReadOnly      types.Bool   `tfsdk:"read_only"`
@@ -29,17 +29,17 @@ type ImageDefinitionModel struct {
 }
 
 var ImageDefAttrType = map[string]attr.Type{
-	"id":                 types.StringType,
-	"node_definition_id": types.StringType,
-	"description":        types.StringType,
-	"label":              types.StringType,
-	"read_only":          types.BoolType,
-	"ram":                types.Int64Type,
-	"cpus":               types.Int64Type,
-	"cpu_limit":          types.Int64Type,
-	"data_volume":        types.Int64Type,
-	"boot_disk_size":     types.Int64Type,
-	"schema_version":     types.StringType,
+	"id":             types.StringType,
+	"nodedefinition": types.StringType,
+	"description":    types.StringType,
+	"label":          types.StringType,
+	"read_only":      types.BoolType,
+	"ram":            types.Int64Type,
+	"cpus":           types.Int64Type,
+	"cpu_limit":      types.Int64Type,
+	"data_volume":    types.Int64Type,
+	"boot_disk_size": types.Int64Type,
+	"schema_version": types.StringType,
 }
 
 // ImageDef returns the schema for the Image definition model
@@ -49,9 +49,9 @@ func ImageDef() map[string]schema.Attribute {
 			Description: "ID to identifying the image",
 			Computed:    true,
 		},
-		"node_definition_id": schema.StringAttribute{
+		"nodedefinition": schema.StringAttribute{
 			Description: "ID of the node definition this image belongs to",
-			Optional:    true,
+			Computed:    true,
 		},
 		"description": schema.StringAttribute{
 			Description: "Description of this image definition",

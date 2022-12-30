@@ -33,45 +33,46 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	node.LabID = data.LabID.ValueString()
 
-	if !data.Label.IsNull() {
+	if !data.Label.IsUnknown() {
 		node.Label = data.Label.ValueString()
 	}
-	if !data.NodeDefinition.IsNull() {
+	if !data.NodeDefinition.IsUnknown() {
 		node.NodeDefinition = data.NodeDefinition.ValueString()
 	}
-	if !data.ImageDefinition.IsNull() {
-		node.ImageDefinition = data.ImageDefinition.ValueString()
-	}
-	if !data.Tags.IsNull() {
+	if !data.Tags.IsUnknown() {
 		tags := []string{}
 		for _, tag := range data.Tags.Elements() {
 			tags = append(tags, tag.(types.String).ValueString())
 		}
 		node.Tags = tags
 	}
-	if !data.Configuration.IsNull() {
+	if !data.Configuration.IsUnknown() {
 		node.Configuration = data.Configuration.ValueString()
 	}
-	if !data.X.IsNull() {
+	if !data.X.IsUnknown() {
 		node.X = int(data.X.ValueInt64())
 	}
-	if !data.Y.IsNull() {
+	if !data.Y.IsUnknown() {
 		node.Y = int(data.Y.ValueInt64())
 	}
-	if !data.CPUs.IsNull() {
+
+	if !data.RAM.IsUnknown() {
+		node.RAM = int(data.RAM.ValueInt64())
+	}
+	if !data.CPUs.IsUnknown() {
 		node.CPUs = int(data.CPUs.ValueInt64())
 	}
-	if !data.CPUlimit.IsNull() {
+	if !data.CPUlimit.IsUnknown() {
 		node.CPUlimit = int(data.CPUlimit.ValueInt64())
 	}
-	if !data.BootDiskSize.IsNull() {
+	if !data.BootDiskSize.IsUnknown() {
 		node.BootDiskSize = int(data.BootDiskSize.ValueInt64())
 	}
-	if !data.DataVolume.IsNull() {
+	if !data.DataVolume.IsUnknown() {
 		node.DataVolume = int(data.DataVolume.ValueInt64())
 	}
-	if !data.RAM.IsNull() {
-		node.RAM = int(data.RAM.ValueInt64())
+	if !data.ImageDefinition.IsUnknown() {
+		node.ImageDefinition = data.ImageDefinition.ValueString()
 	}
 
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)

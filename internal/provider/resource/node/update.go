@@ -35,6 +35,7 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	node := &cmlclient.Node{
 		ID:    planData.ID.ValueString(),
 		LabID: planData.LabID.ValueString(),
+		State: planData.State.ValueString(),
 	}
 
 	if !planData.X.IsNull() {
@@ -59,26 +60,26 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	// these can only be changed when the node is DEFINED_ON_CORE
-	if stateData.State.ValueString() == cmlclient.LabStateDefined {
-		if !planData.Configuration.IsNull() {
+	if stateData.State.ValueString() == cmlclient.NodeStateDefined {
+		if !planData.Configuration.IsUnknown() {
 			node.Configuration = planData.Configuration.ValueString()
 		}
-		if !planData.RAM.IsNull() {
+		if !planData.RAM.IsUnknown() {
 			node.RAM = int(planData.RAM.ValueInt64())
 		}
-		if !planData.CPUs.IsNull() {
+		if !planData.CPUs.IsUnknown() {
 			node.CPUs = int(planData.CPUs.ValueInt64())
 		}
-		if !planData.CPUlimit.IsNull() {
+		if !planData.CPUlimit.IsUnknown() {
 			node.CPUlimit = int(planData.CPUlimit.ValueInt64())
 		}
-		if !planData.BootDiskSize.IsNull() {
+		if !planData.BootDiskSize.IsUnknown() {
 			node.BootDiskSize = int(planData.BootDiskSize.ValueInt64())
 		}
-		if !planData.DataVolume.IsNull() {
+		if !planData.DataVolume.IsUnknown() {
 			node.DataVolume = int(planData.DataVolume.ValueInt64())
 		}
-		if !planData.ImageDefinition.IsNull() {
+		if !planData.ImageDefinition.IsUnknown() {
 			node.ImageDefinition = planData.ImageDefinition.ValueString()
 		}
 	}
