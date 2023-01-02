@@ -116,7 +116,7 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		}
 		planData.CPUlimit = configData.CPUlimit
 	}
-	if planData.CPUs.IsUnknown() {
+	if planData.CPUlimit.IsUnknown() {
 		// CPUlimit is the weird one here as it is possible to set the value to null
 		// and this actually works on updating on the controller (PATCH). However,
 		// when reading the data again, the value comes back as 100.
