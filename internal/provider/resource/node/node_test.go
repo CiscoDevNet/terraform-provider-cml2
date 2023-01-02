@@ -26,6 +26,18 @@ func testAccPreCheck(t *testing.T) {
 	// are common to see in a pre-check function.
 }
 
+func TestAccNodeResourceCreateAllAttrs(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceCreateAllAttrs(cfg.Cfg),
+			},
+		},
+	})
+}
+
 func TestAccNodeResource(t *testing.T) {
 	re1 := regexp.MustCompile(`Node Definition not found:`)
 	resource.Test(t, resource.TestCase{
@@ -169,6 +181,32 @@ resource "cml2_node" "r1" {
 	nodedefinition = "invalid"
 }
 `, cfg)
+}
+
+func testAccNodeResourceCreateAllAttrs(cfg string) string {
+	return fmt.Sprintf(`
+		%[1]s
+		data "cml2_images" "test" {
+			nodedefinition = "alpine"
+		}
+		resource "cml2_lab" "test" {
+		}
+		resource "cml2_node" "r1" {
+			lab_id          = cml2_lab.test.id
+			label           = "alpine-0"
+			x               = 100
+			y               = 100
+			nodedefinition  = "alpine"
+			tags            = [ "test" ]
+			configuration   = "hostname bla"
+			ram             = 2048
+			cpus            = 2
+			cpu_limit       = 90
+			boot_disk_size  = 64
+			data_volume     = 64
+			imagedefinition = element(data.cml2_images.test.image_list, 0).id
+		}
+		`, cfg)
 }
 
 func testAccNodeResourceConfig(cfg string, step int) string {
