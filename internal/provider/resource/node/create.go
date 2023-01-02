@@ -39,13 +39,17 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if !data.NodeDefinition.IsUnknown() {
 		node.NodeDefinition = data.NodeDefinition.ValueString()
 	}
-	if !data.Tags.IsUnknown() {
-		tags := []string{}
-		for _, tag := range data.Tags.Elements() {
-			tags = append(tags, tag.(types.String).ValueString())
-		}
-		node.Tags = tags
+
+	// We always need to create a tag list as the API always returns a list of
+	// tags even if none are set... e.g. no tags --> [] (instead of null).
+	// if !data.Tags.IsUnknown() {
+	tags := []string{}
+	for _, tag := range data.Tags.Elements() {
+		tags = append(tags, tag.(types.String).ValueString())
 	}
+	node.Tags = tags
+	// }
+
 	if !data.Configuration.IsUnknown() {
 		node.Configuration = data.Configuration.ValueString()
 	}

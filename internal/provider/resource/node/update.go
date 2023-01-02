@@ -51,8 +51,6 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		var tag types.String
 		tags := []string{}
 		for _, elem := range planData.Tags.Elements() {
-			// Ignore error and diagnostics for the simple conversion here
-			// Can't use elem.String() here as that has the value in quotes!
 			tfsdk.ValueAs(ctx, elem, &tag)
 			tags = append(tags, tag.ValueString())
 		}

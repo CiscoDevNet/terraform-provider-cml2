@@ -324,9 +324,10 @@ func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag
 }
 
 func newTags(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
-	if len(node.Tags) == 0 {
-		return types.ListNull(types.StringType)
-	}
+	// Node tags can't be null, there's always a list of tags, even if it's empty
+	// if len(node.Tags) == 0 {
+	// 	return types.ListNull(types.StringType)
+	// }
 	valueList := make([]attr.Value, 0)
 	for _, tag := range node.Tags {
 		valueList = append(valueList, types.StringValue(tag))

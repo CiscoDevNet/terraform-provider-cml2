@@ -6,6 +6,7 @@ Lists the changes in the provider.
 
 - refactor the node resource update logic, allow change of more properties when
   node hasn't been started yet
+- fix node tag handling (also a regression in cmlclient)
 - for image definition data source: change the attribute name of the node
   definition filter from `node_definition_id` to `nodedefinition` for consistency
 - improve test coverage
