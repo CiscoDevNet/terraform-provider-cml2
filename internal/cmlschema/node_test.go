@@ -17,17 +17,17 @@ import (
 )
 
 var node *cmlclient.Node = &cmlclient.Node{
-	ID:              "8bf321c3-3312-44f2-9098-fa89e2e05d7e",
-	Label:           "router 1",
-	X:               10,
-	Y:               20,
-	NodeDefinition:  "IOSv",
-	ImageDefinition: "",
-	Configuration:   "hostname router1",
-	CPUs:            0,
-	CPUlimit:        100,
-	RAM:             512,
-	State:           "BOOTED",
+	ID:             "8bf321c3-3312-44f2-9098-fa89e2e05d7e",
+	Label:          "router 1",
+	X:              10,
+	Y:              20,
+	NodeDefinition: "IOSv",
+	// ImageDefinition: "",
+	Configuration: "hostname router1",
+	CPUs:          0,
+	CPUlimit:      100,
+	RAM:           512,
+	State:         "BOOTED",
 	Interfaces: cmlclient.InterfaceList{
 		iface,
 		iface,
@@ -43,6 +43,12 @@ var node *cmlclient.Node = &cmlclient.Node{
 	BootDiskSize: 16,
 	DataVolume:   0,
 }
+
+// func newPtr[V int | string](value V) *V {
+// 	ptr := new(V)
+// 	*ptr = value
+// 	return ptr
+// }
 
 func TestNewNode(t *testing.T) {
 	diag := &diag.Diagnostics{}

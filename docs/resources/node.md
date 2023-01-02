@@ -19,17 +19,17 @@ A node resource represents a CML node. At create time, the lab ID, a node defini
 
 - `lab_id` (String) Lab ID containing the node (UUID).
 - `label` (String) Node label.
-- `nodedefinition` (String) Node definition / type.
+- `nodedefinition` (String) Node definition / type. This can only be set at create time.
 
 ### Optional
 
-- `boot_disk_size` (Number) Size of boot disk volume, in GB.
-- `configuration` (String) Node configuration.
-- `cpu_limit` (Number) CPU limit in %, 20-100.
-- `cpus` (Number) Number of CPUs.
-- `data_volume` (Number) Size of data volume, in GB.
-- `imagedefinition` (String) Image definition, must match the node type.
-- `ram` (Number) Amount of RAM, megabytes.
+- `boot_disk_size` (Number) Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
+- `configuration` (String) Node configuration. Can be changed until the node is started once. Will require a replace in that case.
+- `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
+- `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
+- `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
+- `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
+- `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `tags` (List of String) List of tags of the node.
 - `x` (Number) X coordinate on the topology canvas.
 - `y` (Number) Y coordinate on the topology canvas.

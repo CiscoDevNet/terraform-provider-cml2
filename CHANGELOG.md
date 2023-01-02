@@ -2,6 +2,31 @@
 
 Lists the changes in the provider.
 
+## Version 0.5.1
+
+- refactor the node resource update logic, allow change of more properties when
+  node hasn't been started yet
+- fix node tag handling (also a regression in cmlclient)
+- for image definition data source: change the attribute name of the node
+  definition filter from `node_definition_id` to `nodedefinition` for consistency
+- improve test coverage
+- documentation improvements
+- dependency updates
+
+## Version 0.5.0
+
+- refactor to work with Terraform Plugin Framework 1.0.1
+- added an image definition data source
+- removed the GH secret tool from the repo
+- dependency updates
+
+## Version 0.4.2
+
+- fixed node properties (compute ID and VNC key)
+- added the combine workflow action (internal)
+- bumped gocmlclient to 0.0.6
+- dependency updates
+
 ## Version 0.4.1
 
 - documentation consistency and small fixes

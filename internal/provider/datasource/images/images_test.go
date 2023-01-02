@@ -53,7 +53,7 @@ func TestImageDataSource(t *testing.T) {
 func testImageDataSourceConfig(cfg, nd string) string {
 	ndCfg := ""
 	if len(nd) > 0 {
-		ndCfg = fmt.Sprintf("node_definition = %q", nd)
+		ndCfg = fmt.Sprintf("nodedefinition = %q", nd)
 	}
 	return fmt.Sprintf(`
 	%[1]s
@@ -64,7 +64,7 @@ func testImageDataSourceConfig(cfg, nd string) string {
 		il = data.cml2_images.test.image_list
 	}
 	output "bla" {
-		value = element(local.il, length(local.il)-1).node_definition_id
+		value = element(local.il, length(local.il)-1).nodedefinition
 	}
 	`, cfg, ndCfg)
 }

@@ -58,7 +58,7 @@ func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			Computed:    true,
 		},
 	}
-	resp.Schema.MarkdownDescription = "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller.  Note that **all** of the attributes of the node element are read-only even though the auto-generated schema documentation lists some of them as \"optional\"."
+	resp.Schema.MarkdownDescription = "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller."
 	resp.Diagnostics = nil
 }
 

@@ -12,9 +12,14 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 	for name, fromAttr := range rSchema {
 
 		// required := fromAttr.IsRequired()
-		required := false // for datasources, the required attrs are on the outside
-		computed := fromAttr.IsComputed()
-		optional := fromAttr.IsOptional()
+		// computed := fromAttr.IsComputed()
+		// optional := fromAttr.IsOptional()
+
+		// for a datasource, all attributes are computed and the required attrs
+		// are on the container / outside.
+		required := false
+		computed := true
+		optional := false
 
 		if !(required && computed && optional) {
 			computed = true

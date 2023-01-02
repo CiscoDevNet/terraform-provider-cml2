@@ -1,12 +1,10 @@
 # TODO
 
-As this provider is "work-in-progress", there's still plenty of work to do:
+As this provider is "work-in-progress", there's still plenty of work to do.
 
-- documentation (content, consistency)
-- tests (only a few so far)
-- "filter" implementation for lab details data source (if needed at all)
-- naming consistency (cml vs cml2)?
 - additional resources and data sources
+- improved documentation and examples
+- better test coverage(unit/acceptance)
 
 Especially the last bullet requires some discussion in terms of what makes
 sense and what doesn't.
@@ -21,13 +19,20 @@ There's some documentation around design
 but that wasn't really conclusive; it also seemed to be referencing outdated
 material.
 
-## Modularization
-
-Need to likely move the actual golang CML client library to its own repo.
-
 ## Items Done
 
+- basic acceptance tests
+- documentation (content, consistency)
+- added image definition data source
 - add CA pem file to provider config
+- move the actual golang CML client library to its own repo
+- naming consistency (cml vs cml2) -- should be OK by now
+- image schema unit test
+- fix documentation of data sources ("optional schema props")
+
+## Not doing
+
+- "filter" implementation for lab details data source (if needed at all)
 
 ## References
 

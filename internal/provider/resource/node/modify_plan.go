@@ -3,9 +3,11 @@ package node
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
@@ -31,45 +33,124 @@ import (
 func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 
 	// var stateData, planData cmlschema.NodeModel
-	var planData cmlschema.NodeModel
+	var configData, planData, stateData cmlschema.NodeModel
 
 	tflog.Info(ctx, "Resource Node MODIFYPLAN")
 
 	// when deleting, there's no plan
-	if req.Plan.Raw.IsNull() {
-		tflog.Info(ctx, "there is no plan")
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		tflog.Info(ctx, "there is no plan or state")
 		return
 	}
 
-	// Read Terraform plan data into the model
+	// Read Terraform config/plan/state data into the model
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	if planData.DataVolume.IsUnknown() {
-		planData.DataVolume = types.Int64Null()
-	}
-	if planData.BootDiskSize.IsUnknown() {
-		planData.BootDiskSize = types.Int64Null()
-	}
+	// if the node was started once (e.g. not in state DEFINED anymore) then
+	// changing certain attributes require a replace
+	nodeExists := stateData.State.ValueString() != cmlclient.NodeStateDefined
+
 	if planData.ComputeID.IsUnknown() {
 		planData.ComputeID = types.StringNull()
-	}
-	if planData.ImageDefinition.IsUnknown() {
-		planData.ImageDefinition = types.StringNull()
 	}
 	if planData.SerialDevices.IsUnknown() {
 		planData.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
 	}
+	if planData.VNCkey.IsUnknown() {
+		planData.VNCkey = types.StringNull()
+	}
+	if planData.Interfaces.IsUnknown() {
+		planData.Interfaces = types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
+	}
+
+	// the following are the attributes where the replace is depending on
+	// the node state...
+	if !planData.Configuration.IsUnknown() && nodeExists {
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configuration"))
+	}
+
+	if !configData.ImageDefinition.IsNull() && !configData.ImageDefinition.Equal(stateData.ImageDefinition) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("imagedefinition"))
+		}
+		planData.ImageDefinition = configData.ImageDefinition
+	}
+	if planData.ImageDefinition.IsUnknown() {
+		planData.ImageDefinition = types.StringNull()
+	}
+
+	if !configData.RAM.IsNull() && !configData.RAM.Equal(stateData.RAM) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("ram"))
+		}
+		planData.RAM = configData.RAM
+	}
 	if planData.RAM.IsUnknown() {
 		planData.RAM = types.Int64Null()
+	}
+
+	if !configData.CPUs.IsNull() && !configData.CPUs.Equal(stateData.CPUs) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("cpus"))
+		}
+		planData.CPUs = configData.CPUs
 	}
 	if planData.CPUs.IsUnknown() {
 		planData.CPUs = types.Int64Null()
 	}
-	if planData.VNCkey.IsUnknown() {
-		planData.VNCkey = types.StringNull()
+
+	if !configData.CPUlimit.IsNull() && !configData.CPUlimit.Equal(stateData.CPUlimit) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("cpu_limit"))
+		}
+		planData.CPUlimit = configData.CPUlimit
+	}
+	if planData.CPUs.IsUnknown() {
+		// CPUlimit is the weird one here as it is possible to set the value to null
+		// and this actually works on updating on the controller (PATCH). However,
+		// when reading the data again, the value comes back as 100.
+		// See SIMPLE-5052 and cmlclient.NodeGet()
+		planData.CPUlimit = types.Int64Value(int64(100))
+	}
+
+	if !configData.DataVolume.IsNull() && !configData.DataVolume.Equal(stateData.DataVolume) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("data_volume"))
+		}
+		planData.DataVolume = configData.DataVolume
+	}
+	if planData.DataVolume.IsUnknown() {
+		planData.DataVolume = types.Int64Null()
+	}
+
+	if !configData.BootDiskSize.IsNull() && !configData.BootDiskSize.Equal(stateData.BootDiskSize) {
+		if nodeExists {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("boot_disk_size"))
+		}
+		planData.BootDiskSize = configData.BootDiskSize
+	}
+	if planData.BootDiskSize.IsUnknown() {
+		planData.BootDiskSize = types.Int64Null()
+	}
+
+	// need to set an empty list if no configuration is provided for tags
+	// this is a one-off since tags can't be null
+	if configData.Tags.IsNull() {
+		tags, dia := types.ListValueFrom(ctx, types.StringType, []string{})
+		planData.Tags = tags
+		resp.Diagnostics.Append(dia...)
+		// types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
