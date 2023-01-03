@@ -24,8 +24,8 @@ type LinkModel struct {
 	State      types.String `tfsdk:"state"`
 	NodeA      types.String `tfsdk:"node_a"`
 	NodeB      types.String `tfsdk:"node_b"`
-	NodeAslot  types.Int64  `tfsdk:"node_a_slot"`
-	NodeBslot  types.Int64  `tfsdk:"node_b_slot"`
+	SlotA      types.Int64  `tfsdk:"slot_a"`
+	SlotB      types.Int64  `tfsdk:"slot_b"`
 }
 
 // with simplified=true
@@ -59,8 +59,8 @@ var LinkAttrType = map[string]attr.Type{
 	"state":            types.StringType,
 	"node_a":           types.StringType,
 	"node_b":           types.StringType,
-	"node_a_slot":      types.Int64Type,
-	"node_b_slot":      types.Int64Type,
+	"slot_a":           types.Int64Type,
+	"slot_b":           types.Int64Type,
 }
 
 func Link() map[string]schema.Attribute {
@@ -109,6 +109,7 @@ func Link() map[string]schema.Attribute {
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
 		"node_b": schema.StringAttribute{
@@ -116,9 +117,10 @@ func Link() map[string]schema.Attribute {
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"node_a_slot": schema.Int64Attribute{
+		"slot_a": schema.Int64Attribute{
 			Description: "Optional interface slot on node A (src), if not provided use next free.",
 			Optional:    true,
 			Computed:    true,
@@ -127,7 +129,7 @@ func Link() map[string]schema.Attribute {
 				int64planmodifier.RequiresReplace(),
 			},
 		},
-		"node_b_slot": schema.Int64Attribute{
+		"slot_b": schema.Int64Attribute{
 			Description: "Optional interface slot on node B (dst), if not provided use next free.",
 			Optional:    true,
 			Computed:    true,
@@ -159,15 +161,15 @@ func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics)
 		NodeA:      types.StringValue(link.SrcNode),
 		NodeB:      types.StringValue(link.DstNode),
 		// -1 is "don't care, use next free"
-		NodeAslot: types.Int64Value(-1),
-		NodeBslot: types.Int64Value(-1),
+		SlotA: types.Int64Value(-1),
+		SlotB: types.Int64Value(-1),
 	}
 
 	if link.SrcSlot >= 0 {
-		newLink.NodeAslot = types.Int64Value(int64(link.SrcSlot))
+		newLink.SlotA = types.Int64Value(int64(link.SrcSlot))
 	}
 	if link.DstSlot >= 0 {
-		newLink.NodeBslot = types.Int64Value(int64(link.DstSlot))
+		newLink.SlotB = types.Int64Value(int64(link.DstSlot))
 	}
 
 	var value attr.Value

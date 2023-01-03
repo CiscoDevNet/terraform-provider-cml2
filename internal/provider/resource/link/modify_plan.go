@@ -34,12 +34,12 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	// these are the fields which are optional and computed... if they are
 	// specified, then we need to copy over the state data into the plan
 
-	if !stateData.NodeAslot.IsUnknown() {
-		planData.NodeAslot = stateData.NodeAslot
+	if !stateData.SlotA.IsUnknown() {
+		planData.SlotA = stateData.SlotA
 	}
 
-	if !stateData.NodeBslot.IsUnknown() {
-		planData.NodeBslot = stateData.NodeBslot
+	if !stateData.SlotB.IsUnknown() {
+		planData.SlotB = stateData.SlotB
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)

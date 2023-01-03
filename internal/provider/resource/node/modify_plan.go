@@ -61,18 +61,18 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	// changing certain attributes require a replace
 	nodeExists := stateData.State.ValueString() != cmlclient.NodeStateDefined
 
-	if planData.ComputeID.IsUnknown() {
-		planData.ComputeID = types.StringNull()
-	}
-	if planData.SerialDevices.IsUnknown() {
-		planData.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
-	}
-	if planData.VNCkey.IsUnknown() {
-		planData.VNCkey = types.StringNull()
-	}
-	if planData.Interfaces.IsUnknown() {
-		planData.Interfaces = types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
-	}
+	// if planData.ComputeID.IsUnknown() {
+	// 	planData.ComputeID = types.StringNull()
+	// }
+	// if planData.SerialDevices.IsUnknown() {
+	// 	planData.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
+	// }
+	// if planData.VNCkey.IsUnknown() {
+	// 	planData.VNCkey = types.StringNull()
+	// }
+	// if planData.Interfaces.IsUnknown() {
+	// 	planData.Interfaces = types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
+	// }
 
 	// the following are the attributes where the replace is depending on
 	// the node state...

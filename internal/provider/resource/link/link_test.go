@@ -34,7 +34,7 @@ func TestAccLinkResource(t *testing.T) {
 			{
 				Config: testAccLinkResourceConfig(cfg.Cfg),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_link.l0", "label", "r1-eth3<->r2-eth0"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "label", "r1-eth3<->r2-eth2"),
 				),
 			},
 			{
@@ -81,7 +81,8 @@ resource "cml2_link" "l0" {
 	lab_id = cml2_lab.test.id
 	node_a = cml2_node.r1.id
 	node_b = cml2_node.r2.id
-	node_a_slot = 3
+	slot_a = 3
+	slot_b = 2
 }
 data "cml2_node" "r1" {
 	id = cml2_node.r1.id

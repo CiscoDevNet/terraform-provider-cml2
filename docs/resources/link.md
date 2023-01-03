@@ -23,8 +23,8 @@ A link resource represents a CML link. At create time, the lab ID, source and de
 
 ### Optional
 
-- `node_a_slot` (Number) Optional interface slot on node A (src), if not provided use next free.
-- `node_b_slot` (Number) Optional interface slot on node B (dst), if not provided use next free.
+- `slot_a` (Number) Optional interface slot on node A (src), if not provided use next free.
+- `slot_b` (Number) Optional interface slot on node B (dst), if not provided use next free.
 
 ### Read-Only
 
