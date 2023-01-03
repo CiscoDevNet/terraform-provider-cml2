@@ -105,6 +105,9 @@ function start() {
     export GH_KEY GH_KEY_ID TUNNEL
 
     # create/update the needed secrets on Github
+    # note that gh has a "secret" subcommand... so, the use of ghsecret is
+    # only for historical reasons :)
+    # https://github.com/cli/cli/releases/tag/v1.4.0
     ghsecret TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
     ghsecret TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
     ghsecret TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -

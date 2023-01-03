@@ -82,6 +82,7 @@ resource "cml2_link" "l0" {
 	node_a = cml2_node.r1.id
 	node_b = cml2_node.r2.id
 	slot_a = 3
+	slot_b = 7
 }
 data "cml2_node" "r1" {
 	id = cml2_node.r1.id

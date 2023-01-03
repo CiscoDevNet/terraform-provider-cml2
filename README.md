@@ -19,6 +19,7 @@ The current implementation provides:
   - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`, `STOPPED`), including staged starting and configuration injection
   - data source `cml2_lab` to retrieve state of an existing lab
   - data source `cml2_node` to retrieve state of an existing node in a lab
+  - data source `cml2_image` to retrieve the available node images from the controller
 - Examples (`examples/`) and generated documentation (`docs/`),
 - Miscellaneous meta files.
 
@@ -72,7 +73,7 @@ TF_VAR_address="https://cml-controller.cml.lab"
 export TF_VAR_username TF_VAR_password TF_VAR_address
 ```
 
-Those are referenced for testing in `internal/provider/testing`.
+Those variables are referenced for acceptance testing in `internal/provider/testing`.
 
 ```shell
 make testacc
@@ -81,4 +82,4 @@ make testacc
 Acceptance testing with Github actions can be achieved using the provided
 `tunnel.sh` script which uses tools like `gh` CLI and `ngrok` to forward the API
 calls to a locally installed CML instance.  See `tunnel.sh` and the `ghsecret`
-[README](cmd/ghsecret/README.md) for additional details
+[CLI tool](https://github.com/rschmied/ghsecret) for additional details.
