@@ -49,11 +49,11 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	link.LabID = data.LabID.ValueString()
 	link.SrcNode = data.NodeA.ValueString()
 	link.DstNode = data.NodeB.ValueString()
-	if !data.NodeAslot.IsUnknown() {
-		link.SrcSlot = int(data.NodeAslot.ValueInt64())
+	if !data.SlotA.IsUnknown() {
+		link.SrcSlot = int(data.SlotA.ValueInt64())
 	}
-	if !data.NodeBslot.IsUnknown() {
-		link.DstSlot = int(data.NodeBslot.ValueInt64())
+	if !data.SlotB.IsUnknown() {
+		link.DstSlot = int(data.SlotB.ValueInt64())
 	}
 
 	newLink, err := r.cfg.Client().LinkCreate(ctx, &link)
@@ -68,8 +68,8 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	tflog.Info(ctx, fmt.Sprintf("src slot %d", newLink.SrcSlot))
 	tflog.Info(ctx, fmt.Sprintf("dst slot %d", newLink.DstSlot))
 
-	data.NodeAslot = types.Int64Value(int64(newLink.SrcSlot))
-	data.NodeBslot = types.Int64Value(int64(newLink.DstSlot))
+	data.SlotA = types.Int64Value(int64(newLink.SrcSlot))
+	data.SlotB = types.Int64Value(int64(newLink.DstSlot))
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(

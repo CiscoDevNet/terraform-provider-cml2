@@ -71,18 +71,18 @@ resource "cml2_node" "r3" {
 }
 
 resource "cml2_link" "l0" {
-  lab_id      = cml2_lab.this.id
-  node_a      = cml2_node.ext.id
-  node_b      = cml2_node.ums1.id
-  node_b_slot = 31
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ext.id
+  node_b = cml2_node.ums1.id
+  slot_b = 31
 }
 
 resource "cml2_link" "l1" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.r1.id
   node_b = cml2_node.ums1.id
-  # node_a_slot = 3
-  # node_b_slot = 31
+  # slot_a = 3
+  # slot_b = 31
 }
 
 resource "cml2_link" "l2" {

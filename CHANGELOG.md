@@ -4,11 +4,20 @@ Lists the changes in the provider.
 
 ## Version 0.5.1
 
+### Breaking changes
+
+- link resources: change the attribute names for slots from `node_a_slot` to `slot_a`
+  and `node_b_slot` to `slot_b`
+- image definition data source: change the attribute name of the node
+  definition filter from `node_definition_id` to `nodedefinition` for consistency
+
+### Other changes
+
 - refactor the node resource update logic, allow change of more properties when
   node hasn't been started yet
+- make link node changes (e.g. changing the ID of either end of the link) requires
+  a replace now.
 - fix node tag handling (also a regression in cmlclient)
-- for image definition data source: change the attribute name of the node
-  definition filter from `node_definition_id` to `nodedefinition` for consistency
 - improve test coverage
 - documentation improvements
 - dependency updates

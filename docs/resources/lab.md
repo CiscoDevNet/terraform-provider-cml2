@@ -46,19 +46,19 @@ resource "cml2_node" "r2" {
 }
 
 resource "cml2_link" "l0" {
-  lab_id      = cml2_lab.twonode.id
-  node_a      = cml2_node.r1.id
-  node_a_slot = 3
-  node_b      = cml2_node.r2.id
-  node_b_slot = 3
+  lab_id = cml2_lab.twonode.id
+  node_a = cml2_node.r1.id
+  slot_a = 3
+  node_b = cml2_node.r2.id
+  slot_b = 3
 }
 
 resource "cml2_link" "l1" {
-  lab_id      = cml2_lab.twonode.id
-  node_a      = cml2_node.r1.id
-  node_a_slot = 2
-  node_b      = cml2_node.r2.id
-  node_b_slot = 2
+  lab_id = cml2_lab.twonode.id
+  node_a = cml2_node.r1.id
+  slot_a = 2
+  node_b = cml2_node.r2.id
+  slot_b = 2
 }
 ```
 

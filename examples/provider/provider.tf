@@ -1,4 +1,7 @@
 provider "cml2" {
+  # for use of variables, see
+  # https://developer.hashicorp.com/terraform/language/values/variables
+
   # address must use https://
   address = var.address
 

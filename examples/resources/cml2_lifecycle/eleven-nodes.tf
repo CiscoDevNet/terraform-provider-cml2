@@ -117,25 +117,25 @@ resource "cml2_link" "l0" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ext.id
   node_b = cml2_node.ums1.id
-  # node_a_slot = 0
-  # node_b_slot = 31
+  # slot_a = 0
+  # slot_b = 31
 }
 
 resource "cml2_link" "l1" {
-  lab_id      = cml2_lab.this.id
-  node_a      = cml2_node.r1.id
-  node_b      = cml2_node.ums1.id
-  node_a_slot = 0
-  node_b_slot = 31
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.r1.id
+  node_b = cml2_node.ums1.id
+  slot_a = 0
+  slot_b = 31
 }
 
 
 resource "cml2_link" "l2" {
-  lab_id      = cml2_lab.this.id
-  node_a      = cml2_node.r1.id
-  node_b      = cml2_node.r3.id
-  node_a_slot = 3
-  # node_b_slot = 0
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.r1.id
+  node_b = cml2_node.r3.id
+  slot_a = 3
+  # slot_b = 0
 }
 
 
@@ -143,58 +143,58 @@ resource "cml2_link" "l3" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r3.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 
 resource "cml2_link" "l4" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r4.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l5" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r5.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l6" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r6.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l7" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r7.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l8" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r8.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l9" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.r9.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 resource "cml2_link" "l10" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ums1.id
   node_b = cml2_node.ios.id
-  # node_a_slot = 0
-  # node_b_slot = 0
+  # slot_a = 0
+  # slot_b = 0
 }
 
 resource "cml2_lifecycle" "top" {
