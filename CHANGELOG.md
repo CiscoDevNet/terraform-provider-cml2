@@ -21,6 +21,7 @@ Lists the changes in the provider.
 - improve test coverage
 - documentation improvements
 - dependency updates
+- fix `skip_verify` flag default
 
 ## Version 0.5.0
 
