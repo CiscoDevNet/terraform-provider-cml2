@@ -2,6 +2,11 @@
 
 Lists the changes in the provider.
 
+## Unreleased
+
+- reverted `skip_verify` to pre 0.5.1 logic, fixed documentation for it
+- framework 1.1.1, added better provider description
+
 ## Version 0.5.1
 
 ### Breaking changes

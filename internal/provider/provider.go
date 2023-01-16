@@ -77,7 +77,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 	if data.SkipVerify.IsNull() {
 		tflog.Warn(ctx, "unspecified certificate verification, will verify")
-		data.SkipVerify = types.BoolValue(true)
+		data.SkipVerify = types.BoolValue(false)
 	}
 
 	if data.UseCache.IsNull() {
