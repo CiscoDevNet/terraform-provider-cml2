@@ -120,7 +120,12 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 }
 
 func (p *CML2Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
-	resp.Schema.Description = "provider schema description"
+	resp.Schema.MarkdownDescription = `The CML2 Terraform provider helps to
+deploy and run entire "virtual networks as code" into the Cisco Modeling Labs network
+simulation platform. Available deployment methods allow to create networks (e.g.,
+routers, switches and endpoints and their connectivity) as well as import existing CML2
+topologies. It also includes fine-grained lifecycle control (staged start up),
+configuration injection, IP address retrieval from network devices, and more.`
 	resp.Schema.Attributes = cmlschema.Provider()
 	resp.Diagnostics = nil
 }

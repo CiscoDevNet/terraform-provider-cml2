@@ -3,12 +3,22 @@
 page_title: "cml2 Provider"
 subcategory: ""
 description: |-
-  provider schema description
+  The CML2 Terraform provider helps to
+  deploy and run entire "virtual networks as code" into the Cisco Modeling Labs network
+  simulation platform. Available deployment methods allow to create networks (e.g.,
+  routers, switches and endpoints and their connectivity) as well as import existing CML2
+  topologies. It also includes fine-grained lifecycle control (staged start up),
+  configuration injection, IP address retrieval from network devices, and more.
 ---
 
 # cml2 Provider
 
-provider schema description
+The CML2 Terraform provider helps to
+deploy and run entire "virtual networks as code" into the Cisco Modeling Labs network
+simulation platform. Available deployment methods allow to create networks (e.g.,
+routers, switches and endpoints and their connectivity) as well as import existing CML2
+topologies. It also includes fine-grained lifecycle control (staged start up),
+configuration injection, IP address retrieval from network devices, and more.
 
 ## Example Usage
 
