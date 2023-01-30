@@ -63,7 +63,7 @@ provider "cml2" {
 
 - `cacert` (String) A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.
 - `password` (String, Sensitive) CML2 password.
-- `skip_verify` (Boolean) Disables TLS certificate verification.
+- `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
-- `use_cache` (Boolean) Enables the client cache, this is considered experimental.
+- `use_cache` (Boolean) Enables the client cache, this is considered experimental (default is false -- will not use the cache!)
 - `username` (String) CML2 username.
