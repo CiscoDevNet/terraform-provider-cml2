@@ -62,6 +62,19 @@ func TestAccLinkResource(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleResourceDaniel(t *testing.T) {
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccLifecycleDaniel(cfg.Cfg),
+			},
+		},
+	})
+}
+
 func testAccLinkResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -89,4 +102,60 @@ data "cml2_node" "r1" {
 	lab_id = cml2_lab.test.id
 }
 `, cfg)
+}
+
+// this specifically tests the omission of link interface slots which should
+// result in "use next free slot" as defined by the CML client. This was broken
+// in 0.5.1 and earlier.
+func testAccLifecycleDaniel(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "devnet-expert" {
+	title       = "DevNet Expert Lab"
+	description = "This is the DevNet Expert Lab for study"
+  }
+
+resource "cml2_node" "ext" {
+	lab_id         = cml2_lab.devnet-expert.id
+	nodedefinition = "external_connector"
+	label          = "Internet"
+	configuration  = "bridge0"
+  }
+
+  resource "cml2_node" "nat1" {
+	lab_id         = cml2_lab.devnet-expert.id
+	label          = "NAT"
+	nodedefinition = "iosv"
+  }
+
+  resource "cml2_node" "ums1" {
+	lab_id         = cml2_lab.devnet-expert.id
+	label          = "MGMT"
+	nodedefinition = "unmanaged_switch"
+  }
+
+  resource "cml2_node" "cws1" {
+	lab_id         = cml2_lab.devnet-expert.id
+	label          = "CWS"
+	nodedefinition = "alpine"
+  }
+
+  resource "cml2_link" "l0" {
+	lab_id = cml2_lab.devnet-expert.id
+	node_a = cml2_node.ext.id
+	node_b = cml2_node.nat1.id
+  }
+
+  resource "cml2_link" "l1" {
+    lab_id = cml2_lab.devnet-expert.id
+    node_a = cml2_node.nat1.id
+    node_b = cml2_node.ums1.id
+  }
+
+  resource "cml2_link" "l2" {
+	lab_id = cml2_lab.devnet-expert.id
+	node_a = cml2_node.ums1.id
+	node_b = cml2_node.cws1.id
+  }
+  `, cfg)
 }

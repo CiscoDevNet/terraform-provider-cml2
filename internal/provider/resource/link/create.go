@@ -45,10 +45,14 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	link := cmlclient.Link{}
-	link.LabID = data.LabID.ValueString()
-	link.SrcNode = data.NodeA.ValueString()
-	link.DstNode = data.NodeB.ValueString()
+	link := cmlclient.Link{
+		LabID:   data.LabID.ValueString(),
+		SrcNode: data.NodeA.ValueString(),
+		DstNode: data.NodeB.ValueString(),
+		SrcSlot: -1,
+		DstSlot: -1,
+	}
+
 	if !data.SlotA.IsUnknown() {
 		link.SrcSlot = int(data.SlotA.ValueInt64())
 	}
