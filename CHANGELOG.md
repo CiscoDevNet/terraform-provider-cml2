@@ -2,6 +2,13 @@
 
 Lists the changes in the provider.
 
+## Version 0.5.2
+
+- reverted `skip_verify` to pre 0.5.1 logic, fixed documentation for it
+- framework 1.1.1, added better provider description
+- fixed #38 to allow adding of links without specifying slots
+- dependency updates
+
 ## Version 0.5.1
 
 ### Breaking changes

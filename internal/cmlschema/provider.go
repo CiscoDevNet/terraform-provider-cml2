@@ -42,11 +42,11 @@ func Provider() map[string]schema.Attribute {
 			Optional:    true,
 		},
 		"skip_verify": schema.BoolAttribute{
-			Description: "Disables TLS certificate verification.",
+			Description: "Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)",
 			Optional:    true,
 		},
 		"use_cache": schema.BoolAttribute{
-			Description: "Enables the client cache, this is considered experimental.",
+			Description: "Enables the client cache, this is considered experimental (default is false -- will not use the cache!)",
 			Optional:    true,
 		},
 	}
