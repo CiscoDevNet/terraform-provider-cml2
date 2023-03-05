@@ -41,8 +41,8 @@ provider "cml2" {
   # cacert = file("ca.pem")
 
   # should the certificate be verified?
-  # (defaults to true)
-  # skip_verify = false
+  # (defaults to false, e.g. it will be verified)
+  # skip_verify = true
 
   # should the API client cache responses?
   # this will improve performance but isn't guaranteed
