@@ -2,6 +2,15 @@
 
 Lists the changes in the provider.
 
+## Version 0.5.3
+
+- fixed #40, `skip_verify` documentation
+- bumped golang to 1.19
+- bumped gocmlclient to 0.0.14
+- for integration tests, don't use cache (there's still a race)
+- bumped all direct dependencies
+- fixed modify_plan for node, to include cpu limit and imagedefinition
+
 ## Version 0.5.2
 
 - reverted `skip_verify` to pre 0.5.1 logic, fixed documentation for it
