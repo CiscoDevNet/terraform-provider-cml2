@@ -18,6 +18,6 @@ provider "cml2" {
 	username = var.username
 	password = var.password
 	skip_verify = true
-	use_cache = true
+	use_cache = false
 }
 `

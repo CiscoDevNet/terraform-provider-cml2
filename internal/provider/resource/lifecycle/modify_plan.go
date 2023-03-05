@@ -96,6 +96,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.RAM = types.Int64Null()
 				node.BootDiskSize = types.Int64Null()
 				node.State = types.StringValue(cmlclient.NodeStateDefined)
+				node.CPUlimit = types.Int64Null()
+				node.ImageDefinition = types.StringNull()
 			}
 			if plannedState == cmlclient.LabStateStarted {
 				node.SerialDevices = types.ListUnknown(cmlschema.SerialDevicesAttrType)
@@ -106,6 +108,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.RAM = types.Int64Unknown()
 				node.BootDiskSize = types.Int64Unknown()
 				node.State = types.StringUnknown()
+				node.CPUlimit = types.Int64Unknown()
+				node.ImageDefinition = types.StringUnknown()
 			}
 			if plannedState == cmlclient.LabStateStopped {
 				if node.State.ValueString() != cmlclient.NodeStateDefined {
