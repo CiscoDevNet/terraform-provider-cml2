@@ -15,13 +15,13 @@ provider "cml2" {
   # if not specified, the system root CAs are used
   # cacert = file("ca.pem")
 
-  # should the certificate be verified?
-  # (defaults to true)
-  # skip_verify = false
+  # should the server certificate be verified?
+  # (defaults to false, it will be verified)
+  # skip_verify = true
 
   # should the API client cache responses?
   # this will improve performance but isn't guaranteed
   # to work for all scenarios
-  # (defaults to false)
+  # (defaults to false, no caching is done)
   # use_cache = true
 }
