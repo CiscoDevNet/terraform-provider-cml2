@@ -90,7 +90,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	// create a new CML2 client
-	client := cmlclient.NewClient(
+	client := cmlclient.New(
 		data.Address.ValueString(),
 		data.SkipVerify.ValueBool(),
 		data.UseCache.ValueBool(),
