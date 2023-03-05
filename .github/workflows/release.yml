@@ -17,7 +17,7 @@ permissions:
 env:
   # Go language version to use for building. This value should also be updated
   # in the testing workflow if changed.
-  GO_VERSION: "1.18"
+  GO_VERSION: "1.19"
 
 jobs:
   goreleaser:
@@ -45,7 +45,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --clean
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
