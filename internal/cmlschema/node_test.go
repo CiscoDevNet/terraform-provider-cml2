@@ -16,33 +16,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var node *cmlclient.Node = &cmlclient.Node{
-	ID:             "8bf321c3-3312-44f2-9098-fa89e2e05d7e",
-	Label:          "router 1",
-	X:              10,
-	Y:              20,
-	NodeDefinition: "IOSv",
-	// ImageDefinition: "",
-	Configuration: "hostname router1",
-	CPUs:          0,
-	CPUlimit:      100,
-	RAM:           512,
-	State:         "BOOTED",
-	Interfaces: cmlclient.InterfaceList{
-		iface,
-		iface,
-	},
-	SerialDevices: []cmlclient.SerialDevice{
-		{
-			ConsoleKey:   "1eab9ba0-c92e-4568-a742-6b4b2244c5b2",
-			DeviceNumber: 0,
+var (
+	config                 = "hostname router1"
+	node   *cmlclient.Node = &cmlclient.Node{
+		ID:             "8bf321c3-3312-44f2-9098-fa89e2e05d7e",
+		Label:          "router 1",
+		X:              10,
+		Y:              20,
+		NodeDefinition: "IOSv",
+		// ImageDefinition: "",
+		Configuration: &config,
+		CPUs:          0,
+		CPUlimit:      100,
+		RAM:           512,
+		State:         "BOOTED",
+		Interfaces: cmlclient.InterfaceList{
+			iface,
+			iface,
 		},
-	},
-	Tags:         []string{"red", "blue"},
-	ComputeID:    "f3678fb5-985d-45c2-b0f5-e54174798912",
-	BootDiskSize: 16,
-	DataVolume:   0,
-}
+		SerialDevices: []cmlclient.SerialDevice{
+			{
+				ConsoleKey:   "1eab9ba0-c92e-4568-a742-6b4b2244c5b2",
+				DeviceNumber: 0,
+			},
+		},
+		Tags:         []string{"red", "blue"},
+		ComputeID:    "f3678fb5-985d-45c2-b0f5-e54174798912",
+		BootDiskSize: 16,
+		DataVolume:   0,
+	}
+)
 
 // func newPtr[V int | string](value V) *V {
 // 	ptr := new(V)

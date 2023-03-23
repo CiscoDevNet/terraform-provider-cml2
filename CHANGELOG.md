@@ -2,6 +2,11 @@
 
 Lists the changes in the provider.
 
+## Unreleased
+
+- allow empty node configurations
+- updated dependencies
+
 ## Version 0.5.3
 
 - fixed #40, `skip_verify` documentation

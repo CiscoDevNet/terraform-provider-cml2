@@ -3,6 +3,7 @@ package node_test
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -170,6 +171,41 @@ func TestAccNodeResourceTags(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceEmptyConfig(t *testing.T) {
+	empty := ""
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigEmpty(cfg.Cfg, &empty),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "configuration", ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNullConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigEmpty(cfg.Cfg, nil),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.r1", "configuration", func(value string) error {
+					expected := "this is a shell script which"
+					if strings.Contains(value, expected) {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
+			},
+		},
+	})
+}
+
 func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -312,3 +348,32 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 // 		}
 // 		tagline = fmt.Sprintf("tags = [%s]\n", strings.Join(tags, ","))
 // 	}
+
+func testAccNodeResourceConfigEmpty(cfg string, nodeCfg *string) string {
+	if nodeCfg != nil {
+		return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+	configuration  = %[2]q
+}
+`, cfg, *nodeCfg)
+	}
+
+	// no configuration when the node config is null
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+}
+`, cfg)
+
+}
