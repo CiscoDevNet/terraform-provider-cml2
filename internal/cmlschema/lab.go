@@ -44,7 +44,7 @@ var LabAttrType = map[string]attr.Type{
 	"notes":       types.StringType,
 	"groups": types.ListType{
 		ElemType: types.ObjectType{
-			AttrTypes: GroupAttrType,
+			AttrTypes: LabGroupAttrType,
 		},
 	},
 }
@@ -130,7 +130,7 @@ func Lab() map[string]schema.Attribute {
 			Computed:    true,
 			Description: "Groups assigned to the lab.",
 			NestedObject: schema.NestedAttributeObject{
-				Attributes: Group(),
+				Attributes: LabGroup(),
 			},
 			PlanModifiers: []planmodifier.List{
 				listplanmodifier.UseStateForUnknown(),
@@ -144,11 +144,11 @@ func NewLab(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) at
 
 	valueList := make([]attr.Value, 0)
 	for _, group := range lab.Groups {
-		value := NewGroup(ctx, group, diags)
+		value := NewLabGroup(ctx, group, diags)
 		valueList = append(valueList, value)
 	}
 	groups, _ := types.ListValue(
-		types.ObjectType{AttrTypes: GroupAttrType},
+		types.ObjectType{AttrTypes: LabGroupAttrType},
 		valueList,
 	)
 

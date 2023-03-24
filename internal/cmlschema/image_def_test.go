@@ -47,7 +47,7 @@ func TestImageDef(t *testing.T) {
 	assert.False(t, diag.HasError())
 }
 
-func TestImageeSchema(t *testing.T) {
+func TestImageSchema(t *testing.T) {
 	imageSchema := schema.Schema{
 		Attributes: cmlschema.ImageDef(),
 	}

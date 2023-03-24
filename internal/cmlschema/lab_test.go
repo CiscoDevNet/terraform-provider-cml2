@@ -27,9 +27,10 @@ var lab *cmlclient.Lab = &cmlclient.Lab{
 	LinkCount:   0,
 	Nodes:       make(cmlclient.NodeMap),
 	Links:       []*cmlclient.Link{},
-	Groups: []*cmlclient.Group{
+	Groups: []*cmlclient.LabGroup{
 		{
 			ID:         "fe9acf37-c1dd-4628-9658-9020bae6e036",
+			Name:       "students",
 			Permission: "bla",
 		},
 	},
