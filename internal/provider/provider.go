@@ -13,11 +13,12 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	d_group "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/group"
+	d_groups "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/groups"
 	d_images "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/images"
 	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
 	d_node "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/node"
 	d_system "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/system"
+	r_group "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/group"
 	r_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lab"
 	r_lifecycle "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lifecycle"
 	r_link "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/link"
@@ -138,6 +139,7 @@ func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource
 		r_lifecycle.NewResource,
 		r_link.NewResource,
 		r_node.NewResource,
+		r_group.NewResource,
 	}
 }
 
@@ -147,7 +149,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 		d_node.NewDataSource,
 		d_images.NewDataSource,
 		d_system.NewDataSource,
-		d_group.NewDataSource,
+		d_groups.NewDataSource,
 	}
 }
 

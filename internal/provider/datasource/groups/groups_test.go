@@ -2,6 +2,7 @@ package images_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -22,7 +23,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestGroupDataSource(t *testing.T) {
-	// re1 := regexp.MustCompile(`ran into timeout`)
+	re1 := regexp.MustCompile(`\w+`)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -32,18 +33,18 @@ func TestGroupDataSource(t *testing.T) {
 			// 	Config:      testSystemDataSourceConfig(cfg.CfgBroken, 8),
 			// 	ExpectError: re1,
 			// },
-			{
-				Config: testGroupDataSourceConfig(cfg.Cfg),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckOutput("bla", "false"),
-				),
-			},
 			// {
-			// 	Config: testSystemDataSourceConfig(cfg.Cfg, 0),
+			// 	Config: testGroupDataSourceConfig(cfg.Cfg),
 			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckOutput("bla", "true"),
+			// 		resource.TestCheckOutput("bla", "false"),
 			// 	),
 			// },
+			{
+				Config: testGroupDataSourceConfig(cfg.Cfg),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchOutput("bla", re1),
+				),
+			},
 		},
 	})
 }
@@ -51,10 +52,11 @@ func TestGroupDataSource(t *testing.T) {
 func testGroupDataSourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 	%[1]s
-	data "cml2_group" "test" {
+	data "cml2_groups" "test" {
+		name = "students"
 	}
 	output "bla" {
-		value = data.cml2_group.test.groups
+		value = data.cml2_groups.test.groups[0].name
 	}
 	`, cfg)
 }

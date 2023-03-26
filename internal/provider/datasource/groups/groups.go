@@ -22,6 +22,7 @@ var _ datasource.DataSource = &GroupDataSource{}
 
 type GroupDataSourceModel struct {
 	ID     types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
 	Groups types.List   `tfsdk:"groups"`
 }
 
@@ -35,7 +36,7 @@ type GroupDataSource struct {
 }
 
 func (d *GroupDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_group"
+	resp.TypeName = req.ProviderTypeName + "_groups"
 }
 
 func (d *GroupDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
@@ -48,6 +49,10 @@ func (d *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			Description: "A UUID. The presence of the ID attribute is mandated by the framework. The attribute is a random UUID and has no actual significance.",
 			Computed:    true,
 		},
+		"name": schema.StringAttribute{
+			Description: "A group name to filter the groups list returned by the controller. Group names must be unique, so it's either one group or no group at all if a name filter is provided.",
+			Optional:    true,
+		},
 		"groups": schema.ListNestedAttribute{
 			MarkdownDescription: "A list of all permission groups available on the controller.",
 			NestedObject: schema.NestedAttributeObject{
@@ -56,7 +61,7 @@ func (d *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			Computed: true,
 		},
 	}
-	resp.Schema.MarkdownDescription = "A data source that retrieves permission group information from the controller."
+	resp.Schema.MarkdownDescription = "A data source that retrieves a list of permission group information from the controller."
 	resp.Diagnostics = nil
 }
 
@@ -82,6 +87,10 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	groupList := make([]attr.Value, 0)
 	for _, group := range groups {
+		// filter by group name
+		if !data.Name.IsNull() && group.Name != data.Name.ValueString() {
+			continue
+		}
 		groupList = append(groupList, cmlschema.NewGroup(
 			ctx, group, &resp.Diagnostics),
 		)
