@@ -91,7 +91,7 @@ func testAccGroupResourceConfig(cfg string) string {
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_user"
+	username      = "acc_test_group_user"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -130,7 +130,7 @@ func testAccGroupResourceConfigUpdate(cfg string) string {
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_user"
+	username      = "acc_test_group_user"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -165,7 +165,7 @@ func testAccGroupResourceConfigUpdate2(cfg string) string {
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_user"
+	username      = "acc_test_group_user"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -174,7 +174,7 @@ resource "cml2_user" "acc_test" {
 }
 
 resource "cml2_user" "acc_test_2" {
-	username      = "acc_test_user_2"
+	username      = "acc_test_group_user_2"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"

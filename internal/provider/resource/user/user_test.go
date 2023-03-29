@@ -66,11 +66,11 @@ func testAccUserResourceConfig(cfg string) string {
 %[1]s
 
 resource "cml2_group" "group1" {
-	name       = "user_acc_test_group1"
+	name       = "user_acc_test1_group1"
 }
 
 resource "cml2_group" "group2" {
-	name       = "user_acc_test_group2"
+	name       = "user_acc_test1_group2"
 }
 
 resource "cml2_user" "acc_test" {
@@ -91,11 +91,11 @@ func testAccUserResourceConfigUpdate(cfg string) string {
 %[1]s
 
 resource "cml2_group" "group1" {
-	name       = "user_acc_test_group1"
+	name       = "user_acc_test2_group1"
 }
 
 resource "cml2_group" "group2" {
-	name       = "user_acc_test_group2"
+	name       = "user_acc_test2_group2"
 }
 
 resource "cml2_user" "acc_test" {

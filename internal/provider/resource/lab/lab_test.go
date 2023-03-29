@@ -67,11 +67,11 @@ func testAccLabResourceConfig(cfg, title, description string) string {
 %[1]s
 
 resource "cml2_group" "group1" {
-	name       = "user_acc_test_group1"
+	name       = "user_acc_lab_test_group1"
 }
 
 resource "cml2_group" "group2" {
-	name       = "user_acc_test_group2"
+	name       = "user_acc_lab_test_group2"
 }
 
 resource "cml2_lab" "test" {
