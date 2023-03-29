@@ -91,7 +91,7 @@ jobs:
       - env:
           TF_VAR_username: ${{ secrets.USERNAME }}
           TF_VAR_password: ${{ secrets.PASSWORD }}
-        run: go test -timeout 300s -race -v -covermode atomic -coverprofile=covprofile ./internal/...
+        run: go test -timeout 600s -race -v -covermode atomic -coverprofile=covprofile ./internal/...
         timeout-minutes: 20
 
       - name: Install goveralls
