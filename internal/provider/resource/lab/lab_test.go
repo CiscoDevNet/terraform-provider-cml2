@@ -65,6 +65,15 @@ func TestAccLabResource(t *testing.T) {
 func testAccLabResourceConfig(cfg, title, description string) string {
 	return fmt.Sprintf(`
 %[1]s
+
+resource "cml2_group" "group1" {
+	name       = "user_acc_test_group1"
+}
+
+resource "cml2_group" "group2" {
+	name       = "user_acc_test_group2"
+}
+
 resource "cml2_lab" "test" {
 	title       = %[2]q
 	description = %[3]q
@@ -74,6 +83,16 @@ resource "cml2_lab" "test" {
 	- topic two
 	This is where it's ending... PEBKAC
 	EOT
+	groups = [
+		{
+			id = cml2_group.group1.id
+			permission = "read_only"
+		},
+		{
+			id = cml2_group.group2.id
+			permission = "read_only"
+		}
+	]
 }
 `, cfg, title, description)
 }

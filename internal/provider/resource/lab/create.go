@@ -63,15 +63,6 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	// updatedLab, err := r.cfg.Client().LabUpdate(ctx, lab)
-	// if err != nil {
-	// 	resp.Diagnostics.AddError(
-	// 		common.ErrorLabel,
-	// 		fmt.Sprintf("Unable to update lab, got error: %s", err),
-	// 	)
-	// 	return
-	// }
-
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
