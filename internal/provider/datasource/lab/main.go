@@ -106,6 +106,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		return
 	}
 
+	data.ID = types.StringValue(lab.ID)
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

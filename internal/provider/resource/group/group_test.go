@@ -67,6 +67,25 @@ func TestAccGroupResource(t *testing.T) {
 	})
 }
 
+func TestAccGroupResourceNoLists(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccGroupResourceConfigNoLists(cfg.Cfg),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "description", "description"),
+					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "0"),
+					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "0"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
 func testAccGroupResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -185,6 +204,17 @@ resource "cml2_group" "test" {
 			permission = "read_only"
 		}
 	]
+}
+`, cfg)
+}
+
+func testAccGroupResourceConfigNoLists(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_group" "test" {
+	description = "description"
+	name = "new name"
 }
 `, cfg)
 }

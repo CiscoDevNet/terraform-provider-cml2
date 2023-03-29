@@ -35,15 +35,15 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	user.Description = data.Description.ValueString()
 	user.IsAdmin = data.IsAdmin.ValueBool()
 
+	stringList := make([]string, 0)
 	if !data.Groups.IsUnknown() {
-		var stringList []string
 		var elem types.String
 		for _, bb := range data.Groups.Elements() {
 			tfsdk.ValueAs(ctx, bb, &elem)
 			stringList = append(stringList, elem.ValueString())
 		}
-		user.Groups = stringList
 	}
+	user.Groups = stringList
 
 	user.ResourcePool = nil
 	if !data.ResourcePool.IsUnknown() {

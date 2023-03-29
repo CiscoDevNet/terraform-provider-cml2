@@ -40,6 +40,20 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		lab.Title = labModel.Title.ValueString()
 	}
 
+	labList := make(cmlclient.LabGroupList, 0)
+	if !labModel.Groups.IsUnknown() {
+		var model cmlschema.LabGroupModel
+		for _, elem := range labModel.Groups.Elements() {
+			tfsdk.ValueAs(ctx, elem, &model)
+			el := cmlclient.LabGroup{
+				ID:         model.ID.ValueString(),
+				Permission: model.Permission.ValueString(),
+			}
+			labList = append(labList, &el)
+		}
+	}
+	lab.Groups = labList
+
 	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -48,6 +62,15 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		)
 		return
 	}
+
+	// updatedLab, err := r.cfg.Client().LabUpdate(ctx, lab)
+	// if err != nil {
+	// 	resp.Diagnostics.AddError(
+	// 		common.ErrorLabel,
+	// 		fmt.Sprintf("Unable to update lab, got error: %s", err),
+	// 	)
+	// 	return
+	// }
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(

@@ -91,6 +91,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
+	data.ID = types.StringValue(node.ID)
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

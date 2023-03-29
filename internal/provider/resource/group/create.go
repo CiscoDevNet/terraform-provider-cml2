@@ -31,19 +31,19 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 	group.Name = data.Name.ValueString()
 	group.Description = data.Description.ValueString()
 
+	memberList := make([]string, 0)
 	if !data.Members.IsUnknown() {
-		var memberList []string
 		var member types.String
 		for _, userID := range data.Members.Elements() {
 			tfsdk.ValueAs(ctx, userID, &member)
 			el := member.ValueString()
 			memberList = append(memberList, el)
 		}
-		group.Members = memberList
 	}
+	group.Members = memberList
 
+	labList := make([]cmlclient.GroupLab, 0)
 	if !data.Labs.IsUnknown() {
-		var labList []cmlclient.GroupLab
 		var glModel cmlschema.GroupLabModel
 		for _, bb := range data.Labs.Elements() {
 			tfsdk.ValueAs(ctx, bb, &glModel)
@@ -53,8 +53,8 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 			}
 			labList = append(labList, el)
 		}
-		group.Labs = labList
 	}
+	group.Labs = labList
 
 	newGroup, err := r.cfg.Client().GroupCreate(ctx, &group)
 	if err != nil {

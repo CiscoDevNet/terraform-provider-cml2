@@ -54,15 +54,15 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		node.ResourcePool = data.ResourcePool.ValueStringPointer()
 	}
 
+	groups := make([]string, 0)
 	if !data.Groups.IsUnknown() {
 		var group types.String
-		groups := []string{}
 		for _, elem := range data.Groups.Elements() {
 			tfsdk.ValueAs(ctx, elem, &group)
 			groups = append(groups, group.ValueString())
 		}
-		node.Groups = groups
 	}
+	node.Groups = groups
 
 	// can't update password
 	node.Password = ""

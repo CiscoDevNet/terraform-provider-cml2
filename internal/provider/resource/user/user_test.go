@@ -50,7 +50,7 @@ func TestAccUserResource(t *testing.T) {
 				Config: testAccUserResourceConfigUpdate(cfg.Cfg),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "description", "has changed"),
-					resource.TestCheckResourceAttr("cml2_user.acc_test", "groups.#", "1"),
+					resource.TestCheckResourceAttr("cml2_user.acc_test", "groups.#", "0"),
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "is_admin", "false"),
 				),
 				// PlanOnly:           true,
@@ -80,7 +80,6 @@ resource "cml2_user" "acc_test" {
 	email         = "bla@cml.lab"
 	description   = "acc test user description"
 	is_admin      = true
-	# opt_in = true
 	# resource_pool = "e0e18ef5-9d1f-4cbb-99e8-a6da60c20113"
 	groups = [ cml2_group.group1.id, cml2_group.group2.id ]
 }
@@ -106,9 +105,8 @@ resource "cml2_user" "acc_test" {
 	email         = "bla@cml.lab"
 	description   = "has changed"
 	is_admin      = false
-	# opt_in = true
 	# resource_pool = "e0e18ef5-9d1f-4cbb-99e8-a6da60c20113"
-	groups = [ cml2_group.group1.id ]
+	groups = []
 }
 `, cfg)
 }

@@ -36,18 +36,18 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		group.Description = data.Description.ValueString()
 	}
 
+	members := make([]string, 0)
 	if !data.Members.IsUnknown() {
 		var user types.String
-		members := []string{}
 		for _, elem := range data.Members.Elements() {
 			tfsdk.ValueAs(ctx, elem, &user)
 			members = append(members, user.ValueString())
 		}
-		group.Members = members
 	}
+	group.Members = members
 
+	labList := make([]cmlclient.GroupLab, 0)
 	if !data.Labs.IsUnknown() {
-		var labList []cmlclient.GroupLab
 		var glModel cmlschema.GroupLabModel
 		for _, elem := range data.Labs.Elements() {
 			tfsdk.ValueAs(ctx, elem, &glModel)
@@ -57,8 +57,8 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 			}
 			labList = append(labList, lab)
 		}
-		group.Labs = labList
 	}
+	group.Labs = labList
 
 	updatedGroup, err := r.cfg.Client().GroupUpdate(ctx, group)
 	if err != nil {

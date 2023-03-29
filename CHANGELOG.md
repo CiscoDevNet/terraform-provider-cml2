@@ -2,10 +2,9 @@
 
 Lists the changes in the provider.
 
-## Unreleased
+## Version 0.6.0
 
-- allow empty node configurations
-- updated dependencies
+- allow empty node configurations (fixes #50)
 - new data sources
   - "system" for version and ready check, can be used with a timeout to wait until the system becomes ready
   - "groups" to retrieve a list of groups from the system
@@ -13,7 +12,10 @@ Lists the changes in the provider.
 - new resources
   - "user" for user operations
   - "group" for group operations
-- changed "lists" to "sets" where applicable. That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as lists (ordered)
+- changed "lists" to "sets" where applicable. That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as (ordered) lists
+- set correct ID for node and lab data sources
+- updated dependencies
+- added vendoring dependencies
 
 ## Version 0.5.3
 
@@ -22,7 +24,7 @@ Lists the changes in the provider.
 - bumped gocmlclient to 0.0.14
 - for integration tests, don't use cache (there's still a race)
 - bumped all direct dependencies
-- fixed modify_plan for node, to include cpu limit and imagedefinition
+- fixed `modify_plan` for node, to include cpu limit and imagedefinition
 
 ## Version 0.5.2
 

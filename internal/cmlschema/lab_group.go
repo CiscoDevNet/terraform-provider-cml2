@@ -48,6 +48,7 @@ func LabGroup() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
 			Description: "Group ID (UUID).",
+			Optional:    true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
@@ -62,6 +63,7 @@ func LabGroup() map[string]schema.Attribute {
 		},
 		"permission": schema.StringAttribute{
 			MarkdownDescription: "Permission, either `read_only` or `read_write`.",
+			Optional:            true,
 			Computed:            true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
