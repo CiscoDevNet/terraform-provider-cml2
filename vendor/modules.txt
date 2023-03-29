@@ -252,7 +252,7 @@ github.com/pmezard/go-difflib/difflib
 github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
-# github.com/rschmied/gocmlclient v0.0.15 => /home/rschmied/Projects/gocmlclient
+# github.com/rschmied/gocmlclient v0.0.16
 ## explicit; go 1.19
 github.com/rschmied/gocmlclient
 # github.com/russross/blackfriday v1.6.0
@@ -446,5 +446,3 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient
-# github.com/rschmied/mockresponder => /home/rschmied/Projects/mockresponder
