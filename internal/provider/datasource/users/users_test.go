@@ -1,8 +1,7 @@
-package system_test
+package users_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -22,41 +21,30 @@ func testAccPreCheck(t *testing.T) {
 	// are common to see in a pre-check function.
 }
 
-func TestSystemDataSource(t *testing.T) {
-	re1 := regexp.MustCompile(`ran into timeout`)
+func TestUsersDataSource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:      testSystemDataSourceConfig(cfg.CfgBroken, 8),
-				ExpectError: re1,
-			},
-			{
-				Config: testSystemDataSourceConfig(cfg.CfgBroken, 0),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckOutput("bla", "false"),
-				),
-			},
-			{
-				Config: testSystemDataSourceConfig(cfg.Cfg, 0),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckOutput("bla", "true"),
+				Config: testGroupDataSourceConfig(cfg.Cfg, "admin"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckOutput("bla", "admin"),
 				),
 			},
 		},
 	})
 }
 
-func testSystemDataSourceConfig(cfg string, timeout int) string {
+func testGroupDataSourceConfig(cfg, username string) string {
 	return fmt.Sprintf(`
 	%[1]s
-	data "cml2_system" "test" {
-		timeout = "%[2]ds"
+	data "cml2_users" "acc_test" {
+		username = %[2]q
 	}
 	output "bla" {
-		value = data.cml2_system.test.ready
+		value = data.cml2_users.acc_test.users[0].username
 	}
-	`, cfg, timeout)
+	`, cfg, username)
 }

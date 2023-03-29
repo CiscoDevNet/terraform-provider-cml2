@@ -9,15 +9,7 @@ import (
 
 func unknownAttrs() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"float": schema.SetNestedAttribute{
-			NestedObject: schema.NestedAttributeObject{
-				Attributes: map[string]schema.Attribute{
-					"bla": schema.StringAttribute{
-						Required: true,
-					},
-				},
-			},
-		},
+		"float": schema.Float64Attribute{},
 	}
 }
 

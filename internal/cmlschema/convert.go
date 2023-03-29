@@ -1,10 +1,13 @@
 package cmlschema
 
 import (
+	"context"
 	"fmt"
 
 	ds_schema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	r_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attribute {
@@ -84,11 +87,42 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 				Computed: computed,
 				Required: required,
 			}
+		case r_schema.SetNestedAttribute:
+			dSchema[name] = ds_schema.SetNestedAttribute{
+				Validators:          fromAttrType.Validators,
+				Description:         fromAttrType.Description,
+				MarkdownDescription: fromAttrType.MarkdownDescription,
+				CustomType:          fromAttrType.CustomType,
+				Sensitive:           fromAttrType.Sensitive,
+				NestedObject: ds_schema.NestedAttributeObject{
+					Attributes: Converter(fromAttrType.NestedObject.Attributes),
+				},
+				Optional: optional,
+				Computed: computed,
+				Required: required,
+			}
+		case r_schema.SetAttribute:
+			dSchema[name] = ds_schema.SetAttribute{
+				Validators:          fromAttrType.Validators,
+				Description:         fromAttrType.Description,
+				MarkdownDescription: fromAttrType.MarkdownDescription,
+				CustomType:          fromAttrType.CustomType,
+				Sensitive:           fromAttrType.Sensitive,
+				ElementType:         fromAttrType.ElementType,
+				Optional:            optional,
+				Computed:            computed,
+				Required:            required,
+			}
 		default:
 			msg := fmt.Sprintf("unknown attribute type: %v", fromAttr.GetType().String())
 			panic(msg)
 		}
 	}
-
 	return dSchema
+}
+
+func newStringSet(ctx context.Context, elements []string, diags *diag.Diagnostics) types.Set {
+	newSet, diag := types.SetValueFrom(ctx, types.StringType, elements)
+	diags.Append(diag...)
+	return newSet
 }

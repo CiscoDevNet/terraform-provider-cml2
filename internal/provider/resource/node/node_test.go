@@ -58,7 +58,7 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "1"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
 				),
 			},
 			{
@@ -70,8 +70,8 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			{
@@ -87,8 +87,8 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "boot_disk_size", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "data_volume", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			// ImportState testing
@@ -119,15 +119,14 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
-					// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 				),
 			},
 			{
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			{
@@ -144,7 +143,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 			},
 			{
 				// need to re-run to apply the change
@@ -152,7 +150,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
 				),
-				// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 			},
 			{
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 5),
@@ -164,7 +161,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 6),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
-					// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 				),
 			},
 		},

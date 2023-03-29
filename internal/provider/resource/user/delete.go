@@ -1,4 +1,4 @@
-package group
+package user
 
 import (
 	"context"
@@ -10,27 +10,27 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
 
-func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var (
-		data cmlschema.GroupModel
+		data cmlschema.UserModel
 		err  error
 	)
 
-	tflog.Info(ctx, "Resource Group DELETE")
+	tflog.Info(ctx, "Resource User DELETE")
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err = r.cfg.Client().GroupDestroy(ctx, data.ID.ValueString())
+	err = r.cfg.Client().UserDestroy(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
-			fmt.Sprintf("Unable to delete group, got error: %s", err),
+			fmt.Sprintf("Unable to delete user, got error: %s", err),
 		)
 		return
 	}
 
-	tflog.Info(ctx, "Resource Group DELETE done")
+	tflog.Info(ctx, "Resource User DELETE done")
 }

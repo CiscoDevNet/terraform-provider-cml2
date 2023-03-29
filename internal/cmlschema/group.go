@@ -6,8 +6,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -22,11 +22,11 @@ var GroupLabAttrType = map[string]attr.Type{
 var GroupAttrType = map[string]attr.Type{
 	"id":          types.StringType,
 	"description": types.StringType,
-	"members": types.ListType{
+	"members": types.SetType{
 		ElemType: types.StringType,
 	},
 	"name": types.StringType,
-	"labs": types.ListType{
+	"labs": types.SetType{
 		ElemType: types.ObjectType{
 			AttrTypes: GroupLabAttrType,
 		},
@@ -41,48 +41,33 @@ type GroupLabModel struct {
 type GroupModel struct {
 	ID          types.String `tfsdk:"id"`
 	Description types.String `tfsdk:"description"`
-	Members     types.List   `tfsdk:"members"`
+	Members     types.Set    `tfsdk:"members"`
 	Name        types.String `tfsdk:"name"`
-	Labs        types.List   `tfsdk:"labs"`
+	Labs        types.Set    `tfsdk:"labs"`
 }
 
-func newMembers(ctx context.Context, members []string, diags *diag.Diagnostics) types.List {
-	if len(members) == 0 {
-		return types.ListNull(types.StringType)
-	}
-	valueList := make([]attr.Value, 0)
-	for _, member := range members {
-		valueList = append(valueList, types.StringValue(member))
-	}
-	memberList, dia := types.ListValue(types.StringType, valueList)
-	diags.Append(dia...)
-	return memberList
-}
-
-func newLabs(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) types.List {
+func newLabs(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) types.Set {
 	if len(group.Labs) == 0 {
-		return types.ListNull(types.ObjectType{AttrTypes: GroupLabAttrType})
+		return types.SetNull(types.ObjectType{AttrTypes: GroupLabAttrType})
 	}
-	valueList := make([]attr.Value, 0)
+	valueSet := make([]attr.Value, 0)
 	for _, lab := range group.Labs {
 		var value attr.Value
-
 		newLab := GroupLabModel{
 			ID:         types.StringValue(lab.ID),
 			Permission: types.StringValue(lab.Permission),
 		}
-
 		diags.Append(tfsdk.ValueFrom(
 			ctx,
 			newLab,
 			types.ObjectType{AttrTypes: GroupLabAttrType},
 			&value,
 		)...)
-		valueList = append(valueList, value)
+		valueSet = append(valueSet, value)
 	}
-	labList, dia := types.ListValue(types.ObjectType{AttrTypes: GroupLabAttrType}, valueList)
+	newSet, dia := types.SetValue(types.ObjectType{AttrTypes: GroupLabAttrType}, valueSet)
 	diags.Append(dia...)
-	return labList
+	return newSet
 }
 
 func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) attr.Value {
@@ -91,7 +76,7 @@ func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnosti
 		ID:          types.StringValue(group.ID),
 		Description: types.StringValue(group.Description),
 		Name:        types.StringValue(group.Name),
-		Members:     newMembers(ctx, group.Members, diags),
+		Members:     newStringSet(ctx, group.Members, diags),
 		Labs:        newLabs(ctx, group, diags),
 	}
 
@@ -118,17 +103,19 @@ func Group() map[string]schema.Attribute {
 		},
 		"description": schema.StringAttribute{
 			Description: "Description of the group.",
+			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"members": schema.ListAttribute{
-			Description: "List of user IDs who are members of this group.",
+		"members": schema.SetAttribute{
+			Description: "Set of user IDs who are members of this group.",
+			Computed:    true,
 			Optional:    true,
 			ElementType: types.StringType,
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"name": schema.StringAttribute{
@@ -138,29 +125,30 @@ func Group() map[string]schema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"labs": schema.ListNestedAttribute{
-			MarkdownDescription: "List of labs with their permission which are associated to this group.",
+		"labs": schema.SetNestedAttribute{
+			MarkdownDescription: "Set of labs with their permission which are associated to this group.",
+			Computed:            true,
 			Optional:            true,
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"id": schema.StringAttribute{
+						Required:    true,
 						Description: "Lab ID (UUID).",
-						Computed:    true,
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.UseStateForUnknown(),
 						},
 					},
 					"permission": schema.StringAttribute{
+						Required:    true,
 						Description: "Permission.",
-						Computed:    true,
 						PlanModifiers: []planmodifier.String{
 							stringplanmodifier.UseStateForUnknown(),
 						},
 					},
 				},
 			},
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}

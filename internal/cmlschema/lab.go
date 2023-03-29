@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,7 +27,7 @@ type LabModel struct {
 	NodeCount   types.Int64  `tfsdk:"node_count"`
 	LinkCount   types.Int64  `tfsdk:"link_count"`
 	Notes       types.String `tfsdk:"notes"`
-	Groups      types.List   `tfsdk:"groups"`
+	Groups      types.Set    `tfsdk:"groups"`
 }
 
 // LabAttrType has the attribute types of a CML2 LabModel
@@ -42,7 +42,7 @@ var LabAttrType = map[string]attr.Type{
 	"node_count":  types.Int64Type,
 	"link_count":  types.Int64Type,
 	"notes":       types.StringType,
-	"groups": types.ListType{
+	"groups": types.SetType{
 		ElemType: types.ObjectType{
 			AttrTypes: LabGroupAttrType,
 		},
@@ -125,15 +125,15 @@ func Lab() map[string]schema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"groups": schema.ListNestedAttribute{
+		"groups": schema.SetNestedAttribute{
 			Optional:    true,
 			Computed:    true,
 			Description: "Groups assigned to the lab.",
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: LabGroup(),
 			},
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 		},
 	}
@@ -142,14 +142,14 @@ func Lab() map[string]schema.Attribute {
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
 func NewLab(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) attr.Value {
 
-	valueList := make([]attr.Value, 0)
+	valueSet := make([]attr.Value, 0)
 	for _, group := range lab.Groups {
 		value := NewLabGroup(ctx, group, diags)
-		valueList = append(valueList, value)
+		valueSet = append(valueSet, value)
 	}
-	groups, _ := types.ListValue(
+	groups, _ := types.SetValue(
 		types.ObjectType{AttrTypes: LabGroupAttrType},
-		valueList,
+		valueSet,
 	)
 
 	newLab := LabModel{

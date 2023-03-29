@@ -1,4 +1,4 @@
-package images
+package groups
 
 import (
 	"context"
@@ -76,7 +76,7 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	groups, err := d.cfg.Client().GetGroups(ctx)
+	groups, err := d.cfg.Client().Groups(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

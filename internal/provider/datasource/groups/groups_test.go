@@ -1,4 +1,4 @@
-package images_test
+package groups_test
 
 import (
 	"fmt"

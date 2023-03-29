@@ -6,6 +6,14 @@ Lists the changes in the provider.
 
 - allow empty node configurations
 - updated dependencies
+- new data sources
+  - "system" for version and ready check, can be used with a timeout to wait until the system becomes ready
+  - "groups" to retrieve a list of groups from the system
+  - "users" to retrieve a list of users from the system
+- new resources
+  - "user" for user operations
+  - "group" for group operations
+- changed "lists" to "sets" where applicable. That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as lists (ordered)
 
 ## Version 0.5.3
 

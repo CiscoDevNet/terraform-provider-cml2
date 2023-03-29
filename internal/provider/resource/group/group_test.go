@@ -1,0 +1,190 @@
+package group_test
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	cml "github.com/rschmied/terraform-provider-cml2/internal/provider"
+	cfg "github.com/rschmied/terraform-provider-cml2/internal/testing"
+)
+
+// testAccProtoV6ProviderFactories are used to instantiate a provider during
+// acceptance testing. The factory function will be invoked for every Terraform
+// CLI command executed to create a provider server to which the CLI can
+// reattach.
+var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
+	"cml2": providerserver.NewProtocol6WithError(cml.New("test")()),
+}
+
+func testAccPreCheck(t *testing.T) {
+	// You can add code here to run prior to any test case execution, for
+	// example assertions about the appropriate environment variables being set
+	// are common to see in a pre-check function.
+}
+
+func TestAccGroupResource(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccGroupResourceConfig(cfg.Cfg),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "description", "description"),
+					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "2"),
+					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "1"),
+				),
+			},
+			// ImportState testing
+			{
+				ResourceName:      "cml2_group.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// Update and Read testing
+			{
+				Config: testAccGroupResourceConfigUpdate(cfg.Cfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "name", "new name"),
+					resource.TestCheckResourceAttr("cml2_group.test", "description", "new description"),
+					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "1"),
+					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "0"),
+				),
+			},
+			{
+				Config: testAccGroupResourceConfigUpdate2(cfg.Cfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "2"),
+					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "2"),
+				),
+			},
+			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func testAccGroupResourceConfig(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_user" "acc_test" {
+	username      = "acc_test_user"
+	password      = "süpersücret"
+	fullname      = "firstname, lastname"
+	email         = "bla@cml.lab"
+	description   = "acc test user description"
+	is_admin      = false
+}
+
+resource "cml2_lab" "lab1" {
+	title       = "group_acc_test_lab1"
+}
+
+resource "cml2_lab" "lab2" {
+	title       = "group_acc_test_lab2"
+}
+
+resource "cml2_group" "test" {
+	description = "description"
+	name = "acc_test_group"
+	members = [ cml2_user.acc_test.id ]
+	labs = [
+		{
+			id = cml2_lab.lab1.id
+			permission = "read_only"
+		},
+		{
+			id = cml2_lab.lab2.id
+			permission = "read_only"
+		}
+	]
+}
+`, cfg)
+}
+
+func testAccGroupResourceConfigUpdate(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_user" "acc_test" {
+	username      = "acc_test_user"
+	password      = "süpersücret"
+	fullname      = "firstname, lastname"
+	email         = "bla@cml.lab"
+	description   = "acc test user description"
+	is_admin      = false
+}
+
+resource "cml2_lab" "lab1" {
+	title       = "group_acc_test_lab1"
+}
+
+resource "cml2_lab" "lab2" {
+	title       = "group_acc_test_lab2"
+}
+
+resource "cml2_group" "test" {
+	description = "new description"
+	name = "new name"
+	members = []
+	labs = [
+		{
+			id = cml2_lab.lab1.id
+			permission = "read_only"
+		}
+	]
+}
+`, cfg)
+}
+
+func testAccGroupResourceConfigUpdate2(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_user" "acc_test" {
+	username      = "acc_test_user"
+	password      = "süpersücret"
+	fullname      = "firstname, lastname"
+	email         = "bla@cml.lab"
+	description   = "acc test user description"
+	is_admin      = false
+}
+
+resource "cml2_user" "acc_test_2" {
+	username      = "acc_test_user_2"
+	password      = "süpersücret"
+	fullname      = "firstname, lastname"
+	email         = "bla@cml.lab"
+	description   = "acc test user description"
+	is_admin      = false
+}
+
+resource "cml2_lab" "lab1" {
+	title       = "group_acc_test_lab1"
+}
+
+resource "cml2_lab" "lab2" {
+	title       = "group_acc_test_lab2"
+}
+
+resource "cml2_group" "test" {
+	description = "new description"
+	name = "new name"
+	members = [ cml2_user.acc_test.id, cml2_user.acc_test_2.id ]
+	labs = [
+		{
+			id = cml2_lab.lab1.id
+			permission = "read_only"
+		},
+		{
+			id = cml2_lab.lab2.id
+			permission = "read_only"
+		}
+	]
+}
+`, cfg)
+}
