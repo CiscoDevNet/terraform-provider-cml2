@@ -85,10 +85,13 @@ resource "cml2_link" "l1" {
 <a id="nestedatt--groups"></a>
 ### Nested Schema for `groups`
 
-Read-Only:
+Optional:
 
 - `id` (String) Group ID (UUID).
-- `name` (String) Descriptive group name.
 - `permission` (String) Permission, either `read_only` or `read_write`.
+
+Read-Only:
+
+- `name` (String) Descriptive group name.
 
 
