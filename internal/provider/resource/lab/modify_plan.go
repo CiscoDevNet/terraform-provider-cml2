@@ -2,6 +2,7 @@ package lab
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -20,23 +21,61 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		return
 	}
 
-	// Read Terraform plan data into the model
+	// Read Terraform plan and state data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &planData)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Read Terraform current state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// if state and plan are identical -> modified date has changed
+	tflog.Info(ctx, fmt.Sprintf("XXX  plan: %v", planData.Groups))
+	tflog.Info(ctx, fmt.Sprintf("XXX state: %v", stateData.Groups))
+
+	// this makes TF crash
+	// planData.Groups = types.SetUnknown(
+	// 	types.ObjectType{AttrTypes: cmlschema.LabGroupAttrType},
+	// )
+
+	// maybe related to
+	// https://github.com/hashicorp/terraform-plugin-framework/issues/628
+	// this should go into the unequal block below...!
+	// resp.Diagnostics.Append(
+	// 	resp.Plan.SetAttribute(
+	// 		ctx, path.Root("groups"),
+	// 		types.SetUnknown(
+	// 			types.ObjectType{AttrTypes: cmlschema.LabGroupAttrType},
+	// 		),
+	// 	)...,
+	// )
+
+	// if state and plan are NOT identical -> modified date has changed
 	// this gets auto-updated when we change something
 	if !reflect.DeepEqual(stateData, planData) {
 		planData.Modified = types.StringUnknown()
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, planData)...)
+
+	// maybe related to
+	// https://github.com/hashicorp/terraform-plugin-framework/issues/628
+	// this should go into the unequal block below...!
+	// resp.Diagnostics.Append(
+	// 	resp.Plan.SetAttribute(
+	// 		ctx, path.Root("groups"),
+	// 		types.SetUnknown(
+	// 			types.ObjectType{
+	// 				AttrTypes: cmlschema.LabGroupAttrType,
+	// 			},
+	// 			// types.SetType{
+	// 			// 	ElemType: types.ObjectType{
+	// 			// 		AttrTypes: cmlschema.LabGroupAttrType,
+	// 			// 	},
+	// 			// },
+	// 			// types.ObjectType.WithAttributeTypes(
+	// 			// 	types.ObjectType{}, cmlschema.LabGroupAttrType,
+	// 			// ),
+	// 		),
+	// 	)...,
+	// )
+
 	tflog.Info(ctx, "Resource Lab MODIFYPLAN done")
 }

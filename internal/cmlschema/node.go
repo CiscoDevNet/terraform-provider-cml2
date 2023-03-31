@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,7 +25,7 @@ type NodeModel struct {
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
 	Configuration   types.String `tfsdk:"configuration"`
 	Interfaces      types.List   `tfsdk:"interfaces"`
-	Tags            types.List   `tfsdk:"tags"`
+	Tags            types.Set    `tfsdk:"tags"`
 	X               types.Int64  `tfsdk:"x"`
 	Y               types.Int64  `tfsdk:"y"`
 	CPUs            types.Int64  `tfsdk:"cpus"`
@@ -120,7 +121,7 @@ var NodeAttrType = map[string]attr.Type{
 			AttrTypes: InterfaceAttrType,
 		},
 	},
-	"tags":           types.ListType{ElemType: types.StringType},
+	"tags":           types.SetType{ElemType: types.StringType},
 	"x":              types.Int64Type,
 	"y":              types.Int64Type,
 	"cpus":           types.Int64Type,
@@ -197,13 +198,13 @@ func Node() map[string]schema.Attribute {
 				listplanmodifier.UseStateForUnknown(),
 			},
 		},
-		"tags": schema.ListAttribute{
-			Description: "List of tags of the node.",
+		"tags": schema.SetAttribute{
+			Description: "Set of tags of the node.",
 			Computed:    true,
 			Optional:    true,
 			ElementType: types.StringType,
-			PlanModifiers: []planmodifier.List{
-				listplanmodifier.UseStateForUnknown(),
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"configuration": schema.StringAttribute{
@@ -323,16 +324,13 @@ func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag
 	return value
 }
 
-func newTags(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
-	// Node tags can't be null, there's always a list of tags, even if it's empty
-	// if len(node.Tags) == 0 {
-	// 	return types.ListNull(types.StringType)
-	// }
-	valueList := make([]attr.Value, 0)
+func newTags(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.Set {
+	// Node tags can't be null, there's always a set of tags, even if it's empty
+	valueSet := make([]attr.Value, 0)
 	for _, tag := range node.Tags {
-		valueList = append(valueList, types.StringValue(tag))
+		valueSet = append(valueSet, types.StringValue(tag))
 	}
-	tags, dia := types.ListValue(types.StringType, valueList)
+	tags, dia := types.SetValue(types.StringType, valueSet)
 	diags.Append(dia...)
 	return tags
 }
@@ -377,7 +375,7 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		Label:          types.StringValue(node.Label),
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
-		Configuration:  types.StringValue(node.Configuration),
+		Configuration:  types.StringPointerValue(node.Configuration),
 		Interfaces:     newInterfaces(ctx, node, diags),
 		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),

@@ -40,6 +40,20 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		lab.Title = labModel.Title.ValueString()
 	}
 
+	groupList := make([]*cmlclient.LabGroup, 0)
+	if !labModel.Groups.IsUnknown() {
+		var model cmlschema.LabGroupModel
+		for _, elem := range labModel.Groups.Elements() {
+			tfsdk.ValueAs(ctx, elem, &model)
+			el := cmlclient.LabGroup{
+				ID:         model.ID.ValueString(),
+				Permission: model.Permission.ValueString(),
+			}
+			groupList = append(groupList, &el)
+		}
+	}
+	lab.Groups = groupList
+
 	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
 	if err != nil {
 		resp.Diagnostics.AddError(

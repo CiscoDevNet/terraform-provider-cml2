@@ -3,6 +3,7 @@ package node_test
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -57,7 +58,7 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "1"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
 				),
 			},
 			{
@@ -69,8 +70,8 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			{
@@ -86,8 +87,8 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "boot_disk_size", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "data_volume", "64"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			// ImportState testing
@@ -118,15 +119,14 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
-					// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 				),
 			},
 			{
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.0", "test"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "tags.1", "tag2"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
+					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
 				),
 			},
 			{
@@ -143,7 +143,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 			},
 			{
 				// need to re-run to apply the change
@@ -151,7 +150,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
 				),
-				// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 			},
 			{
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 5),
@@ -163,8 +161,42 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Config: testAccNodeResourceConfigTags(cfg.Cfg, 6),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
-					// resource.TestCheckNoResourceAttr("cml2_node.r1", "tags"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceEmptyConfig(t *testing.T) {
+	empty := ""
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigEmpty(cfg.Cfg, &empty),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "configuration", ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNullConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigEmpty(cfg.Cfg, nil),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.r1", "configuration", func(value string) error {
+					expected := "this is a shell script which"
+					if strings.Contains(value, expected) {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
 			},
 		},
 	})
@@ -312,3 +344,32 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 // 		}
 // 		tagline = fmt.Sprintf("tags = [%s]\n", strings.Join(tags, ","))
 // 	}
+
+func testAccNodeResourceConfigEmpty(cfg string, nodeCfg *string) string {
+	if nodeCfg != nil {
+		return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+	configuration  = %[2]q
+}
+`, cfg, *nodeCfg)
+	}
+
+	// no configuration when the node config is null
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+}
+`, cfg)
+
+}

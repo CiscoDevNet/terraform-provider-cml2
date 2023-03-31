@@ -30,7 +30,7 @@ A node resource represents a CML node. At create time, the lab ID, a node defini
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
 - `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
-- `tags` (List of String) List of tags of the node.
+- `tags` (Set of String) Set of tags of the node.
 - `x` (Number) X coordinate on the topology canvas.
 - `y` (Number) Y coordinate on the topology canvas.
 

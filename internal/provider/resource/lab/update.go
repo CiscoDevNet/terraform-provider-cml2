@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
@@ -34,6 +33,20 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		Title:       data.Title.ValueString(),
 	}
 
+	groupList := make([]*cmlclient.LabGroup, 0)
+	if !data.Groups.IsUnknown() {
+		var model cmlschema.LabGroupModel
+		for _, elem := range data.Groups.Elements() {
+			tfsdk.ValueAs(ctx, elem, &model)
+			el := cmlclient.LabGroup{
+				ID:         model.ID.ValueString(),
+				Permission: model.Permission.ValueString(),
+			}
+			groupList = append(groupList, &el)
+		}
+	}
+	lab.Groups = groupList
+
 	newLab, err := r.cfg.Client().LabUpdate(ctx, lab)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -43,16 +56,8 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
-			&data,
-		)...,
-	)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	value := cmlschema.NewLab(ctx, newLab, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
 
 	tflog.Info(ctx, "Resource Lab UPDATE done")
 }
