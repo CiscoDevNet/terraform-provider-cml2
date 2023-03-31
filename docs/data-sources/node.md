@@ -57,7 +57,7 @@ Read-Only:
 - `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--node--serial_devices))
 - `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
-- `tags` (List of String) List of tags of the node.
+- `tags` (Set of String) Set of tags of the node.
 - `vnc_key` (String) VNC key of console, a UUID4.
 - `x` (Number) X coordinate on the topology canvas.
 - `y` (Number) Y coordinate on the topology canvas.

@@ -68,7 +68,7 @@ resource "cml2_link" "l1" {
 ### Optional
 
 - `description` (String) Lab description.
-- `groups` (Attributes List) Groups assigned to the lab. (see [below for nested schema](#nestedatt--groups))
+- `groups` (Attributes Set) Groups assigned to the lab. (see [below for nested schema](#nestedatt--groups))
 - `notes` (String) Lab notes.
 - `title` (String) Title of the lab.
 
@@ -85,9 +85,13 @@ resource "cml2_link" "l1" {
 <a id="nestedatt--groups"></a>
 ### Nested Schema for `groups`
 
-Read-Only:
+Optional:
 
 - `id` (String) Group ID (UUID).
 - `permission` (String) Permission, either `read_only` or `read_write`.
+
+Read-Only:
+
+- `name` (String) Descriptive group name.
 
 

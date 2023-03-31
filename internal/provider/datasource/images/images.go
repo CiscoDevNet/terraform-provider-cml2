@@ -112,7 +112,7 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	images, err := d.cfg.Client().GetImageDefs(ctx)
+	images, err := d.cfg.Client().ImageDefinitions(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

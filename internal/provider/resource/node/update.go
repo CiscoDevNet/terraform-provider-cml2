@@ -60,7 +60,8 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	// these can only be changed when the node is DEFINED_ON_CORE
 	if stateData.State.ValueString() == cmlclient.NodeStateDefined {
 		if !planData.Configuration.IsUnknown() {
-			node.Configuration = planData.Configuration.ValueString()
+			value := planData.Configuration.ValueString()
+			node.Configuration = &value
 		}
 		if !planData.RAM.IsUnknown() {
 			node.RAM = int(planData.RAM.ValueInt64())

@@ -27,9 +27,10 @@ var lab *cmlclient.Lab = &cmlclient.Lab{
 	LinkCount:   0,
 	Nodes:       make(cmlclient.NodeMap),
 	Links:       []*cmlclient.Link{},
-	Groups: []*cmlclient.Group{
+	Groups: []*cmlclient.LabGroup{
 		{
 			ID:         "fe9acf37-c1dd-4628-9658-9020bae6e036",
+			Name:       "students",
 			Permission: "bla",
 		},
 	},
@@ -51,13 +52,20 @@ func TestNewLab(t *testing.T) {
 }
 
 func TestLabAttrs(t *testing.T) {
-	labschema := schema.Schema{
-		Attributes: cmlschema.Lab(),
-	}
-
+	labschema := schema.Schema{Attributes: cmlschema.Lab()}
 	got, diag := labschema.TypeAtPath(context.TODO(), path.Root("id"))
+	t.Log(diag.Errors())
+	groups, diag := labschema.TypeAtPath(context.TODO(), path.Root("groups"))
 	t.Log(diag.Errors())
 	assert.Equal(t, 11, len(labschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
+	assert.Equal(t,
+		types.SetType{
+			ElemType: types.ObjectType{
+				AttrTypes: cmlschema.LabGroupAttrType,
+			},
+		},
+		groups,
+	)
 }

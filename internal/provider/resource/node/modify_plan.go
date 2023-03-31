@@ -144,13 +144,12 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		planData.BootDiskSize = types.Int64Null()
 	}
 
-	// need to set an empty list if no configuration is provided for tags
+	// need to set an empty set if no configuration is provided for tags
 	// this is a one-off since tags can't be null
 	if configData.Tags.IsNull() {
-		tags, dia := types.ListValueFrom(ctx, types.StringType, []string{})
+		tags, dia := types.SetValueFrom(ctx, types.StringType, []string{})
 		planData.Tags = tags
 		resp.Diagnostics.Append(dia...)
-		// types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)

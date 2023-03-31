@@ -32,10 +32,11 @@ func TestAccLabResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLabResourceConfig(cfg.Cfg, "thistitle", "description"),
+				Config: testAccLabResourceConfig(cfg.Cfg, "thistitle", "description", 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "thistitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "description"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "groups.#", "2"),
 				),
 			},
 			// ImportState testing
@@ -43,15 +44,26 @@ func TestAccLabResource(t *testing.T) {
 				ResourceName:      "cml2_lab.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// This is not normally necessary, but is here because this
-				// example code does not have an actual upstream service.
-				// Once the Read method is able to refresh information from
-				// the upstream service, this can be removed.
-				ImportStateVerifyIgnore: []string{"title"},
 			},
 			// Update and Read testing
 			{
-				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc"),
+				// disabled for now, raised
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/709
+				SkipFunc: func() (bool, error) { return true, nil },
+				Config:   testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "groups.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("cml2_lab.test", "groups.*", map[string]string{
+						"permission": "read_write",
+					}),
+				),
+			},
+			{
+				// should use the disabled one above and remove this.
+				// using this to have some test for update.
+				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
@@ -62,9 +74,39 @@ func TestAccLabResource(t *testing.T) {
 	})
 }
 
-func testAccLabResourceConfig(cfg, title, description string) string {
+func testAccLabResourceConfig(cfg, title, description string, group int) string {
+	var group_cfg string
+	if group == 1 {
+		group_cfg = `
+		{
+			id = cml2_group.group1.id
+			permission = "read_only"
+		},
+		{
+			id = cml2_group.group2.id
+			permission = "read_only"
+		}
+		`
+	} else {
+		group_cfg = `
+		{
+			id = cml2_group.group2.id
+			permission = "read_write"
+		}
+		`
+	}
+
 	return fmt.Sprintf(`
 %[1]s
+
+resource "cml2_group" "group1" {
+	name       = "user_acc_lab_test_group1"
+}
+
+resource "cml2_group" "group2" {
+	name       = "user_acc_lab_test_group2"
+}
+
 resource "cml2_lab" "test" {
 	title       = %[2]q
 	description = %[3]q
@@ -74,6 +116,9 @@ resource "cml2_lab" "test" {
 	- topic two
 	This is where it's ending... PEBKAC
 	EOT
+	groups = [
+		%[4]s
+	]
 }
-`, cfg, title, description)
+`, cfg, title, description, group_cfg)
 }
