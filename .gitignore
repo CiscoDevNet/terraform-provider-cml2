@@ -41,5 +41,3 @@ vendor
 *.winfile eol=crlf
 
 tftest
-
-.tool-versions

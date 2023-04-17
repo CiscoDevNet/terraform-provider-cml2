@@ -101,6 +101,7 @@ func User() map[string]schema.Attribute {
 		"password": schema.StringAttribute{
 			Description: "Password of the user.",
 			Required:    true,
+			Sensitive:   true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplaceIfConfigured(),
 				stringplanmodifier.UseStateForUnknown(),

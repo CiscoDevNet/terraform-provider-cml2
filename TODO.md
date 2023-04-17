@@ -10,6 +10,7 @@ sense and what doesn't.
 
 ## Items Done
 
+- added group and user resources and data sources
 - basic acceptance tests
 - documentation (content, consistency)
 - added image definition data source
