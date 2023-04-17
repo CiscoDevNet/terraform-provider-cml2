@@ -49,8 +49,10 @@ func TestAccLabResource(t *testing.T) {
 			{
 				// disabled for now, raised
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/709
-				SkipFunc: func() (bool, error) { return true, nil },
-				Config:   testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2),
+				// Update: workaround for now is to disable the UseStateForUnknown modifier
+				// in the schema for the nested schema objects in the set.
+				// SkipFunc: func() (bool, error) { return true, nil },
+				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),

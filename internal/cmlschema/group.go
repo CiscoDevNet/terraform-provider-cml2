@@ -136,16 +136,16 @@ func Group() map[string]schema.Attribute {
 					"id": schema.StringAttribute{
 						Required:    true,
 						Description: "Lab ID (UUID).",
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
+						// PlanModifiers: []planmodifier.String{
+						// 	stringplanmodifier.UseStateForUnknown(),
+						// },
 					},
 					"permission": schema.StringAttribute{
 						Required:    true,
 						Description: "Permission.",
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
+						// PlanModifiers: []planmodifier.String{
+						// 	stringplanmodifier.UseStateForUnknown(),
+						// },
 						Validators: []validator.String{
 							cmlvalidator.GroupPermission{},
 						},
