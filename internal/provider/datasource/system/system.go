@@ -2,6 +2,7 @@ package system
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 )
@@ -101,8 +103,11 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	for {
 		err = d.cfg.Client().Ready(ctx)
 		if err == nil {
-			//  || errors.Unwrap(err) != cmlclient.ErrSystemNotReady {
 			break
+		}
+		if !errors.Is(err, cmlclient.ErrSystemNotReady) {
+			resp.Diagnostics.AddError("CML client error", err.Error())
+			return
 		}
 
 		if time.Now().After(endTime) {
@@ -128,7 +133,12 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		)
 	}
 
-	data.ID = types.StringValue(uuid.NewString())
+	if data.ID.IsNull() {
+		data.ID = types.StringValue(uuid.NewString())
+	}
+	if err != nil {
+		resp.Diagnostics.AddWarning("system ready", fmt.Sprintf("err %s", err))
+	}
 	data.Ready = types.BoolValue(err == nil)
 	data.Version = types.StringValue(d.cfg.Client().Version())
 

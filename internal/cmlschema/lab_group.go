@@ -6,8 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -52,24 +50,24 @@ func LabGroup() map[string]schema.Attribute {
 			Description: "Group ID (UUID).",
 			Optional:    true,
 			Computed:    true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
+			// PlanModifiers: []planmodifier.String{
+			// 	stringplanmodifier.UseStateForUnknown(),
+			// },
 		},
 		"name": schema.StringAttribute{
 			Description: "Descriptive group name.",
 			Computed:    true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
+			// PlanModifiers: []planmodifier.String{
+			// 	stringplanmodifier.UseStateForUnknown(),
+			// },
 		},
 		"permission": schema.StringAttribute{
 			MarkdownDescription: "Permission, either `read_only` or `read_write`.",
 			Optional:            true,
 			Computed:            true,
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
+			// PlanModifiers: []planmodifier.String{
+			// 	stringplanmodifier.UseStateForUnknown(),
+			// },
 			Validators: []validator.String{
 				cmlvalidator.GroupPermission{},
 			},
