@@ -35,10 +35,11 @@ var _ provider.Provider = &CML2Provider{}
 // CML2Provider defines the Cisco Modeling Labs Terraform provider implementation.
 type CML2Provider struct {
 	version string
+	name    string
 }
 
 func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "cml2"
+	resp.TypeName = p.name
 	resp.Version = p.version
 }
 
@@ -77,7 +78,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if len(data.Address.ValueString()) == 0 {
 		resp.Diagnostics.AddError(
 			"Required configuration missing",
-			fmt.Sprintf("a server address must be configured to use %T", p),
+			fmt.Sprintf("A server address must be configured to use provider %s", p.name),
 		)
 	}
 	if data.SkipVerify.IsNull() {
@@ -161,6 +162,7 @@ func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &CML2Provider{
 			version: version,
+			name:    "cml2",
 		}
 	}
 }
