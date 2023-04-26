@@ -7,13 +7,14 @@ import (
 
 // ProviderModel describes the provider configuration data model.
 type ProviderModel struct {
-	Address    types.String `tfsdk:"address"`
-	Username   types.String `tfsdk:"username"`
-	Password   types.String `tfsdk:"password"`
-	Token      types.String `tfsdk:"token"`
-	CAcert     types.String `tfsdk:"cacert"`
-	SkipVerify types.Bool   `tfsdk:"skip_verify"`
-	UseCache   types.Bool   `tfsdk:"use_cache"`
+	Address       types.String `tfsdk:"address"`
+	Username      types.String `tfsdk:"username"`
+	Password      types.String `tfsdk:"password"`
+	Token         types.String `tfsdk:"token"`
+	CAcert        types.String `tfsdk:"cacert"`
+	SkipVerify    types.Bool   `tfsdk:"skip_verify"`
+	UseCache      types.Bool   `tfsdk:"use_cache"`
+	DynamicConfig types.Bool   `tfsdk:"dynamic_config"`
 }
 
 func Provider() map[string]schema.Attribute {
@@ -48,6 +49,10 @@ func Provider() map[string]schema.Attribute {
 		"use_cache": schema.BoolAttribute{
 			Description: "Enables the client cache, this is considered experimental (default is false -- will not use the cache!)",
 			Optional:    true,
+		},
+		"dynamic_config": schema.BoolAttribute{
+			MarkdownDescription: "Does late binding of the provider configuration. If set to `true` then provider configuration errors will only be caught when resources and data sources are actually created/read. Defaults to `false`",
+			Optional:            true,
 		},
 	}
 }

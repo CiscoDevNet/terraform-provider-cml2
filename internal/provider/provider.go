@@ -2,15 +2,11 @@ package provider
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
 	d_groups "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/groups"
@@ -51,76 +47,21 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	// check if provided auth configuration makes sense
-	if data.Token.IsNull() &&
-		(data.Username.IsNull() || data.Password.IsNull()) {
-		resp.Diagnostics.AddError(
-			"Required configuration missing",
-			fmt.Sprintf("null check: either username and password or a token must be provided %T", p),
-		)
+	dynamic_config := false
+	if data.DynamicConfig.IsNull() {
+		data.DynamicConfig = types.BoolValue(false)
+	} else if data.DynamicConfig.ValueBool() {
+		dynamic_config = true
+		// resp.Diagnostics.AddWarning(
+		// 	"Dynamic configuration",
+		// 	"\"dynamic_config\" does late binding of the provider configuration",
+		// )
 	}
 
-	if len(data.Token.ValueString()) == 0 &&
-		(len(data.Username.ValueString()) == 0 || len(data.Password.ValueString()) == 0) {
-		resp.Diagnostics.AddError(
-			"Required configuration missing",
-			fmt.Sprintf("value check: either username and password or a token must be provided %T", p),
-		)
+	config := common.NewProviderConfig(&data)
+	if !dynamic_config {
+		config.Initialize(ctx, &data, resp.Diagnostics)
 	}
-
-	if len(data.Token.ValueString()) > 0 && len(data.Username.ValueString()) > 0 {
-		resp.Diagnostics.AddWarning(
-			"Conflicting configuration",
-			"both token and username / password were provided")
-	}
-
-	// an address must be specified
-	if len(data.Address.ValueString()) == 0 {
-		resp.Diagnostics.AddError(
-			"Required configuration missing",
-			fmt.Sprintf("A server address must be configured to use provider %s", p.name),
-		)
-	}
-	if data.SkipVerify.IsNull() {
-		tflog.Warn(ctx, "unspecified certificate verification, will verify")
-		data.SkipVerify = types.BoolValue(false)
-	}
-
-	if data.UseCache.IsNull() {
-		data.UseCache = types.BoolValue(false)
-	} else if data.UseCache.ValueBool() {
-		resp.Diagnostics.AddWarning(
-			"Experimental feature enabled",
-			"\"use_cache\" is considered experimental and may not work as expected; use with care",
-		)
-	}
-
-	// create a new CML2 client
-	client := cmlclient.New(
-		data.Address.ValueString(),
-		data.SkipVerify.ValueBool(),
-		data.UseCache.ValueBool(),
-	)
-	if len(data.Username.ValueString()) > 0 {
-		client.SetUsernamePassword(
-			data.Username.ValueString(),
-			data.Password.ValueString(),
-		)
-	}
-	if len(data.Token.ValueString()) > 0 {
-		client.SetToken(data.Token.ValueString())
-	}
-
-	if len(data.CAcert.ValueString()) > 0 {
-		err := client.SetCACert([]byte(data.CAcert.ValueString()))
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Configuration issue",
-				fmt.Sprintf("Provided certificate could not be used: %s", err),
-			)
-		}
-	}
-	config := common.NewProviderConfig(client)
 	resp.DataSourceData = config
 	resp.ResourceData = config
 }
