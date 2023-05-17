@@ -40,7 +40,7 @@ func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	}
 }
 
-func (r *ProviderConfig) Initialize(ctx context.Context, data *cmlschema.ProviderModel, diag diag.Diagnostics) *ProviderConfig {
+func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) *ProviderConfig {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -49,43 +49,43 @@ func (r *ProviderConfig) Initialize(ctx context.Context, data *cmlschema.Provide
 	}
 
 	// check if provided auth configuration makes sense
-	if data.Token.IsNull() &&
-		(data.Username.IsNull() || data.Password.IsNull()) {
+	if r.data.Token.IsNull() &&
+		(r.data.Username.IsNull() || r.data.Password.IsNull()) {
 		diag.AddError(
 			"Required configuration missing",
 			"null check: either username and password or a token must be provided",
 		)
 	}
 
-	if len(data.Token.ValueString()) == 0 &&
-		(len(data.Username.ValueString()) == 0 || len(data.Password.ValueString()) == 0) {
+	if len(r.data.Token.ValueString()) == 0 &&
+		(len(r.data.Username.ValueString()) == 0 || len(r.data.Password.ValueString()) == 0) {
 		diag.AddError(
 			"Required configuration missing",
 			"value check: either username and password or a token must be provided",
 		)
 	}
 
-	if len(data.Token.ValueString()) > 0 && len(data.Username.ValueString()) > 0 {
+	if len(r.data.Token.ValueString()) > 0 && len(r.data.Username.ValueString()) > 0 {
 		diag.AddWarning(
 			"Conflicting configuration",
 			"both token and username / password were provided")
 	}
 
 	// an address must be specified
-	if len(data.Address.ValueString()) == 0 {
+	if len(r.data.Address.ValueString()) == 0 {
 		diag.AddError(
 			"Required configuration missing",
 			"A server address must be configured to use th CML2 provider",
 		)
 	}
-	if data.SkipVerify.IsNull() {
+	if r.data.SkipVerify.IsNull() {
 		tflog.Warn(ctx, "unspecified certificate verification, will verify")
-		data.SkipVerify = types.BoolValue(false)
+		r.data.SkipVerify = types.BoolValue(false)
 	}
 
-	if data.UseCache.IsNull() {
-		data.UseCache = types.BoolValue(false)
-	} else if data.UseCache.ValueBool() {
+	if r.data.UseCache.IsNull() {
+		r.data.UseCache = types.BoolValue(false)
+	} else if r.data.UseCache.ValueBool() {
 		diag.AddWarning(
 			"Experimental feature enabled",
 			"\"use_cache\" is considered experimental and may not work as expected; use with care",
@@ -94,22 +94,22 @@ func (r *ProviderConfig) Initialize(ctx context.Context, data *cmlschema.Provide
 
 	// create a new CML2 client
 	client := cmlclient.New(
-		data.Address.ValueString(),
-		data.SkipVerify.ValueBool(),
-		data.UseCache.ValueBool(),
+		r.data.Address.ValueString(),
+		r.data.SkipVerify.ValueBool(),
+		r.data.UseCache.ValueBool(),
 	)
-	if len(data.Username.ValueString()) > 0 {
+	if len(r.data.Username.ValueString()) > 0 {
 		client.SetUsernamePassword(
-			data.Username.ValueString(),
-			data.Password.ValueString(),
+			r.data.Username.ValueString(),
+			r.data.Password.ValueString(),
 		)
 	}
-	if len(data.Token.ValueString()) > 0 {
-		client.SetToken(data.Token.ValueString())
+	if len(r.data.Token.ValueString()) > 0 {
+		client.SetToken(r.data.Token.ValueString())
 	}
 
-	if len(data.CAcert.ValueString()) > 0 {
-		err := client.SetCACert([]byte(data.CAcert.ValueString()))
+	if len(r.data.CAcert.ValueString()) > 0 {
+		err := client.SetCACert([]byte(r.data.CAcert.ValueString()))
 		if err != nil {
 			diag.AddError(
 				"Configuration issue",
@@ -134,7 +134,7 @@ func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, r
 		)
 		return nil
 	}
-	return config.Initialize(ctx, config.data, resp.Diagnostics)
+	return config.Initialize(ctx, resp.Diagnostics)
 }
 
 func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) *ProviderConfig {
@@ -151,5 +151,5 @@ func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp 
 		)
 		return nil
 	}
-	return config.Initialize(ctx, config.data, resp.Diagnostics)
+	return config.Initialize(ctx, resp.Diagnostics)
 }

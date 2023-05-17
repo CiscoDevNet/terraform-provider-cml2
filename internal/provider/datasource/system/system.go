@@ -23,10 +23,11 @@ import (
 var _ datasource.DataSource = &SystemDataSource{}
 
 type SystemDataSourceModel struct {
-	ID      types.String `tfsdk:"id"`
-	Version types.String `tfsdk:"version"`
-	Ready   types.Bool   `tfsdk:"ready"`
-	Timeout types.String `tfsdk:"timeout"`
+	ID           types.String `tfsdk:"id"`
+	Version      types.String `tfsdk:"version"`
+	Ready        types.Bool   `tfsdk:"ready"`
+	Timeout      types.String `tfsdk:"timeout"`
+	IgnoreErrors types.Bool   `tfsdk:"ignore_errors"`
 }
 
 func NewDataSource() datasource.DataSource {
@@ -67,6 +68,10 @@ func (d *SystemDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 			},
 			Optional: true,
 		},
+		"ignore_errors": schema.BoolAttribute{
+			MarkdownDescription: "If set to `true`, then errors will be ignored during the ready check. This can help when using proxies which might return intermediate errors especially during the initial phase where gateway timeouts or proxy errors might be returned because of initial connectivity issues towards the CML2 instance. Will default to `false`.",
+			Optional:            true,
+		},
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves system state information from the controller. If a `timeout` is set then this will only return when the system responds."
@@ -91,6 +96,11 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		timeout = data.Timeout.ValueString()
 	}
 
+	ignoreErrors := false
+	if !data.IgnoreErrors.IsNull() {
+		ignoreErrors = data.IgnoreErrors.ValueBool()
+	}
+
 	tov, err := time.ParseDuration(timeout)
 	if err != nil {
 		panic("can't parse timeout -- should be validated")
@@ -105,11 +115,12 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		if err == nil {
 			break
 		}
-		if !errors.Is(err, cmlclient.ErrSystemNotReady) {
+		if !(errors.Is(err, cmlclient.ErrSystemNotReady) || ignoreErrors) {
 			resp.Diagnostics.AddError("CML client error", err.Error())
 			return
 		}
 
+		// if no timeout was specified, break immediately
 		if time.Now().After(endTime) {
 			break
 		}

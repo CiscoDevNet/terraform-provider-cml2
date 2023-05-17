@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -59,12 +58,6 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		)
 		return
 	}
-
-	// when nodes are deleted then this apparently causes a race of some sort.
-	// wait for 100ms to allow the controller to settle before deleting the next
-	// node in an attempt to work around SIMPLE-5368 until the root cause is
-	// fixed!
-	<-time.After(100 * time.Millisecond)
 
 	tflog.Info(ctx, "Resource Node DELETE done")
 }

@@ -47,6 +47,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
+	// https://dev.to/camptocamp-ops/how-to-allow-dynamic-terraform-provider-configuration-20ik
 	dynamic_config := false
 	if data.DynamicConfig.IsNull() {
 		data.DynamicConfig = types.BoolValue(false)
@@ -54,13 +55,13 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		dynamic_config = true
 		// resp.Diagnostics.AddWarning(
 		// 	"Dynamic configuration",
-		// 	"\"dynamic_config\" does late binding of the provider configuration",
+		// 	With "\"dynamic_config\", late binding of the provider configuration is enabled",
 		// )
 	}
 
 	config := common.NewProviderConfig(&data)
 	if !dynamic_config {
-		config.Initialize(ctx, &data, resp.Diagnostics)
+		config.Initialize(ctx, resp.Diagnostics)
 	}
 	resp.DataSourceData = config
 	resp.ResourceData = config
