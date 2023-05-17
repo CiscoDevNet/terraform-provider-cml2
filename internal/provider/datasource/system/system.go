@@ -110,6 +110,7 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			return
 		}
 
+		// if no timeout was specified, break immediately
 		if time.Now().After(endTime) {
 			break
 		}

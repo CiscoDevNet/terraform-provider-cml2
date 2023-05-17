@@ -2,13 +2,14 @@
 
 Lists the changes in the provider.
 
+## Version 0.6.2
+
+- The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof). `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.
+- bump gocmlclient to 0.0.21 (better handling of error conditions / proxy use)
+
 ## Version 0.6.1
 
-- allow dynamic configuration of the provider by introducing a "dynamic_config"
-  provider config flag. This defaults to `false`. When set to `true` then the
-  provider configuration is only validated when actual resources are read or
-  created. This is for specific use cases like AWS deployments where the CML2
-  instance IP is only known after the EC2 instance has been created.
+- allow dynamic configuration of the provider by introducing a "dynamic_config" provider config flag. This defaults to `false`. When set to `true` then the provider configuration is only validated when actual resources are read or created. This is for specific use cases like AWS deployments where the CML2 instance IP is only known after the EC2 instance has been created.
 - bump the gocmlclient to 0.0.18
 
 ## Version 0.6.0
