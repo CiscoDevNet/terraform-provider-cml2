@@ -29,6 +29,7 @@ output "readiness" {
 
 ### Optional
 
+- `ignore_errors` (Boolean) If set to `true`, then errors will be ignored during the ready check. This can help when using proxies which might return intermediate errors especially during the initial phase where gateway timeouts or proxy errors might be returned because of initial connectivity issues towards the CML2 instance. Will default to `false`.
 - `ready` (Boolean) Shows if the CML system API is ready.
 - `timeout` (String) Wait timeout, like `5m`, defaults to 0.
 
