@@ -52,8 +52,13 @@ func TestGroupDataSource(t *testing.T) {
 func testGroupDataSourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 	%[1]s
+	resource "cml2_group" "thegroup" {
+        description = "the students"
+        name = "students"
+	}
 	data "cml2_groups" "test" {
 		name = "students"
+		depends_on = [ cml2_group.thegroup ]
 	}
 	output "bla" {
 		value = data.cml2_groups.test.groups[0].name

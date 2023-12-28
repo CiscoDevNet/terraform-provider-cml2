@@ -14,7 +14,6 @@ import (
 )
 
 func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-
 	var (
 		data cmlschema.GroupModel
 		err  error

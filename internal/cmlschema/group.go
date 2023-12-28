@@ -73,7 +73,6 @@ func newLabs(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostic
 }
 
 func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) attr.Value {
-
 	newGroup := GroupModel{
 		ID:          types.StringValue(group.ID),
 		Description: types.StringValue(group.Description),

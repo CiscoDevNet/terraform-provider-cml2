@@ -14,7 +14,6 @@ import (
 )
 
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-
 	var (
 		stateData, planData cmlschema.NodeModel
 		err                 error
@@ -33,9 +32,10 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	node := &cmlclient.Node{
-		ID:    planData.ID.ValueString(),
-		LabID: planData.LabID.ValueString(),
-		State: planData.State.ValueString(),
+		ID:             planData.ID.ValueString(),
+		LabID:          planData.LabID.ValueString(),
+		State:          planData.State.ValueString(),
+		NodeDefinition: planData.NodeDefinition.ValueString(),
 	}
 
 	if !planData.X.IsNull() {
@@ -43,6 +43,9 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 	if !planData.Y.IsNull() {
 		node.Y = int(planData.Y.ValueInt64())
+	}
+	if !planData.HideLinks.IsNull() {
+		node.HideLinks = bool(planData.HideLinks.ValueBool())
 	}
 	if !planData.Label.IsNull() {
 		node.Label = planData.Label.ValueString()
@@ -92,6 +95,28 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			fmt.Sprintf("Unable to update node, got error: %s", err),
 		)
 		return
+	}
+
+	// work around the fact that updating an external connector will "resolve"
+	// the device name (if given, worked in previous versions" with the
+	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We want to keep
+	// the original value in this case, otherwise we run into inconsistent
+	// state!
+	if node.NodeDefinition == "external_connector" {
+		// tflog.Warn(ctx, "$$$", map[string]any{
+		// 	"plan_config": planData.Configuration.ValueString(),
+		// 	"state_config": stateData.Configuration.ValueString(),
+		// 	"old_config": *node.Configuration,
+		// 	"new_config": *newNode.Configuration,
+		// })
+		// if the state hasn't changed but it should have
+		if planData.Configuration.ValueString() != *newNode.Configuration {
+			resp.Diagnostics.AddError(
+				"External connector configuration",
+				fmt.Sprintf("provide proper external connector configuration, not a device name (deprecated). API returned %q, configured was %q!", *newNode.Configuration, *node.Configuration),
+			)
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(

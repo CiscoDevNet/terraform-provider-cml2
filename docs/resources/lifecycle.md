@@ -198,6 +198,7 @@ Optional:
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
+- `hide_links` (Boolean) If true, links are not shown in the topology. This is a visual cue and does not influence any simulation function.
 - `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
 - `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `tags` (Set of String) Set of tags of the node.
@@ -234,5 +235,3 @@ Read-Only:
 
 - `console_key` (String)
 - `device_number` (Number)
-
-

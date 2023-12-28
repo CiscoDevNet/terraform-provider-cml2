@@ -15,7 +15,6 @@ import (
 )
 
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-
 	var configData, planData, stateData cmlschema.LabLifecycleModel
 
 	tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN")

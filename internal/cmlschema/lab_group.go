@@ -26,7 +26,6 @@ type LabGroupModel struct {
 }
 
 func NewLabGroup(ctx context.Context, group *cmlclient.LabGroup, diags *diag.Diagnostics) attr.Value {
-
 	newGroup := LabGroupModel{
 		ID:         types.StringValue(group.ID),
 		Name:       types.StringValue(group.Name),

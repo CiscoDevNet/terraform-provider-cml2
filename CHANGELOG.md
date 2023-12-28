@@ -2,6 +2,23 @@
 
 Lists the changes in the provider.
 
+## Version 0.7.0
+
+- added support for "hide links" node resource property, fixes #80
+- added external connector data source
+- fixed integration test for groups data source
+- return error for external connector configuration when device name is provided instead of "NAT" or "System Bridge", fixes #81
+- updated all package dependencies
+- fix CPULimit property for UMS and ExtConn (they are now always NULL starting with 2.6.0)
+- some cosmetic and test changes
+- added a add-to-booted-lab lifecycle test (addresses #75 but can't reproduce)
+- formatted codebase w/ gofumpt
+- removed cmlclient go.mod local replace and updated cmlclient to 0.0.22 in go.mod
+- added / updated docs and ran generate
+- bumped go version to 1.21 in the workflows
+- added an extconn schema test
+- updated gh action components, only run one test suite in parallel
+
 ## Version 0.6.2
 
 - The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof). `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.

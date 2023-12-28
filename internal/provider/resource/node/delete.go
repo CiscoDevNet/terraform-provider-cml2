@@ -14,7 +14,6 @@ import (
 )
 
 func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-
 	var (
 		data cmlschema.NodeModel
 		err  error

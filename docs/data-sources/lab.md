@@ -66,5 +66,3 @@ Read-Only:
 - `id` (String) Group ID (UUID).
 - `name` (String) Descriptive group name.
 - `permission` (String) Permission, either `read_only` or `read_write`.
-
-

@@ -11,27 +11,26 @@ import (
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 )
 
-// ModifyPlan is called when the provider has an opportunity to modify
-// the plan: once during the plan phase when Terraform is determining
-// the diff that should be shown to the user for approval, and once
-// during the apply phase with any unknown values from configuration
-// filled in with their final values.
+// ModifyPlan is called when the provider has an opportunity to modify the
+// plan: once during the plan phase when Terraform is determining the diff that
+// should be shown to the user for approval, and once during the apply phase
+// with any unknown values from configuration filled in with their final
+// values.
 //
-// The planned new state is represented by
-// ModifyPlanResponse.Plan. It must meet the following
-// constraints:
-// 1. Any non-Computed attribute set in config must preserve the exact
-// config value or return the corresponding attribute value from the
-// prior state (ModifyPlanRequest.State).
-// 2. Any attribute with a known value must not have its value changed
-// in subsequent calls to ModifyPlan or Create/Read/Update.
-// 3. Any attribute with an unknown value may either remain unknown
-// or take on any value of the expected type.
+// The planned new state is represented by ModifyPlanResponse.Plan. It must
+// meet the following constraints:
+//
+// 1. Any non-Computed attribute set in config must preserve the exact config
+// value or return the corresponding attribute value from the prior state
+// (ModifyPlanRequest.State).
+// 2. Any attribute with a known value must not have its value changed in
+// subsequent calls to ModifyPlan or Create/Read/Update.
+// 3. Any attribute with an unknown value may either remain unknown or take on
+// any value of the expected type.
 //
 // Any errors will prevent further resource-level plan modifications.
 
 func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-
 	// var stateData, planData cmlschema.NodeModel
 	var configData, planData, stateData cmlschema.NodeModel
 
@@ -61,22 +60,15 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	// changing certain attributes require a replace
 	nodeExists := stateData.State.ValueString() != cmlclient.NodeStateDefined
 
-	// if planData.ComputeID.IsUnknown() {
-	// 	planData.ComputeID = types.StringNull()
-	// }
-	// if planData.SerialDevices.IsUnknown() {
-	// 	planData.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
-	// }
-	// if planData.VNCkey.IsUnknown() {
-	// 	planData.VNCkey = types.StringNull()
-	// }
-	// if planData.Interfaces.IsUnknown() {
-	// 	planData.Interfaces = types.ListNull(types.ObjectType{AttrTypes: cmlschema.InterfaceAttrType})
-	// }
+	// tflog.Warn(ctx, "### CONDITION ###", map[string]any{
+	// 	"type_state": stateData.NodeDefinition.ValueString(),
+	// 	"type_plan": planData.NodeDefinition.ValueString(),
+	// 	"config_state": stateData.Configuration.ValueString(),
+	// 	"config_plan": planData.Configuration.ValueString(),
+	// 	"unknown_plan": planData.Configuration.IsUnknown(),
+	// })
 
-	// the following are the attributes where the replace is depending on
-	// the node state...
-	if !planData.Configuration.IsUnknown() && nodeExists {
+	if nodeExists && !stateData.Configuration.Equal(planData.Configuration) {
 		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configuration"))
 	}
 
@@ -116,11 +108,14 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		}
 		planData.CPUlimit = configData.CPUlimit
 	}
-	if planData.CPUlimit.IsUnknown() {
+	if planData.CPUlimit.IsUnknown() && planData.NodeDefinition.ValueString() != "external_connector" && planData.NodeDefinition.ValueString() != "unmanaged_switch" {
 		// CPUlimit is the weird one here as it is possible to set the value to null
 		// and this actually works on updating on the controller (PATCH). However,
 		// when reading the data again, the value comes back as 100.
 		// See SIMPLE-5052 and cmlclient.NodeGet()
+		// Also: Need to restrict this to devices other than UMS and ExtConn as those
+		// do always return NULL for the value w/ 2.6.0
+		// TODO: need to see what IOL returns in 2.7.0
 		planData.CPUlimit = types.Int64Value(int64(100))
 	}
 

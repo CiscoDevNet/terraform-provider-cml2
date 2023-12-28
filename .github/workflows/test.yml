@@ -21,7 +21,7 @@ permissions:
 env:
   # Go language version to use for building. This value should also be updated
   # in the release workflow if changed.
-  GO_VERSION: "1.19"
+  GO_VERSION: "1.21"
 
 jobs:
   # Ensure project builds before running testing matrix
@@ -30,20 +30,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: actions/checkout@v3
       - run: go mod download
       - run: go build -v .
 
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: actions/checkout@v3
       - run: go generate ./...
       - name: git diff
         run: |
@@ -57,24 +57,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         # list whatever Terraform versions here you would like to support
+        # jobs run in parallel -- some tests create resources with
+        # specific IDs which must be unique... some test resource randomization
+        # is needed but doesn't exist... Currently only testing w/ 1.6
+        # max-parallel: 1 should fix this!
+        # NOTE: required tests are configured in branch protection!
         terraform:
           # - "1.0.*"
           # - "1.1.*"
           # - "1.3.*"
           - "1.4.*"
+          - "1.6.*"
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: hashicorp/setup-terraform@v2
+      - run: go mod download
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
-      - uses: actions/checkout@v3
-      - run: go mod download
 
       - env:
           # for the time being, only do unit tests, below needs to be changed

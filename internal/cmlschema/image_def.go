@@ -93,7 +93,6 @@ func ImageDef() map[string]schema.Attribute {
 }
 
 func NewImageDefinition(ctx context.Context, image *cmlclient.ImageDefinition, diags *diag.Diagnostics) attr.Value {
-
 	newImage := ImageDefinitionModel{
 		ID:            types.StringValue(image.ID),
 		NodeDefID:     types.StringValue(image.NodeDefID),

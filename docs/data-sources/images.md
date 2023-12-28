@@ -63,5 +63,3 @@ Read-Only:
 - `ram` (Number) Image specific RAM value, can be null
 - `read_only` (Boolean) Is this image definition read only?
 - `schema_version` (String) Version of the image definition schemage
-
-

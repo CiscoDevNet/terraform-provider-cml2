@@ -14,10 +14,12 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &LabLifecycleResource{}
-var _ resource.ResourceWithImportState = &LabLifecycleResource{}
-var _ resource.ResourceWithValidateConfig = &LabLifecycleResource{}
-var _ resource.ResourceWithModifyPlan = &LabLifecycleResource{}
+var (
+	_ resource.Resource                   = &LabLifecycleResource{}
+	_ resource.ResourceWithImportState    = &LabLifecycleResource{}
+	_ resource.ResourceWithValidateConfig = &LabLifecycleResource{}
+	_ resource.ResourceWithModifyPlan     = &LabLifecycleResource{}
+)
 
 type LabLifecycleResource struct {
 	cfg *common.ProviderConfig

@@ -149,7 +149,6 @@ func Link() map[string]schema.Attribute {
 }
 
 func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics) attr.Value {
-
 	newLink := LinkModel{
 		ID:         types.StringValue(link.ID),
 		Label:      types.StringValue(link.Label),

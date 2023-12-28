@@ -2,7 +2,6 @@ package lab
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,7 +11,6 @@ import (
 )
 
 func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-
 	var stateData, planData cmlschema.LabModel
 
 	tflog.Info(ctx, "Resource Lab MODIFYPLAN")
@@ -28,8 +26,8 @@ func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		return
 	}
 
-	tflog.Info(ctx, fmt.Sprintf("XXX  plan: %v", planData.Groups))
-	tflog.Info(ctx, fmt.Sprintf("XXX state: %v", stateData.Groups))
+	// tflog.Info(ctx, fmt.Sprintf("XXX  plan: %v", planData.Groups))
+	// tflog.Info(ctx, fmt.Sprintf("XXX state: %v", stateData.Groups))
 
 	// this makes TF crash
 	// planData.Groups = types.SetUnknown(

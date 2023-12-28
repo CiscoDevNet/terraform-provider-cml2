@@ -63,7 +63,6 @@ func TestAccLinkResource(t *testing.T) {
 }
 
 func TestAccLifecycleResourceDaniel(t *testing.T) {
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

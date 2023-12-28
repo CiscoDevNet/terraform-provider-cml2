@@ -13,7 +13,6 @@ import (
 )
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-
 	var (
 		data cmlschema.LabModel
 		err  error
