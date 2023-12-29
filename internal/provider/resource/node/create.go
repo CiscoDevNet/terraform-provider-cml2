@@ -16,7 +16,6 @@ import (
 )
 
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-
 	var (
 		data cmlschema.NodeModel
 		err  error
@@ -58,7 +57,9 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if !data.Y.IsUnknown() {
 		node.Y = int(data.Y.ValueInt64())
 	}
-
+	if !data.HideLinks.IsUnknown() {
+		node.HideLinks = bool(data.HideLinks.ValueBool())
+	}
 	if !data.RAM.IsUnknown() {
 		node.RAM = int(data.RAM.ValueInt64())
 	}
@@ -78,6 +79,15 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		node.ImageDefinition = data.ImageDefinition.ValueString()
 	}
 
+	// can't set a configuration for an unmanaged switch
+	if node.NodeDefinition == "unmanaged_switch" && !data.Configuration.IsUnknown() {
+		resp.Diagnostics.AddError(
+			"Unmanaged switch configuration",
+			"Can't provide UMS configuration",
+		)
+		return
+	}
+
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -85,6 +95,19 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 			fmt.Sprintf("Unable to create node, got error: %s", err),
 		)
 		return
+	}
+
+	// work around the fact that creating an external connector will "resolve"
+	// the device name (if given, worked in previous versions" with the
+	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We return an
+	// error in this case, otherwise we'd run into inconsistent state!
+	if node.NodeDefinition == "external_connector" && node.Configuration != nil && *newNode.Configuration != *node.Configuration {
+		resp.Diagnostics.AddError(
+			"External connector configuration",
+			fmt.Sprintf("provide proper external connector configuration, not a device name (deprecated). API returned %q, configured was %q!", *newNode.Configuration, *node.Configuration),
+		)
+		return
+		// newNode.Configuration = node.Configuration
 	}
 
 	resp.Diagnostics.Append(

@@ -16,7 +16,6 @@ import (
 )
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-
 	var (
 		labModel cmlschema.LabModel
 		err      error

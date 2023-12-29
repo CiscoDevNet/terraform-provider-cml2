@@ -9,7 +9,6 @@ import (
 )
 
 func (r LinkResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-
 	var data cmlschema.LinkModel
 
 	tflog.Info(ctx, "Resource Link UPDATE")

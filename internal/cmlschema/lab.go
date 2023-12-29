@@ -141,7 +141,6 @@ func Lab() map[string]schema.Attribute {
 
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
 func NewLab(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) attr.Value {
-
 	valueSet := make([]attr.Value, 0)
 	for _, group := range lab.Groups {
 		value := NewLabGroup(ctx, group, diags)

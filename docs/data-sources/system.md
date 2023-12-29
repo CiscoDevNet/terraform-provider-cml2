@@ -37,5 +37,3 @@ output "readiness" {
 
 - `id` (String) A UUID. The presence of the ID attribute is mandated by the framework. The attribute is a random UUID and has no actual significance.
 - `version` (String) The system software version.
-
-

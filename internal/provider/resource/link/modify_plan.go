@@ -10,7 +10,6 @@ import (
 )
 
 func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-
 	var planData, stateData cmlschema.LinkModel
 
 	tflog.Info(ctx, "Resource Link MODIFYPLAN")

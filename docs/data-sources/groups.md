@@ -58,5 +58,3 @@ Read-Only:
 
 - `id` (String) Lab ID (UUID).
 - `permission` (String) Permission.
-
-

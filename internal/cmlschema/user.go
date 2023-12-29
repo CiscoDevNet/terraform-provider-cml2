@@ -50,7 +50,6 @@ type UserModel struct {
 }
 
 func NewUser(ctx context.Context, user *cmlclient.User, diags *diag.Diagnostics) attr.Value {
-
 	newUser := UserModel{
 		ID:          types.StringValue(user.ID),
 		Username:    types.StringValue(user.Username),

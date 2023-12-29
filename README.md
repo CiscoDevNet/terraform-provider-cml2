@@ -17,17 +17,23 @@ The current implementation provides:
   - resource `cml2_node` to create, update and destroy nodes in a lab
   - resource `cml2_link` to create, update and destroy links between nodes in a lab
   - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`, `STOPPED`), including staged starting and configuration injection
+  - resource `cml2_group` to create, update and destroy groups
+  - resource `cml2_user` to create, update and destroy users
   - data source `cml2_lab` to retrieve state of an existing lab
   - data source `cml2_node` to retrieve state of an existing node in a lab
-  - data source `cml2_image` to retrieve the available node images from the controller
+  - data source `cml2_images` to retrieve the available node images from the controller
+  - data source `cml2_groups` to retrieve user groups from the controller
+  - data source `cml2_extconn` to retrieve external connector information from the controller
+  - data source `cml2_system` to retrieve system state (ready state, version, ...) from the controller
+  - data source `cml2_users` to retrieve users from the controller
 - Examples (`examples/`) and generated documentation (`docs/`),
 - Miscellaneous meta files.
 
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.18
-- [CML2](https://cisco.com/go/cml) >= 2.4.0
+- [Go](https://golang.org/doc/install) >= 1.21
+- [CML2](https://cisco.com/go/cml) >= 2.6.0
 
 ## Building The Provider
 

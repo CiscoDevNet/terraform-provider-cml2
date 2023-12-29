@@ -48,6 +48,7 @@ Read-Only:
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
+- `hide_links` (Boolean) If true, links are not shown in the topology. This is a visual cue and does not influence any simulation function.
 - `id` (String) Node ID (UUID).
 - `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
 - `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--node--interfaces))
@@ -83,5 +84,3 @@ Read-Only:
 
 - `console_key` (String)
 - `device_number` (Number)
-
-

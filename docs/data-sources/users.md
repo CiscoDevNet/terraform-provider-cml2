@@ -57,5 +57,3 @@ Read-Only:
 - `password` (String, Sensitive) Password of the user.
 - `resource_pool` (String) Resource pool ID, if any.
 - `username` (String) Login name of the user.
-
-

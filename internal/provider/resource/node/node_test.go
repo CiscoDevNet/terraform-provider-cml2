@@ -57,6 +57,7 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "hide_links", "false"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "1"),
 					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
 				),
@@ -69,6 +70,7 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "hide_links", "true"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "2"),
 					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr("cml2_node.r1", "tags.*", "tag2"),
@@ -82,6 +84,7 @@ func TestAccNodeResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "hide_links", "false"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "ram", "1024"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "cpus", "2"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "boot_disk_size", "64"),
@@ -202,6 +205,70 @@ func TestAccNodeResourceNullConfig(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceExtConn(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, ""),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
+					expected := "NAT"
+					if value == expected {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
+				// Destroy: ,
+			},
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "NAT"),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
+					expected := "NAT"
+					if value == expected {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
+			},
+			// this tests the error condition in Update!
+			{
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
+				ExpectError: regexp.MustCompile("provide proper external connector configuration, not a device name"),
+			},
+		},
+	})
+	// same test, this time the error is raised in Create!
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
+				ExpectError: regexp.MustCompile("provide proper external connector configuration, not a device name"),
+			},
+		},
+	})
+}
+
+func testAccNodeResourceConfigNodeDefExtConn(cfg, extconnname string) string {
+	var config string
+	if len(extconnname) > 0 {
+		config = fmt.Sprintf("configuration = %q", extconnname)
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "ext" {
+	lab_id         = cml2_lab.test.id
+	label          = "ext0"
+	nodedefinition = "external_connector"
+	%[2]s
+}
+`, cfg, config)
+}
+
 func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -267,6 +334,7 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 			label           = "alpine-99"
 			x               = 100
 			y               = 200
+			hide_links      = true
 			nodedefinition  = "alpine"
 			tags            = [ "test", "tag2" ]
 		}
@@ -285,6 +353,7 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 			label           = "alpine-99"
 			x               = 100
 			y               = 200
+			hide_links      = false
 			nodedefinition  = "alpine"
 			imagedefinition = element(data.cml2_images.test.image_list, 0).id
 			ram             = 1024
@@ -371,5 +440,4 @@ resource "cml2_node" "r1" {
 	nodedefinition = "alpine"
 }
 `, cfg)
-
 }

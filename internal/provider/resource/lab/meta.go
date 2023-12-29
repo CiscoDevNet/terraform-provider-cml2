@@ -11,9 +11,11 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &LabResource{}
-var _ resource.ResourceWithImportState = &LabResource{}
-var _ resource.ResourceWithModifyPlan = &LabResource{}
+var (
+	_ resource.Resource                = &LabResource{}
+	_ resource.ResourceWithImportState = &LabResource{}
+	_ resource.ResourceWithModifyPlan  = &LabResource{}
+)
 
 type LabResource struct {
 	cfg *common.ProviderConfig

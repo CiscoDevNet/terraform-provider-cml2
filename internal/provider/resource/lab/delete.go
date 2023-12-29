@@ -14,7 +14,6 @@ import (
 )
 
 func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-
 	var (
 		data cmlschema.LabModel
 		err  error

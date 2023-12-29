@@ -4,12 +4,14 @@ As this provider is "work-in-progress", there's still plenty of work to do.
 
 - additional resources and data sources
 - better test coverage(unit/acceptance)
+- figure out if/how <https://github.frangipane.io/> fits this provider
 
 Especially the first bullet requires some discussion in terms of what makes
 sense and what doesn't.
 
 ## Items Done
 
+- added external connector data source
 - added group and user resources and data sources
 - basic acceptance tests
 - documentation (content, consistency)

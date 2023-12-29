@@ -22,7 +22,6 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestUsersDataSource(t *testing.T) {
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

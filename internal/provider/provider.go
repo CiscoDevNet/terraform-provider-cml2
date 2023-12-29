@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	d_extconn "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/extconn"
 	d_groups "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/groups"
 	d_images "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/images"
 	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
@@ -97,6 +98,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 		d_system.NewDataSource,
 		d_groups.NewDataSource,
 		d_users.NewDataSource,
+		d_extconn.NewDataSource,
 	}
 }
 

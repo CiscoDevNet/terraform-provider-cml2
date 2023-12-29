@@ -100,7 +100,6 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 }
 
 func TestAccLifecycleImportLab(t *testing.T) {
-
 	const (
 		initialAlpineConfig = "new config for alpine"
 		changedAlpineConfig = "changed config for alpine"
@@ -231,6 +230,27 @@ func TestAccLifecycleSequence(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleAddNodeToBooted(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, 0),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+				),
+			},
+			{
+				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, 1),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+				),
+			},
+		},
+	})
+}
+
 func testAccLifecyclekResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -254,6 +274,7 @@ resource "cml2_link" "l1" {
   node_a = cml2_node.r1.id
   node_b = cml2_node.r2.id
 }
+
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
 	elements = [
@@ -289,7 +310,15 @@ resource "cml2_lab" "this" {
 resource "cml2_node" "ext" {
   lab_id         = cml2_lab.this.id
   label          = "Internet"
+  configuration  = "NAT"
   nodedefinition = "external_connector"
+  tags           = [ "bla" ]
+}
+
+resource "cml2_node" "ums" {
+  lab_id         = cml2_lab.this.id
+  label          = "Unmanaged Switch"
+  nodedefinition = "unmanaged_switch"
   tags           = [ "bla" ]
 }
 
@@ -309,15 +338,24 @@ resource "cml2_node" "r2" {
 resource "cml2_link" "l1" {
   lab_id = cml2_lab.this.id
   node_a = cml2_node.ext.id
+  node_b = cml2_node.ums.id
+}
+
+resource "cml2_link" "l2" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
   node_b = cml2_node.r1.id
 }
+
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
 	elements = [
 		cml2_node.ext.id,
+		cml2_node.ums.id,
 		cml2_node.r1.id,
 		cml2_node.r2.id,
 		cml2_link.l1.id,
+		cml2_link.l2.id,
 	]
 	staging = {
 		stages = [ "bla" ]
@@ -402,4 +440,148 @@ resource "cml2_lab" "this" {
 	title = "labimport"
 }
 `, cfg)
+}
+
+func testAccLifecycleAddNodeToBooted(cfg string, stage int) string {
+	if stage == 0 {
+		return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+	title = "lifecycle add node to booted"
+}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  configuration  = "NAT"
+  nodedefinition = "external_connector"
+}
+
+resource "cml2_node" "ums" {
+  lab_id         = cml2_lab.this.id
+  label          = "Unmanaged Switch"
+  nodedefinition = "unmanaged_switch"
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.this.id
+  label          = "R1"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.this.id
+  label          = "R2"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_link" "l0" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ext.id
+  node_b = cml2_node.ums.id
+}
+
+resource "cml2_link" "l1" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r1.id
+}
+
+resource "cml2_link" "l2" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r2.id
+}
+
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	elements = [
+		cml2_node.ext.id,
+		cml2_node.ums.id,
+		cml2_node.r1.id,
+		cml2_node.r2.id,
+		cml2_link.l0.id,
+		cml2_link.l1.id,
+		cml2_link.l2.id,
+	]
+}
+	`, cfg)
+	} else {
+		return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+	title = "lifecycle add node to booted"
+}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  configuration  = "NAT"
+  nodedefinition = "external_connector"
+}
+
+resource "cml2_node" "ums" {
+  lab_id         = cml2_lab.this.id
+  label          = "Unmanaged Switch"
+  nodedefinition = "unmanaged_switch"
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.this.id
+  label          = "R1"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.this.id
+  label          = "R2"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_node" "r3" {
+  lab_id         = cml2_lab.this.id
+  label          = "R3"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_link" "l0" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ext.id
+  node_b = cml2_node.ums.id
+}
+
+resource "cml2_link" "l1" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r1.id
+}
+
+resource "cml2_link" "l2" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r2.id
+}
+
+resource "cml2_link" "l3" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r3.id
+}
+
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	elements = [
+		cml2_node.ext.id,
+		cml2_node.ums.id,
+		cml2_node.r1.id,
+		cml2_node.r2.id,
+		cml2_node.r3.id,
+		cml2_link.l0.id,
+		cml2_link.l1.id,
+		cml2_link.l2.id,
+		cml2_link.l3.id,
+	]
+}
+	`, cfg)
+	}
 }

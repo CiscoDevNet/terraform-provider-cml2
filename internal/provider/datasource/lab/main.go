@@ -16,8 +16,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ datasource.DataSource = &LabDataSource{}
-var _ datasource.DataSourceWithValidateConfig = &LabDataSource{}
+var (
+	_ datasource.DataSource                   = &LabDataSource{}
+	_ datasource.DataSourceWithValidateConfig = &LabDataSource{}
+)
 
 type LabDataSourceModel struct {
 	ID    types.String `tfsdk:"id"`

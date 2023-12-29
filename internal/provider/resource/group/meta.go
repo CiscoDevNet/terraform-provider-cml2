@@ -11,8 +11,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
-var _ resource.Resource = &GroupResource{}
-var _ resource.ResourceWithImportState = &GroupResource{}
+var (
+	_ resource.Resource                = &GroupResource{}
+	_ resource.ResourceWithImportState = &GroupResource{}
+)
 
 type GroupResource struct {
 	cfg *common.ProviderConfig

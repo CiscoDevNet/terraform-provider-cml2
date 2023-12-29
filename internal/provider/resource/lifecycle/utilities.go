@@ -89,7 +89,6 @@ func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Di
 }
 
 func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagnostics, start startData) {
-
 	// start all nodes at once, no staging
 	if start.staging == nil {
 		r.startNodesAll(ctx, diags, start)

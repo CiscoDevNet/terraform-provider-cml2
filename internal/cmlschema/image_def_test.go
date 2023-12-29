@@ -15,7 +15,6 @@ import (
 )
 
 var image *cmlclient.ImageDefinition = &cmlclient.ImageDefinition{
-
 	ID:            "22e72ed9-238f-4f8f-966f-4a5dc6b8de1a",
 	SchemaVersion: "0.0.1",
 	NodeDefID:     "testnodedef",

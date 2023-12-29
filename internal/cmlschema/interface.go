@@ -92,7 +92,6 @@ func Interface() map[string]schema.Attribute {
 }
 
 func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
-
 	ip4List := types.ListNull(types.StringType)
 	ip6List := types.ListNull(types.StringType)
 	var macAddress types.String

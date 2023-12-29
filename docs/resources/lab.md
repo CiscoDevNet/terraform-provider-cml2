@@ -93,5 +93,3 @@ Optional:
 Read-Only:
 
 - `name` (String) Descriptive group name.
-
-

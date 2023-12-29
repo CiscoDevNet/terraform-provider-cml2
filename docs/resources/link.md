@@ -34,5 +34,3 @@ A link resource represents a CML link. At create time, the lab ID, source and de
 - `label` (String) link label (auto generated).
 - `link_capture_key` (String) link capture key (when running).
 - `state` (String) Link state.
-
-

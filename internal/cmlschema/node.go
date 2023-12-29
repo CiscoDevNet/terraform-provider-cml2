@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -28,6 +29,7 @@ type NodeModel struct {
 	Tags            types.Set    `tfsdk:"tags"`
 	X               types.Int64  `tfsdk:"x"`
 	Y               types.Int64  `tfsdk:"y"`
+	HideLinks       types.Bool   `tfsdk:"hide_links"`
 	CPUs            types.Int64  `tfsdk:"cpus"`
 	CPUlimit        types.Int64  `tfsdk:"cpu_limit"`
 	RAM             types.Int64  `tfsdk:"ram"`
@@ -124,6 +126,7 @@ var NodeAttrType = map[string]attr.Type{
 	"tags":           types.SetType{ElemType: types.StringType},
 	"x":              types.Int64Type,
 	"y":              types.Int64Type,
+	"hide_links":     types.BoolType,
 	"cpus":           types.Int64Type,
 	"cpu_limit":      types.Int64Type,
 	"ram":            types.Int64Type,
@@ -134,14 +137,12 @@ var NodeAttrType = map[string]attr.Type{
 	"compute_id":     types.StringType,
 }
 
-var (
-	SerialDevicesAttrType = types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"console_key":   types.StringType,
-			"device_number": types.Int64Type,
-		},
-	}
-)
+var SerialDevicesAttrType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"console_key":   types.StringType,
+		"device_number": types.Int64Type,
+	},
+}
 
 func Node() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
@@ -231,6 +232,14 @@ func Node() map[string]schema.Attribute {
 			Optional:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
+			},
+		},
+		"hide_links": schema.BoolAttribute{
+			Description: "If true, links are not shown in the topology. This is a visual cue and does not influence any simulation function.",
+			Computed:    true,
+			Optional:    true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"ram": schema.Int64Attribute{
@@ -368,7 +377,6 @@ func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagno
 }
 
 func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
-
 	newNode := NodeModel{
 		ID:             types.StringValue(node.ID),
 		LabID:          types.StringValue(node.LabID),
@@ -380,6 +388,7 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),
 		Y:              types.Int64Value(int64(node.Y)),
+		HideLinks:      types.BoolValue(bool(node.HideLinks)),
 		SerialDevices:  newSerialDevices(ctx, node, diags),
 
 		// these values are null if unset

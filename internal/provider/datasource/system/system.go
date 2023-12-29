@@ -34,7 +34,7 @@ func NewDataSource() datasource.DataSource {
 	return &SystemDataSource{}
 }
 
-// ImagesDataSource defines the data source implementation.
+// SystemDataSource defines the data source implementation.
 type SystemDataSource struct {
 	cfg *common.ProviderConfig
 }

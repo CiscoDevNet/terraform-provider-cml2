@@ -48,5 +48,3 @@ resource "cml2_user" "student1" {
 - `id` (String) User ID (UUID).
 - `labs` (Set of String) Set of lab IDs the user owns.
 - `opt_in` (Boolean) True if has opted in to sending telemetry data.
-
-

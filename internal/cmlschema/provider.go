@@ -19,7 +19,6 @@ type ProviderModel struct {
 
 func Provider() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-
 		"address": schema.StringAttribute{
 			MarkdownDescription: "CML2 controller address, must start with `https://`.",
 			Required:            true,
