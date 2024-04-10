@@ -124,7 +124,7 @@ resource "cml2_node" "ext" {
   resource "cml2_node" "nat1" {
 	lab_id         = cml2_lab.devnet-expert.id
 	label          = "NAT"
-	nodedefinition = "iosv"
+	nodedefinition = "iol-xe"
   }
 
   resource "cml2_node" "ums1" {
