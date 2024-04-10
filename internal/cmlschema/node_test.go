@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	// "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"

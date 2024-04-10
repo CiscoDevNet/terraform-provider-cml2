@@ -15,10 +15,10 @@ import (
 )
 
 var conn1 *cmlclient.ExtConn = &cmlclient.ExtConn{
-	Label:        "NAT",
+	Label:      "NAT",
 	DeviceName: "virbr0",
-	Protected: false,
-	Snooped: true,
+	Protected:  false,
+	Snooped:    true,
 	Tags: []string{
 		"NAT",
 	},
@@ -26,10 +26,10 @@ var conn1 *cmlclient.ExtConn = &cmlclient.ExtConn{
 }
 
 var conn2 *cmlclient.ExtConn = &cmlclient.ExtConn{
-	Label:        "System Bridge",
+	Label:      "System Bridge",
 	DeviceName: "bridge0",
-	Protected: true,
-	Snooped: true,
+	Protected:  true,
+	Snooped:    true,
 	Tags: []string{
 		"System Bridge",
 	},
