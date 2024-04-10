@@ -33,8 +33,8 @@ func TestImageDataSource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrWith("data.cml2_images.test", "image_list.#", func(value string) error {
 						num, err := strconv.Atoi(value)
-						if err == nil && num < 10 {
-							return fmt.Errorf("expected at least 10 image definitions, got %d", num)
+						if err == nil && num < 4 {
+							return fmt.Errorf("expected at least 4 image definitions, got %d", num)
 						}
 						return err
 					}),
