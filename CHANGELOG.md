@@ -2,6 +2,12 @@
 
 Lists the changes in the provider.
 
+## Version 0.7.1
+
+- no functional changes, pulled in latest updates for various libraries
+- removed github.com/hashicorp/terraform-plugin-sdk/v2 as a direct dependency,
+  use TF framework testing module instead of SDK v2 testing module
+
 ## Version 0.7.0
 
 - added support for "hide links" node resource property, fixes #80

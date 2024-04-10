@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	cml "github.com/rschmied/terraform-provider-cml2/internal/provider"
 	cfg "github.com/rschmied/terraform-provider-cml2/internal/testing"
 )
@@ -124,7 +124,7 @@ resource "cml2_node" "ext" {
   resource "cml2_node" "nat1" {
 	lab_id         = cml2_lab.devnet-expert.id
 	label          = "NAT"
-	nodedefinition = "iosv"
+	nodedefinition = "iol-xe"
   }
 
   resource "cml2_node" "ums1" {
