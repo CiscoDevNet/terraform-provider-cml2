@@ -205,6 +205,21 @@ func TestAccNodeResourceNullConfig(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceCRLFconfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigCRLF(cfg.Cfg),
+			},
+			{
+				RefreshState: true,
+			},
+		},
+	})
+}
+
 func TestAccNodeResourceExtConn(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -438,6 +453,20 @@ resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
 	nodedefinition = "alpine"
+}
+`, cfg)
+}
+
+func testAccNodeResourceConfigCRLF(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+	configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
 }
 `, cfg)
 }
