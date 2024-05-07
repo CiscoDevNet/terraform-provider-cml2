@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	cmlclient "github.com/rschmied/gocmlclient"
@@ -123,7 +124,9 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			// ums-b843d547-54.
 			// As an alternative, all configurations could be set to "Unknown"
 			if node.NodeDefinition.ValueString() == "unmanaged_switch" {
-				node.Configuration = types.StringUnknown()
+				node.Configuration = cmlschema.Config{
+					StringValue: basetypes.NewStringUnknown(),
+				}
 			}
 
 			var ifaces []cmlschema.InterfaceModel

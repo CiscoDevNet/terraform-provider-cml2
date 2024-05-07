@@ -24,7 +24,7 @@ type NodeModel struct {
 	State           types.String `tfsdk:"state"`
 	NodeDefinition  types.String `tfsdk:"nodedefinition"`
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
-	Configuration   types.String `tfsdk:"configuration"`
+	Configuration   Config       `tfsdk:"configuration"`
 	Interfaces      types.List   `tfsdk:"interfaces"`
 	Tags            types.Set    `tfsdk:"tags"`
 	X               types.Int64  `tfsdk:"x"`
@@ -117,7 +117,7 @@ var NodeAttrType = map[string]attr.Type{
 	"state":           types.StringType,
 	"nodedefinition":  types.StringType,
 	"imagedefinition": types.StringType,
-	"configuration":   types.StringType,
+	"configuration":   ConfigType{},
 	"interfaces": types.ListType{
 		ElemType: types.ObjectType{
 			AttrTypes: InterfaceAttrType,
@@ -210,6 +210,7 @@ func Node() map[string]schema.Attribute {
 		},
 		"configuration": schema.StringAttribute{
 			Description: "Node configuration. Can be changed until the node is started once. Will require a replace in that case.",
+			CustomType:  ConfigType{},
 			Computed:    true,
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
@@ -333,7 +334,7 @@ func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag
 	return value
 }
 
-func newTags(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.Set {
+func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.Set {
 	// Node tags can't be null, there's always a set of tags, even if it's empty
 	valueSet := make([]attr.Value, 0)
 	for _, tag := range node.Tags {
@@ -383,13 +384,15 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		Label:          types.StringValue(node.Label),
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
-		Configuration:  types.StringPointerValue(node.Configuration),
-		Interfaces:     newInterfaces(ctx, node, diags),
-		Tags:           newTags(ctx, node, diags),
-		X:              types.Int64Value(int64(node.X)),
-		Y:              types.Int64Value(int64(node.Y)),
-		HideLinks:      types.BoolValue(bool(node.HideLinks)),
-		SerialDevices:  newSerialDevices(ctx, node, diags),
+		Configuration: Config{
+			StringValue: types.StringPointerValue(node.Configuration),
+		},
+		Interfaces:    newInterfaces(ctx, node, diags),
+		Tags:          newTags(ctx, node, diags),
+		X:             types.Int64Value(int64(node.X)),
+		Y:             types.Int64Value(int64(node.Y)),
+		HideLinks:     types.BoolValue(bool(node.HideLinks)),
+		SerialDevices: newSerialDevices(ctx, node, diags),
 
 		// these values are null if unset
 		VNCkey:          types.StringNull(),
