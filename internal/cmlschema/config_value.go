@@ -58,3 +58,31 @@ func (v Config) StringSemanticEquals(ctx context.Context, newValuable basetypes.
 	newCfg := strings.ReplaceAll(newConfig.ValueString(), "\r\n", "\n")
 	return newCfg == oldCfg, diags
 }
+
+// NewConfigNull creates a Config with a null value. Determine whether the value is null via IsNull method.
+func NewConfigNull() Config {
+	return Config{
+		StringValue: basetypes.NewStringNull(),
+	}
+}
+
+// NewConfigUnknown creates a Config with an unknown value. Determine whether the value is unknown via IsUnknown method.
+func NewConfigUnknown() Config {
+	return Config{
+		StringValue: basetypes.NewStringUnknown(),
+	}
+}
+
+// NewConfigValue creates a Config with a known value. Access the value via ValueString method.
+func NewConfigValue(value string) Config {
+	return Config{
+		StringValue: basetypes.NewStringValue(value),
+	}
+}
+
+// NewConfigPointerValue creates a Config with a null value if nil or a known value. Access the value via ValueStringPointer method.
+func NewConfigPointerValue(value *string) Config {
+	return Config{
+		StringValue: basetypes.NewStringPointerValue(value),
+	}
+}

@@ -384,15 +384,13 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		Label:          types.StringValue(node.Label),
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
-		Configuration: Config{
-			StringValue: types.StringPointerValue(node.Configuration),
-		},
-		Interfaces:    newInterfaces(ctx, node, diags),
-		Tags:          newTags(ctx, node, diags),
-		X:             types.Int64Value(int64(node.X)),
-		Y:             types.Int64Value(int64(node.Y)),
-		HideLinks:     types.BoolValue(bool(node.HideLinks)),
-		SerialDevices: newSerialDevices(ctx, node, diags),
+		Configuration:  NewConfigPointerValue(node.Configuration),
+		Interfaces:     newInterfaces(ctx, node, diags),
+		Tags:           newTags(ctx, node, diags),
+		X:              types.Int64Value(int64(node.X)),
+		Y:              types.Int64Value(int64(node.Y)),
+		HideLinks:      types.BoolValue(bool(node.HideLinks)),
+		SerialDevices:  newSerialDevices(ctx, node, diags),
 
 		// these values are null if unset
 		VNCkey:          types.StringNull(),
