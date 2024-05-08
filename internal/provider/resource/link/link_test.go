@@ -74,6 +74,22 @@ func TestAccLifecycleResourceDaniel(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleResourceSlotChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
+			},
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccLinkResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -157,4 +173,41 @@ resource "cml2_node" "ext" {
 	node_b = cml2_node.cws1.id
   }
   `, cfg)
+}
+
+func testAccLinkResourceConfigSlotChange(cfg string, step int) string {
+	var slotA, slotB int
+	if step == 0 {
+		slotA = 0
+		slotB = 0
+	} else {
+		slotA = 1
+		slotB = 2
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+}
+resource "cml2_node" "r2" {
+	lab_id         = cml2_lab.test.id
+	label          = "r2"
+	nodedefinition = "alpine"
+}
+resource "cml2_link" "l0" {
+	lab_id = cml2_lab.test.id
+	node_a = cml2_node.r1.id
+	node_b = cml2_node.r2.id
+	slot_a = %[2]d
+	slot_b = %[3]d
+}
+data "cml2_node" "r1" {
+	id = cml2_node.r1.id
+	lab_id = cml2_lab.test.id
+}
+`, cfg, slotA, slotB)
 }
