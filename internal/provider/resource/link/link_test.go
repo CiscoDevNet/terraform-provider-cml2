@@ -74,6 +74,51 @@ func TestAccLifecycleResourceDaniel(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleResourceSlotChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// create a link, not specifying any slots
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "0"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "0"),
+				),
+			},
+			// modify the slots for this link, this needs to create a plan change
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			// apply this change
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+			},
+			// change the config back to not specifying any links, should still be
+			// the same.
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func testAccLinkResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -157,4 +202,41 @@ resource "cml2_node" "ext" {
 	node_b = cml2_node.cws1.id
   }
   `, cfg)
+}
+
+func testAccLinkResourceConfigSlotChange(cfg string, step int) string {
+	var slotCfg string
+	if step == 0 {
+		slotCfg = ""
+	} else {
+		slotCfg = `
+          slot_a = 1
+          slot_b = 2
+		`
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "ioll2-xe"
+}
+resource "cml2_node" "r2" {
+	lab_id         = cml2_lab.test.id
+	label          = "r2"
+	nodedefinition = "ioll2-xe"
+}
+resource "cml2_link" "l0" {
+	lab_id = cml2_lab.test.id
+	node_a = cml2_node.r1.id
+	node_b = cml2_node.r2.id
+	%[2]s
+}
+data "cml2_node" "r1" {
+	id = cml2_node.r1.id
+	lab_id = cml2_lab.test.id
+}
+`, cfg, slotCfg)
 }

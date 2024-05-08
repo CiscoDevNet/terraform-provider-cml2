@@ -3,6 +3,7 @@ package link
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -30,15 +31,12 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		return
 	}
 
-	// these are the fields which are optional and computed... if they are
-	// specified, then we need to copy over the state data into the plan
-
-	if !stateData.SlotA.IsUnknown() {
-		planData.SlotA = stateData.SlotA
+	if !stateData.SlotA.Equal(planData.SlotA) {
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_a"))
 	}
 
-	if !stateData.SlotB.IsUnknown() {
-		planData.SlotB = stateData.SlotB
+	if !stateData.SlotB.Equal(planData.SlotB) {
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_b"))
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
