@@ -81,9 +81,18 @@ func TestAccLifecycleResourceSlotChange(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "0"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "0"),
+				),
 			},
 			{
 				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 		},
@@ -191,12 +200,12 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "ioll2-xe"
 }
 resource "cml2_node" "r2" {
 	lab_id         = cml2_lab.test.id
 	label          = "r2"
-	nodedefinition = "alpine"
+	nodedefinition = "ioll2-xe"
 }
 resource "cml2_link" "l0" {
 	lab_id = cml2_lab.test.id
