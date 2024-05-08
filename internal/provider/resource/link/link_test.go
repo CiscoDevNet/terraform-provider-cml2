@@ -185,13 +185,14 @@ resource "cml2_node" "ext" {
 }
 
 func testAccLinkResourceConfigSlotChange(cfg string, step int) string {
-	var slotA, slotB int
+	var slotCfg string
 	if step == 0 {
-		slotA = 0
-		slotB = 0
+		slotCfg = ""
 	} else {
-		slotA = 1
-		slotB = 2
+		slotCfg = `
+          slot_a = 1
+          slot_b = 2
+		`
 	}
 	return fmt.Sprintf(`
 %[1]s
@@ -211,12 +212,11 @@ resource "cml2_link" "l0" {
 	lab_id = cml2_lab.test.id
 	node_a = cml2_node.r1.id
 	node_b = cml2_node.r2.id
-	slot_a = %[2]d
-	slot_b = %[3]d
+	%[2]s
 }
 data "cml2_node" "r1" {
 	id = cml2_node.r1.id
 	lab_id = cml2_lab.test.id
 }
-`, cfg, slotA, slotB)
+`, cfg, slotCfg)
 }
