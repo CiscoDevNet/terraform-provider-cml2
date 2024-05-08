@@ -118,7 +118,7 @@ resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.devnet-expert.id
 	nodedefinition = "external_connector"
 	label          = "Internet"
-	configuration  = "bridge0"
+	configuration  = "NAT"
   }
 
   resource "cml2_node" "nat1" {

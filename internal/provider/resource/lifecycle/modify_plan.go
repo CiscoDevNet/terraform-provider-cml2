@@ -123,7 +123,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			// ums-b843d547-54.
 			// As an alternative, all configurations could be set to "Unknown"
 			if node.NodeDefinition.ValueString() == "unmanaged_switch" {
-				node.Configuration = types.StringUnknown()
+				node.Configuration = cmlschema.NewConfigUnknown()
 			}
 
 			var ifaces []cmlschema.InterfaceModel
