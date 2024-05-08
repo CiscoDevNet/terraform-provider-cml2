@@ -79,6 +79,7 @@ func TestAccLifecycleResourceSlotChange(t *testing.T) {
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
+			// create a link, not specifying any slots
 			{
 				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
 				Check: resource.ComposeTestCheckFunc(
@@ -86,6 +87,7 @@ func TestAccLifecycleResourceSlotChange(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "0"),
 				),
 			},
+			// modify the slots for this link, this needs to create a plan change
 			{
 				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
 				Check: resource.ComposeTestCheckFunc(
@@ -94,6 +96,24 @@ func TestAccLifecycleResourceSlotChange(t *testing.T) {
 				),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+			// apply this change
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+			},
+			// change the config back to not specifying any links, should still be
+			// the same.
+			{
+				Config: testAccLinkResourceConfigSlotChange(cfg.Cfg, 0),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_a", "1"),
+					resource.TestCheckResourceAttr("cml2_link.l0", "slot_b", "2"),
+				),
+				PlanOnly: true,
 			},
 		},
 	})

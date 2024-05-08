@@ -39,17 +39,6 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_b"))
 	}
 
-	// these are the fields which are optional and computed... if they are
-	// specified, then we need to copy over the state data into the plan
-
-	if !stateData.SlotA.IsUnknown() && planData.SlotA.IsUnknown() {
-		planData.SlotA = stateData.SlotA
-	}
-
-	if !stateData.SlotB.IsUnknown() && planData.SlotB.IsUnknown() {
-		planData.SlotB = stateData.SlotB
-	}
-
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 	tflog.Info(ctx, "Resource Link MODIFYPLAN done")
 }
