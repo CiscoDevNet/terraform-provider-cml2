@@ -2,6 +2,12 @@
 
 Lists the changes in the provider.
 
+## Version 0.8.0
+
+- replace link resource when changing link slots (#95)
+- update dependencies
+- run acceptance tests with 1.7 and 1.8 instead of 1.4 and 1.6
+
 ## Version 0.7.1
 
 - no functional changes, pulled in latest updates for various libraries
