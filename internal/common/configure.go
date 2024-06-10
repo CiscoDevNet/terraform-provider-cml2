@@ -86,9 +86,9 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if r.data.UseCache.IsNull() {
 		r.data.UseCache = types.BoolValue(false)
 	} else if r.data.UseCache.ValueBool() {
-		diag.AddWarning(
-			"Experimental feature enabled",
-			"\"use_cache\" is considered experimental and may not work as expected; use with care",
+		diag.AddError(
+			"Experimental feature deprecated",
+			"\"use_cache\" has been deprecated",
 		)
 	}
 
@@ -96,7 +96,6 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	client := cmlclient.New(
 		r.data.Address.ValueString(),
 		r.data.SkipVerify.ValueBool(),
-		r.data.UseCache.ValueBool(),
 	)
 	if len(r.data.Username.ValueString()) > 0 {
 		client.SetUsernamePassword(

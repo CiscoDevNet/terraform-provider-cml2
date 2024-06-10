@@ -168,8 +168,6 @@ github.com/posener/complete v1.2.3 h1:NP0eAhjcjImqslEwo/1hq7gpajME0fTLTezBKDqfXq
 github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSgv7Sy7s/s=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
-github.com/rschmied/gocmlclient v0.0.23 h1:NJyE60aiKVyFOykWoZCYhC27j5arJuVSVvWEvHmbgBA=
-github.com/rschmied/gocmlclient v0.0.23/go.mod h1:L5GpDDuHVHFddNOe9vB9n10V9u8XCAmzmXZjD2CVpLs=
 github.com/rschmied/mockresponder v1.0.4 h1:VFXa9Y9QJ/5oZFhKoqh9u3HQlbjcBfE9pxI+BanMlEs=
 github.com/rschmied/mockresponder v1.0.4/go.mod h1:+EEq2xxKOQNbJTTvfqmjYh1zPPCKnZBthHzaZAJSExg=
 github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 h1:n661drycOFuPLCN3Uc8sB6B/s6Z4t2xvBgU1htSHuq8=

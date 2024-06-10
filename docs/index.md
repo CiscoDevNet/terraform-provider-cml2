@@ -44,11 +44,8 @@ provider "cml2" {
   # (defaults to false, it will be verified)
   # skip_verify = true
 
-  # should the API client cache responses?
-  # this will improve performance but isn't guaranteed
-  # to work for all scenarios
-  # (defaults to false, no caching is done)
-  # use_cache = true
+  # this is deprecated!
+  # use_cache = false
 }
 ```
 
@@ -66,5 +63,5 @@ provider "cml2" {
 - `password` (String, Sensitive) CML2 password.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
-- `use_cache` (Boolean) Enables the client cache, this is considered experimental (default is false -- will not use the cache!)
+- `use_cache` (Boolean, Deprecated) Enables the client cache, **Deprecated**
 - `username` (String) CML2 username.

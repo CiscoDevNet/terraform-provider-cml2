@@ -46,7 +46,8 @@ func Provider() map[string]schema.Attribute {
 			Optional:    true,
 		},
 		"use_cache": schema.BoolAttribute{
-			Description: "Enables the client cache, this is considered experimental (default is false -- will not use the cache!)",
+			Description: "Enables the client cache, **Deprecated**",
+			DeprecationMessage: "This has been deprecated, wasn't really useful and potentially buggy",
 			Optional:    true,
 		},
 		"dynamic_config": schema.BoolAttribute{

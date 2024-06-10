@@ -19,9 +19,6 @@ provider "cml2" {
   # (defaults to false, it will be verified)
   # skip_verify = true
 
-  # should the API client cache responses?
-  # this will improve performance but isn't guaranteed
-  # to work for all scenarios
-  # (defaults to false, no caching is done)
-  # use_cache = true
+  # this is deprecated!
+  # use_cache = false
 }
