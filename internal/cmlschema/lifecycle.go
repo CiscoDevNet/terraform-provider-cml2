@@ -13,17 +13,18 @@ import (
 )
 
 type LabLifecycleModel struct {
-	ID       types.String `tfsdk:"id"`
-	LabID    types.String `tfsdk:"lab_id"`
-	Topology types.String `tfsdk:"topology"`
-	Wait     types.Bool   `tfsdk:"wait"`
-	State    types.String `tfsdk:"state"`
-	Booted   types.Bool   `tfsdk:"booted"`
-	Nodes    types.Map    `tfsdk:"nodes"`
-	Configs  types.Map    `tfsdk:"configs"`
-	Staging  types.Object `tfsdk:"staging"`
-	Timeouts types.Object `tfsdk:"timeouts"`
-	Elements types.List   `tfsdk:"elements"`
+	ID           types.String `tfsdk:"id"`
+	LabID        types.String `tfsdk:"lab_id"`
+	Topology     types.String `tfsdk:"topology"`
+	Wait         types.Bool   `tfsdk:"wait"`
+	State        types.String `tfsdk:"state"`
+	Booted       types.Bool   `tfsdk:"booted"`
+	Nodes        types.Map    `tfsdk:"nodes"`
+	Configs      types.Map    `tfsdk:"configs"`
+	NamedConfigs types.Map    `tfsdk:"named_configs"`
+	Staging      types.Object `tfsdk:"staging"`
+	Timeouts     types.Object `tfsdk:"timeouts"`
+	Elements     types.List   `tfsdk:"elements"`
 }
 
 func Lifecycle() map[string]schema.Attribute {
@@ -87,6 +88,14 @@ func Lifecycle() map[string]schema.Attribute {
 			Description: "Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.",
 			Optional:    true,
 			ElementType: types.StringType,
+			PlanModifiers: []planmodifier.Map{
+				mapplanmodifier.RequiresReplace(),
+			},
+		},
+		"named_configs": schema.MapAttribute{
+			Description: "Map of named node configurations to store into nodes, the key is the label of the node, the value is the node configuration.",
+			Optional:    true,
+			ElementType: types.ListType{ElemType: NamedConfigAttrType},
 			PlanModifiers: []planmodifier.Map{
 				mapplanmodifier.RequiresReplace(),
 			},

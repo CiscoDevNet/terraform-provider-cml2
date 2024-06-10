@@ -25,6 +25,7 @@ type NodeModel struct {
 	NodeDefinition  types.String `tfsdk:"nodedefinition"`
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
 	Configuration   Config       `tfsdk:"configuration"`
+	Configurations  types.List   `tfsdk:"configurations"`
 	Interfaces      types.List   `tfsdk:"interfaces"`
 	Tags            types.Set    `tfsdk:"tags"`
 	X               types.Int64  `tfsdk:"x"`
@@ -118,6 +119,9 @@ var NodeAttrType = map[string]attr.Type{
 	"nodedefinition":  types.StringType,
 	"imagedefinition": types.StringType,
 	"configuration":   ConfigType{},
+	"configurations": types.ListType{
+		ElemType: NamedConfigAttrType,
+	},
 	"interfaces": types.ListType{
 		ElemType: types.ObjectType{
 			AttrTypes: InterfaceAttrType,
@@ -135,6 +139,13 @@ var NodeAttrType = map[string]attr.Type{
 	"vnc_key":        types.StringType,
 	"serial_devices": types.ListType{ElemType: SerialDevicesAttrType},
 	"compute_id":     types.StringType,
+}
+
+var NamedConfigAttrType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"name":    types.StringType,
+		"content": ConfigType{},
+	},
 }
 
 var SerialDevicesAttrType = types.ObjectType{
@@ -217,6 +228,15 @@ func Node() map[string]schema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 				// int64planmodifier.RequiresReplace(),
 				// replace is controlled in modify_plan()
+			},
+		},
+		"configurations": schema.ListAttribute{
+			Description: "List of node configurations. Can be changed until the node is started once. Will require a replace in that case.",
+			Computed:    true,
+			Optional:    true,
+			ElementType: NamedConfigAttrType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"x": schema.Int64Attribute{
@@ -343,6 +363,22 @@ func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) t
 	tags, dia := types.SetValue(types.StringType, valueSet)
 	diags.Append(dia...)
 	return tags
+}
+
+func newNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+	if len(node.Configurations) == 0 {
+		return types.ListNull(NamedConfigAttrType)
+	}
+	valueList := make([]attr.Value, 0)
+	for _, serial_device := range node.SerialDevices {
+		valueList = append(valueList, newSerialDevice(ctx, serial_device, diags))
+	}
+	serialDevices, dia := types.ListValue(
+		SerialDevicesAttrType,
+		valueList,
+	)
+	diags.Append(dia...)
+	return serialDevices
 }
 
 func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
