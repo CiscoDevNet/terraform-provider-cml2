@@ -152,6 +152,7 @@ func Lifecycle() map[string]schema.Attribute {
 			PlanModifiers: []planmodifier.List{
 				listplanmodifier.RequiresReplace(),
 			},
+			DeprecationMessage: "use depends_on instead",
 		},
 	}
 }
