@@ -28,6 +28,26 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// ensure named configs are only used when configured!
+	if len(data.Configurations.Elements()) > 0 && !r.cfg.UseNamedConfigs() {
+		resp.Diagnostics.AddError(
+			"Node config conflict",
+			"Provider option \"named_configs\" required to use named configurations!",
+		)
+		return
+	}
+
+	// tflog.Info(ctx, "CFG", map[string]any{"v": fmt.Sprintf("%+v", data.Configuration.IsUnknown())})
+
+	// can't configure both at the same time!
+	if len(data.Configurations.Elements()) > 0 && !data.Configuration.IsUnknown() {
+		resp.Diagnostics.AddError(
+			"Node config conflict",
+			"Can't provide both, configuration and configurations",
+		)
+		return
+	}
+
 	node := cmlclient.Node{}
 
 	node.LabID = data.LabID.ValueString()
@@ -47,10 +67,13 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	node.Tags = tags
 
-	if !data.Configuration.IsUnknown() {
+	if !(data.Configuration.IsUnknown()) {
 		value := data.Configuration.ValueString()
 		node.Configuration = &value
 	}
+
+	node.Configurations = setNamedConfigsFromData(ctx, resp.Diagnostics, data)
+
 	if !data.X.IsUnknown() {
 		node.X = int(data.X.ValueInt64())
 	}
@@ -80,13 +103,15 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// can't set a configuration for an unmanaged switch
-	if node.NodeDefinition == "unmanaged_switch" && !data.Configuration.IsUnknown() {
+	if node.NodeDefinition == "unmanaged_switch" && data.HasConfig() {
 		resp.Diagnostics.AddError(
 			"Unmanaged switch configuration",
 			"Can't provide UMS configuration",
 		)
 		return
 	}
+
+	// tflog.Info(ctx, "NODE", map[string]any{"v": fmt.Sprintf("%+v", node)})
 
 	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
 	if err != nil {
@@ -97,17 +122,23 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// WAS UNKNOWN??
+	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
+	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
+		newNode.Configuration = &newNode.Configurations[0].Content
+		newNode.Configurations = nil
+	}
+
 	// work around the fact that creating an external connector will "resolve"
 	// the device name (if given, worked in previous versions" with the
 	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We return an
 	// error in this case, otherwise we'd run into inconsistent state!
-	if node.NodeDefinition == "external_connector" && node.Configuration != nil && *newNode.Configuration != *node.Configuration {
+	if node.NodeDefinition == "external_connector" && !node.SameConfig(*newNode) {
 		resp.Diagnostics.AddError(
 			"External connector configuration",
-			fmt.Sprintf("provide proper external connector configuration, not a device name (deprecated). API returned %q, configured was %q!", *newNode.Configuration, *node.Configuration),
+			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated)."),
 		)
 		return
-		// newNode.Configuration = node.Configuration
 	}
 
 	resp.Diagnostics.Append(

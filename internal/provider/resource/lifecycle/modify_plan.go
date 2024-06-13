@@ -117,13 +117,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			}
 
 			// This is a bit of a hack since the node def name is hard coded
-			// here.  what happens is that UMS nodes get the bridge name as the
+			// here.  What happens is that UMS nodes get the bridge name as the
 			// configuration.  So, we start with no configuration and after
 			// start, the configuration is set to the name of the bridge, like
 			// ums-b843d547-54.
 			// As an alternative, all configurations could be set to "Unknown"
 			if node.NodeDefinition.ValueString() == "unmanaged_switch" {
 				node.Configuration = cmlschema.NewConfigUnknown()
+				node.Configurations = types.ListNull(cmlschema.NamedConfigAttrType)
 			}
 
 			var ifaces []cmlschema.InterfaceModel

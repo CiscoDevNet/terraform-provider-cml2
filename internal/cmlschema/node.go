@@ -46,6 +46,11 @@ type serialDeviceModel struct {
 	DeviceNumber types.Int64  `tfsdk:"device_number"`
 }
 
+type NamedConfigModel struct {
+	Name    types.String `tfsdk:"name"`
+	Content Config       `tfsdk:"content"`
+}
+
 // with simplified=true
 // {
 // 	"id": "a3f93420-69d5-4af8-b358-3ef93a97c763",
@@ -338,6 +343,22 @@ func Node() map[string]schema.Attribute {
 	}
 }
 
+func newNamedConfig(ctx context.Context, nc cmlclient.NodeConfig, diags *diag.Diagnostics) attr.Value {
+	namedConfig := NamedConfigModel{
+		Name:    types.StringValue(nc.Name),
+		Content: NewConfigValue(nc.Content),
+	}
+
+	var value attr.Value
+	diags.Append(tfsdk.ValueFrom(
+		ctx,
+		namedConfig,
+		NamedConfigAttrType,
+		&value,
+	)...)
+	return value
+}
+
 func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag.Diagnostics) attr.Value {
 	newSerialDevice := serialDeviceModel{
 		ConsoleKey:   types.StringValue(sd.ConsoleKey),
@@ -365,20 +386,20 @@ func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) t
 	return tags
 }
 
-func newNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+func NewNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {
 		return types.ListNull(NamedConfigAttrType)
 	}
 	valueList := make([]attr.Value, 0)
-	for _, serial_device := range node.SerialDevices {
-		valueList = append(valueList, newSerialDevice(ctx, serial_device, diags))
+	for _, named_config := range node.Configurations {
+		valueList = append(valueList, newNamedConfig(ctx, named_config, diags))
 	}
-	serialDevices, dia := types.ListValue(
-		SerialDevicesAttrType,
+	namedConfigs, dia := types.ListValue(
+		NamedConfigAttrType,
 		valueList,
 	)
 	diags.Append(dia...)
-	return serialDevices
+	return namedConfigs
 }
 
 func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
@@ -413,6 +434,10 @@ func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagno
 	return ifaces
 }
 
+func (nm NodeModel) HasConfig() bool {
+	return !(nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) == 0)
+}
+
 func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
 	newNode := NodeModel{
 		ID:             types.StringValue(node.ID),
@@ -421,6 +446,7 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
 		Configuration:  NewConfigPointerValue(node.Configuration),
+		Configurations: NewNamedConfigs(ctx, node, diags),
 		Interfaces:     newInterfaces(ctx, node, diags),
 		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),

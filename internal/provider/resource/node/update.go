@@ -66,6 +66,7 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			value := planData.Configuration.ValueString()
 			node.Configuration = &value
 		}
+		node.Configurations = setNamedConfigsFromData(ctx, resp.Diagnostics, planData)
 		if !planData.RAM.IsUnknown() {
 			node.RAM = int(planData.RAM.ValueInt64())
 		}
@@ -103,20 +104,24 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 	// the original value in this case, otherwise we run into inconsistent
 	// state!
 	if node.NodeDefinition == "external_connector" {
-		// tflog.Warn(ctx, "$$$", map[string]any{
-		// 	"plan_config": planData.Configuration.ValueString(),
-		// 	"state_config": stateData.Configuration.ValueString(),
-		// 	"old_config": *node.Configuration,
-		// 	"new_config": *newNode.Configuration,
-		// })
-		// if the state hasn't changed but it should have
-		if planData.Configuration.ValueString() != *newNode.Configuration {
+		// this is currently not needed but makes the provider a bit future
+		// proof in case external connectors have named configs eventually.
+		nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
+		if !planData.Configurations.Equal(nnc) {
 			resp.Diagnostics.AddError(
-				"External connector configuration",
-				fmt.Sprintf("provide proper external connector configuration, not a device name (deprecated). API returned %q, configured was %q!", *newNode.Configuration, *node.Configuration),
+				"External connector configurations",
+				fmt.Sprintf("Provide proper external connector configurations, not a device name (deprecated)."),
 			)
 			return
 		}
+	}
+
+	// when updating with named configs on, we need to move over the returned
+	// named config into the single configuration if it was previously used.
+	// tflog.Warn(ctx, "###u", map[string]any{"null": stateData.Configuration.IsNull(), "unknown": stateData.Configuration.IsUnknown(), "len": len(node.Configurations)})
+	if !stateData.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
+		newNode.Configuration = &newNode.Configurations[0].Content
+		newNode.Configurations = nil
 	}
 
 	resp.Diagnostics.Append(

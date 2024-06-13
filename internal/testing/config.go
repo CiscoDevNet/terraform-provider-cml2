@@ -13,12 +13,44 @@ variable "password" {
 	description = "CML controller password"
 	type        = string
 }
+variable "token" {
+	description = "CML controller JWT"
+	type        = string
+}
 provider "cml2" {
 	address = var.address
 	username = var.username
 	password = var.password
+	token = var.token
 	skip_verify = true
-	use_cache = false
+	named_configs = false
+}
+`
+
+var CfgNamedConfigs string = `
+variable "address" {
+	description = "CML controller address"
+	type        = string
+}
+variable "username" {
+	description = "CML controller username"
+	type        = string
+}
+variable "password" {
+	description = "CML controller password"
+	type        = string
+}
+variable "token" {
+	description = "CML controller JWT"
+	type        = string
+}
+provider "cml2" {
+	address = var.address
+	username = var.username
+	password = var.password
+	token = var.token
+	skip_verify = true
+	named_configs = true
 }
 `
 
@@ -41,6 +73,5 @@ provider "cml2" {
 	username = var.username
 	password = var.password
 	skip_verify = true
-	use_cache = false
 }
 `

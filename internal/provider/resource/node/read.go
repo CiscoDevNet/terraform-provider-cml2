@@ -37,6 +37,12 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	// tflog.Warn(ctx, "###1", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
+	if !data.Configuration.IsNull() && len(node.Configurations) > 0 {
+		node.Configuration = &node.Configurations[0].Content
+		node.Configurations = nil
+	}
+
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

@@ -24,6 +24,10 @@ func (r *ProviderConfig) Client() *cmlclient.Client {
 	return r.client
 }
 
+func (r *ProviderConfig) UseNamedConfigs() bool {
+	return r.data.NamedConfigs.ValueBool()
+}
+
 func (r *ProviderConfig) Lock() {
 	r.mu.Lock()
 }
@@ -75,12 +79,21 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if len(r.data.Address.ValueString()) == 0 {
 		diag.AddError(
 			"Required configuration missing",
-			"A server address must be configured to use th CML2 provider",
+			"A server address must be configured to use the CML2 provider",
 		)
 	}
 	if r.data.SkipVerify.IsNull() {
-		tflog.Warn(ctx, "unspecified certificate verification, will verify")
+		tflog.Warn(ctx, "Unspecified certificate verification, will verify")
 		r.data.SkipVerify = types.BoolValue(false)
+	}
+
+	if r.data.NamedConfigs.IsNull() {
+		r.data.NamedConfigs = types.BoolValue(false)
+	} else if r.data.NamedConfigs.ValueBool() {
+		diag.AddWarning(
+			"Feature",
+			"\"named_configs\" is enabled",
+		)
 	}
 
 	if r.data.UseCache.IsNull() {
@@ -106,7 +119,10 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if len(r.data.Token.ValueString()) > 0 {
 		client.SetToken(r.data.Token.ValueString())
 	}
-
+	if r.data.NamedConfigs.ValueBool() {
+		tflog.Warn(ctx, "Want to use named configurations")
+		client.UseNamedConfigs()
+	}
 	if len(r.data.CAcert.ValueString()) > 0 {
 		err := client.SetCACert([]byte(r.data.CAcert.ValueString()))
 		if err != nil {
