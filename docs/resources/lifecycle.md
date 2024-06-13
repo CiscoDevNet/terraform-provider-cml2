@@ -143,7 +143,7 @@ output "r1_ip_address" {
 ### Optional
 
 - `configs` (Map of String) Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
-- `elements` (List of String) List of node and link IDs the lab consists of. Works only when a (lab) ID is provided and no topology is configured.
+- `elements` (List of String, Deprecated) List of node and link IDs the lab consists of. Works only when a (lab) ID is provided and no topology is configured.
 - `lab_id` (String) Lab identifier, a UUID. If set, `elements` must be configured as well.
 - `named_configs` (Map of List of Object) Map of named node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
 - `staging` (Attributes) Defines in what sequence nodes are launched. (see [below for nested schema](#nestedatt--staging))
