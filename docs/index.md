@@ -60,6 +60,7 @@ provider "cml2" {
 
 - `cacert` (String) A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.
 - `dynamic_config` (Boolean) Does late binding of the provider configuration. If set to `true` then provider configuration errors will only be caught when resources and data sources are actually created/read. Defaults to `false`
+- `named_configs` (Boolean) Enables the use of named configs (CML version >2.7.0 required!)
 - `password` (String, Sensitive) CML2 password.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
