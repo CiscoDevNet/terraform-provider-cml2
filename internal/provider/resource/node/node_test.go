@@ -285,7 +285,7 @@ func TestAccNodeResourceNamedConfigErr(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceNamedConfigErr(cfg.CfgNamedConfigs),
+				Config:      testAccNodeResourceNamedConfigErr(cfg.CfgNamedConfigs),
 				ExpectError: regexp.MustCompile("Can't provide both"),
 			},
 		},
@@ -298,7 +298,7 @@ func TestAccNodeResourceNamedConfigErr2(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceNamedConfig(cfg.Cfg),
+				Config:      testAccNodeResourceNamedConfig(cfg.Cfg),
 				ExpectError: regexp.MustCompile("Provider option.*required"),
 			},
 		},
@@ -334,6 +334,18 @@ func TestAccNodeResourceNamedConfigWithSingleConfig(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceUMSconfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccNodeResourceConfigUMS(cfg.Cfg),
+				ExpectError: regexp.MustCompile("Can't provide UMS configuration"),
+			},
+		},
+	})
+}
 
 func testAccNodeResourceConfigNodeDefExtConn(cfg, extconnname string) string {
 	var config string
@@ -544,6 +556,7 @@ resource "cml2_node" "r1" {
 }
 `, cfg)
 }
+
 func testAccNodeResourceNamedConfigErr(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -583,3 +596,16 @@ resource "cml2_node" "r1" {
 `, cfg, cfgStr)
 }
 
+func testAccNodeResourceConfigUMS(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "ums" {
+	lab_id         = cml2_lab.test.id
+	label          = "ums0"
+	configuration  = "illegal"
+	nodedefinition = "unmanaged_switch"
+}
+`, cfg)
+}

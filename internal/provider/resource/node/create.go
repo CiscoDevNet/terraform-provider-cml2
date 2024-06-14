@@ -103,6 +103,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// can't set a configuration for an unmanaged switch
+	// tflog.Warn(ctx, "##UMS", map[string]any{"has_config": data.HasConfig(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
 	if node.NodeDefinition == "unmanaged_switch" && data.HasConfig() {
 		resp.Diagnostics.AddError(
 			"Unmanaged switch configuration",

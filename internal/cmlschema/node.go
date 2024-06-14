@@ -435,7 +435,7 @@ func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagno
 }
 
 func (nm NodeModel) HasConfig() bool {
-	return !(nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) == 0)
+	return !nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) > 0
 }
 
 func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
