@@ -79,7 +79,8 @@ func TestAccLifecycleImport(t *testing.T) {
 }
 
 func TestAccLifecycleConfigCheck(t *testing.T) {
-	re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
+	// this was deprecated and replaced by depends_on with 0.1.0
+	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
 	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
 
 	resource.Test(t, resource.TestCase{
@@ -87,10 +88,10 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
-			{
-				Config:      testAccLifecycleConfigCheck(cfg.Cfg, false),
-				ExpectError: re1,
-			},
+			// {
+			// 	Config:      testAccLifecycleConfigCheck(cfg.Cfg, false),
+			// 	ExpectError: re1,
+			// },
 			{
 				Config:      testAccLifecycleConfigCheck(cfg.Cfg, true),
 				ExpectError: re2,
