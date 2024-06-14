@@ -44,11 +44,20 @@ provider "cml2" {
   # (defaults to false, it will be verified)
   # skip_verify = true
 
-  # should the API client cache responses?
-  # this will improve performance but isn't guaranteed
-  # to work for all scenarios
-  # (defaults to false, no caching is done)
-  # use_cache = true
+  # this configuration option is deprecated with 0.8.0
+  # use_cache = false
+
+  # dynamic_config allows to initiate a provider with an incomplete config. For
+  # example, the address/URL might only be known later, coming from another
+  # module. This is being used in cloud-cml where Terraform provisions a CML VM
+  # in the cloud and uses the result of that provisioning process to configure
+  # the CML Terraform provider to talk to that instance.
+  dynamic_config = false
+
+  # named configs was introduced w/ 0.8.0 and CML 2.7.0, the default is false
+  # enable this to provide multiple day0 configurations, the Cat 9000v is a
+  # device that supports this to provide a unique serial number per device.
+  named_configs = false
 }
 ```
 
@@ -63,8 +72,9 @@ provider "cml2" {
 
 - `cacert` (String) A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.
 - `dynamic_config` (Boolean) Does late binding of the provider configuration. If set to `true` then provider configuration errors will only be caught when resources and data sources are actually created/read. Defaults to `false`
+- `named_configs` (Boolean) Enables the use of named configs (CML version >2.7.0 required!)
 - `password` (String, Sensitive) CML2 password.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
-- `use_cache` (Boolean) Enables the client cache, this is considered experimental (default is false -- will not use the cache!)
+- `use_cache` (Boolean, Deprecated) Enables the client cache, **Deprecated**
 - `username` (String) CML2 username.

@@ -69,7 +69,13 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	// })
 
 	if nodeExists && !stateData.Configuration.Equal(planData.Configuration) {
+		// tflog.Info(ctx, "$$$1")
 		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configuration"))
+	}
+
+	if nodeExists && !stateData.Configurations.Equal(planData.Configurations) {
+		// tflog.Info(ctx, "$$$2")
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configurations"))
 	}
 
 	if !configData.ImageDefinition.IsNull() && !configData.ImageDefinition.Equal(stateData.ImageDefinition) {

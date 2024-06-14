@@ -75,12 +75,24 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 		)
 		return
 	}
+
+	// deprecated, June 2024, can't enforce this:
+	//
 	// id and elements are mutually exclusive with topology
-	if !data.LabID.IsNull() && data.Elements.IsNull() {
-		resp.Diagnostics.AddAttributeError(
+	// if !data.LabID.IsNull() && data.Elements.IsNull() {
+	// 	resp.Diagnostics.AddAttributeError(
+	// 		path.Root("elements"),
+	// 		"Required configuration",
+	// 		"When \"LabID\" is set, \"elements\" is a required attribute.",
+	// 	)
+	// 	return
+	// }
+
+	if len(data.Elements.Elements()) > 0 {
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("elements"),
-			"Required configuration",
-			"When \"LabID\" is set, \"elements\" is a required attribue.",
+			"Deprecated configuration",
+			"\"elements\" is deprecated, use the standard \"depends_on\" attribute.",
 		)
 		return
 	}

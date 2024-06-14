@@ -45,6 +45,7 @@ Read-Only:
 - `boot_disk_size` (Number) Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `compute_id` (String) ID of a compute this node is on, a UUID4.
 - `configuration` (String) Node configuration. Can be changed until the node is started once. Will require a replace in that case.
+- `configurations` (List of Object) List of node configurations. Can be changed until the node is started once. Will require a replace in that case. Note that this requires the `named_configs` provider setting and also at least CML 2.7.0. Using `configuration` and `configurations` is mutually exclusive! (see [below for nested schema](#nestedatt--node--configurations))
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
@@ -62,6 +63,15 @@ Read-Only:
 - `vnc_key` (String) VNC key of console, a UUID4.
 - `x` (Number) X coordinate on the topology canvas.
 - `y` (Number) Y coordinate on the topology canvas.
+
+<a id="nestedatt--node--configurations"></a>
+### Nested Schema for `node.configurations`
+
+Read-Only:
+
+- `content` (String)
+- `name` (String)
+
 
 <a id="nestedatt--node--interfaces"></a>
 ### Nested Schema for `node.interfaces`

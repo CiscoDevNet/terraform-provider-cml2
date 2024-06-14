@@ -14,6 +14,7 @@ type ProviderModel struct {
 	CAcert        types.String `tfsdk:"cacert"`
 	SkipVerify    types.Bool   `tfsdk:"skip_verify"`
 	UseCache      types.Bool   `tfsdk:"use_cache"`
+	NamedConfigs  types.Bool   `tfsdk:"named_configs"`
 	DynamicConfig types.Bool   `tfsdk:"dynamic_config"`
 }
 
@@ -46,7 +47,12 @@ func Provider() map[string]schema.Attribute {
 			Optional:    true,
 		},
 		"use_cache": schema.BoolAttribute{
-			Description: "Enables the client cache, this is considered experimental (default is false -- will not use the cache!)",
+			Description:        "Enables the client cache, **Deprecated**",
+			DeprecationMessage: "This has been deprecated, wasn't really useful and potentially buggy",
+			Optional:           true,
+		},
+		"named_configs": schema.BoolAttribute{
+			Description: "Enables the use of named configs (CML version >2.7.0 required!)",
 			Optional:    true,
 		},
 		"dynamic_config": schema.BoolAttribute{

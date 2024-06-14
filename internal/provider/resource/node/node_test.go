@@ -249,7 +249,7 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 			// this tests the error condition in Update!
 			{
 				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				ExpectError: regexp.MustCompile("provide proper external connector configuration, not a device name"),
+				ExpectError: regexp.MustCompile("Provide proper external connector config"),
 			},
 		},
 	})
@@ -260,7 +260,88 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				ExpectError: regexp.MustCompile("provide proper external connector configuration, not a device name"),
+				ExpectError: regexp.MustCompile("Provide proper external connector config"),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNamedConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceNamedConfig(cfg.CfgNamedConfigs),
+				Check:  resource.TestCheckNoResourceAttr("cml2_node.r1", "configuration"),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNamedConfigErr(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccNodeResourceNamedConfigErr(cfg.CfgNamedConfigs),
+				ExpectError: regexp.MustCompile("Can't provide both"),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNamedConfigErr2(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccNodeResourceNamedConfig(cfg.Cfg),
+				ExpectError: regexp.MustCompile("Provider option.*required"),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceNamedConfigWithSingleConfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigChange(cfg.CfgNamedConfigs, "hostname old"),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.r1", "configuration", func(value string) error {
+					expected := "hostname old"
+					if strings.Contains(value, expected) {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
+			},
+			{
+				Config: testAccNodeResourceConfigChange(cfg.CfgNamedConfigs, "hostname new"),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.r1", "configuration", func(value string) error {
+					expected := "hostname new"
+					if strings.Contains(value, expected) {
+						return nil
+					}
+					return fmt.Errorf("expected %q to contain %q", value, expected)
+				}),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceUMSconfig(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccNodeResourceConfigUMS(cfg.Cfg),
+				ExpectError: regexp.MustCompile("Can't provide UMS configuration"),
 			},
 		},
 	})
@@ -382,14 +463,6 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 	panic("undefined step!")
 }
 
-// 	tagline := ""
-// 	if len(tags) > 0 {
-// 		for idx, tag := range tags {
-// 			tags[idx] = fmt.Sprintf("%q", tag)
-// 		}
-// 		tagline = fmt.Sprintf("tags = [%s]\n", strings.Join(tags, ","))
-// 	}
-
 func testAccNodeResourceConfigTags(cfg string, step int) string {
 	var tags string
 	switch step {
@@ -420,14 +493,6 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 	}
 	`, cfg, tags)
 }
-
-// 	tagline := ""
-// 	if len(tags) > 0 {
-// 		for idx, tag := range tags {
-// 			tags[idx] = fmt.Sprintf("%q", tag)
-// 		}
-// 		tagline = fmt.Sprintf("tags = [%s]\n", strings.Join(tags, ","))
-// 	}
 
 func testAccNodeResourceConfigEmpty(cfg string, nodeCfg *string) string {
 	if nodeCfg != nil {
@@ -467,6 +532,80 @@ resource "cml2_node" "r1" {
 	label          = "r1"
 	nodedefinition = "alpine"
 	configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
+}
+`, cfg)
+}
+
+func testAccNodeResourceNamedConfig(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+	title = "named configs"
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+	# configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
+	configurations = [
+	  {
+		name    = "node.cfg"
+		content = "hostname bla"
+	  }
+	]
+}
+`, cfg)
+}
+
+func testAccNodeResourceNamedConfigErr(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+	title = "named config with error"
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "r1"
+	nodedefinition = "alpine"
+	configuration  = "hostname cant-have-both"
+	configurations = [
+	  {
+		name    = "node.cfg"
+		content = "hostname cant-have-both"
+	  }
+	]
+}
+`, cfg)
+}
+
+func testAccNodeResourceConfigChange(cfg, nodeconfig string) string {
+	var cfgStr string
+	if len(nodeconfig) > 0 {
+		cfgStr = fmt.Sprintf("configuration = %q", nodeconfig)
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "ext0"
+	nodedefinition = "iosv"
+	%[2]s
+}
+`, cfg, cfgStr)
+}
+
+func testAccNodeResourceConfigUMS(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "ums" {
+	lab_id         = cml2_lab.test.id
+	label          = "ums0"
+	configuration  = "illegal"
+	nodedefinition = "unmanaged_switch"
 }
 `, cfg)
 }

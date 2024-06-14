@@ -2,11 +2,17 @@
 
 Lists the changes in the provider.
 
-## Version 0.7.1
+## Version 0.8.0
 
-- no functional changes, pulled in latest updates for various libraries
-- removed github.com/hashicorp/terraform-plugin-sdk/v2 as a direct dependency,
-  use TF framework testing module instead of SDK v2 testing module
+- update gocmlclient to 0.1.0, supporting CML 2.7.0
+- ability to use named configurations (added w/ 2.7.0) (partially addresses #100)
+- deprecate `use_cache` capability, there's a flag in the provider configuration to turn this on (fixes #94)
+- replace link resource when changing link slots (fixes #95)
+- update all dependencies as of June 2024
+- run acceptance tests with 1.7 and 1.8 instead of 1.4 and 1.6
+- removed github.com/hashicorp/terraform-plugin-sdk/v2 as a direct dependency, use TF framework testing module instead of SDK v2 testing module
+- configurations which only differ in line endings (CR/LF vs LF, DOS / Unix) are now equivalent (fixes #106)
+- deprecate `elements` in the `lifecycle` resource, replaced by using standard `depends_on`
 
 ## Version 0.7.0
 
@@ -18,7 +24,7 @@ Lists the changes in the provider.
 - fix CPULimit property for UMS and ExtConn (they are now always NULL starting with 2.6.0)
 - some cosmetic and test changes
 - added a add-to-booted-lab lifecycle test (addresses #75 but can't reproduce)
-- formatted codebase w/ gofumpt
+- formatted code base w/ gofumpt
 - removed cmlclient go.mod local replace and updated cmlclient to 0.0.22 in go.mod
 - added / updated docs and ran generate
 - bumped go version to 1.21 in the workflows
@@ -27,13 +33,13 @@ Lists the changes in the provider.
 
 ## Version 0.6.2
 
-- The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof). `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.
+- The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof).  `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.
 - bump gocmlclient to 0.0.21 (better handling of error conditions / proxy use)
-- added `ignore_errors` attribute to the system data source to be able to simply ignore errors when waiting for te controller to provide status.
+- added `ignore_errors` attribute to the system data source to be able to simply ignore errors when waiting for the controller to provide status.
 
 ## Version 0.6.1
 
-- allow dynamic configuration of the provider by introducing a "dynamic_config" provider config flag. This defaults to `false`. When set to `true` then the provider configuration is only validated when actual resources are read or created. This is for specific use cases like AWS deployments where the CML2 instance IP is only known after the EC2 instance has been created.
+- allow dynamic configuration of the provider by introducing a `dynamic_config` provider config flag.  This defaults to `false`.  When set to `true` then the provider configuration is only validated when actual resources are read or created.  This is for specific use cases like AWS deployments where the CML2 instance IP is only known after the EC2 instance has been created.
 - bump the gocmlclient to 0.0.18
 
 ## Version 0.6.0
@@ -46,7 +52,7 @@ Lists the changes in the provider.
 - new resources
   - "user" for user operations
   - "group" for group operations
-- changed "lists" to "sets" where applicable. That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as (ordered) lists
+- changed "lists" to "sets" where applicable.  That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as (ordered) lists
 - set correct ID for node and lab data sources
 - updated dependencies
 
@@ -61,7 +67,7 @@ Lists the changes in the provider.
 
 ## Version 0.5.2
 
-- reverted `skip_verify` to pre 0.5.1 logic, fixed documentation for it
+- reverted `skip_verify` to pre-0.5.1 logic, fixed documentation for it
 - framework 1.1.1, added better provider description
 - fixed #38 to allow adding of links without specifying slots
 - dependency updates
@@ -70,10 +76,8 @@ Lists the changes in the provider.
 
 ### Breaking changes
 
-- link resources: change the attribute names for slots from `node_a_slot` to `slot_a`
-  and `node_b_slot` to `slot_b`
-- image definition data source: change the attribute name of the node
-  definition filter from `node_definition_id` to `nodedefinition` for consistency
+- link resources: change the attribute names for slots from `node_a_slot` to `slot_a` and `node_b_slot` to `slot_b`
+- image definition data source: change the attribute name of the node definition filter from `node_definition_id` to `nodedefinition` for consistency
 
 ### Other changes
 
@@ -113,9 +117,7 @@ Lists the changes in the provider.
 - adapted to the terraform-provider-framework v0.0.15 changes
 - udpated documentation
 - `cml2_node.label` is now a required attribute
-- `cml2_lifecycle.lab_id` replaces the `id` for consistency.  This will break
-  existing lifecycle resources but it's easy to fix: just rename the `id` to
-  `lab_id`.
+- `cml2_lifecycle.lab_id` replaces the `id` for consistency.  This will break existing lifecycle resources but it's easy to fix: just rename the `id` to `lab_id`.
 - `cml2_lifecycle.id` is now auto-generated as a UUIDv4
 - `cml2_lifecycle` resource logic changes... produces more concise change sets
 - added a `cml2_lifecycle` acceptance test
@@ -123,7 +125,7 @@ Lists the changes in the provider.
 
 ## Version 0.3.2
 
-This releases is a large refactor of the initial code base.  It provides suppport
+This releases is a large refactor of the initial code base.  It provides support
 for a few resources and data sources:
 
 - resources

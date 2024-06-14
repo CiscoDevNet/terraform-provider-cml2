@@ -143,8 +143,9 @@ output "r1_ip_address" {
 ### Optional
 
 - `configs` (Map of String) Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
-- `elements` (List of String) List of node and link IDs the lab consists of. Works only when a (lab) ID is provided and no topology is configured.
+- `elements` (List of String, Deprecated) List of node and link IDs the lab consists of. Works only when a (lab) ID is provided and no topology is configured.
 - `lab_id` (String) Lab identifier, a UUID. If set, `elements` must be configured as well.
+- `named_configs` (Map of List of Object) Map of named node configurations to store into nodes, the key is the label of the node, the value is the node configuration.
 - `staging` (Attributes) Defines in what sequence nodes are launched. (see [below for nested schema](#nestedatt--staging))
 - `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.
 - `timeouts` (Attributes) Timeouts for operations, given as a parsable string as in `60m` or `2h`. (see [below for nested schema](#nestedatt--timeouts))
@@ -195,6 +196,7 @@ Optional:
 
 - `boot_disk_size` (Number) Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `configuration` (String) Node configuration. Can be changed until the node is started once. Will require a replace in that case.
+- `configurations` (List of Object) List of node configurations. Can be changed until the node is started once. Will require a replace in that case. Note that this requires the `named_configs` provider setting and also at least CML 2.7.0. Using `configuration` and `configurations` is mutually exclusive! (see [below for nested schema](#nestedatt--nodes--configurations))
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
@@ -213,6 +215,15 @@ Read-Only:
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--nodes--serial_devices))
 - `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).
 - `vnc_key` (String) VNC key of console, a UUID4.
+
+<a id="nestedatt--nodes--configurations"></a>
+### Nested Schema for `nodes.configurations`
+
+Read-Only:
+
+- `content` (String)
+- `name` (String)
+
 
 <a id="nestedatt--nodes--interfaces"></a>
 ### Nested Schema for `nodes.interfaces`

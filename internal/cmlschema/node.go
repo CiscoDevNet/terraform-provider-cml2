@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
@@ -25,6 +26,7 @@ type NodeModel struct {
 	NodeDefinition  types.String `tfsdk:"nodedefinition"`
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
 	Configuration   Config       `tfsdk:"configuration"`
+	Configurations  types.List   `tfsdk:"configurations"`
 	Interfaces      types.List   `tfsdk:"interfaces"`
 	Tags            types.Set    `tfsdk:"tags"`
 	X               types.Int64  `tfsdk:"x"`
@@ -43,6 +45,11 @@ type NodeModel struct {
 type serialDeviceModel struct {
 	ConsoleKey   types.String `tfsdk:"console_key"`
 	DeviceNumber types.Int64  `tfsdk:"device_number"`
+}
+
+type NamedConfigModel struct {
+	Name    types.String `tfsdk:"name"`
+	Content Config       `tfsdk:"content"`
 }
 
 // with simplified=true
@@ -118,6 +125,9 @@ var NodeAttrType = map[string]attr.Type{
 	"nodedefinition":  types.StringType,
 	"imagedefinition": types.StringType,
 	"configuration":   ConfigType{},
+	"configurations": types.ListType{
+		ElemType: NamedConfigAttrType,
+	},
 	"interfaces": types.ListType{
 		ElemType: types.ObjectType{
 			AttrTypes: InterfaceAttrType,
@@ -135,6 +145,13 @@ var NodeAttrType = map[string]attr.Type{
 	"vnc_key":        types.StringType,
 	"serial_devices": types.ListType{ElemType: SerialDevicesAttrType},
 	"compute_id":     types.StringType,
+}
+
+var NamedConfigAttrType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"name":    types.StringType,
+		"content": ConfigType{},
+	},
 }
 
 var SerialDevicesAttrType = types.ObjectType{
@@ -217,6 +234,15 @@ func Node() map[string]schema.Attribute {
 				stringplanmodifier.UseStateForUnknown(),
 				// int64planmodifier.RequiresReplace(),
 				// replace is controlled in modify_plan()
+			},
+		},
+		"configurations": schema.ListAttribute{
+			Description: "List of node configurations. Can be changed until the node is started once. Will require a replace in that case. Note that this requires the `named_configs` provider setting and also at least CML 2.7.0. Using `configuration` and `configurations` is mutually exclusive!",
+			Computed:    true,
+			Optional:    true,
+			ElementType: NamedConfigAttrType,
+			PlanModifiers: []planmodifier.List{
+				listplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"x": schema.Int64Attribute{
@@ -318,6 +344,22 @@ func Node() map[string]schema.Attribute {
 	}
 }
 
+func newNamedConfig(ctx context.Context, nc cmlclient.NodeConfig, diags *diag.Diagnostics) attr.Value {
+	namedConfig := NamedConfigModel{
+		Name:    types.StringValue(nc.Name),
+		Content: NewConfigValue(nc.Content),
+	}
+
+	var value attr.Value
+	diags.Append(tfsdk.ValueFrom(
+		ctx,
+		namedConfig,
+		NamedConfigAttrType,
+		&value,
+	)...)
+	return value
+}
+
 func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag.Diagnostics) attr.Value {
 	newSerialDevice := serialDeviceModel{
 		ConsoleKey:   types.StringValue(sd.ConsoleKey),
@@ -343,6 +385,22 @@ func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) t
 	tags, dia := types.SetValue(types.StringType, valueSet)
 	diags.Append(dia...)
 	return tags
+}
+
+func NewNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+	if len(node.Configurations) == 0 {
+		return types.ListNull(NamedConfigAttrType)
+	}
+	valueList := make([]attr.Value, 0)
+	for _, named_config := range node.Configurations {
+		valueList = append(valueList, newNamedConfig(ctx, named_config, diags))
+	}
+	namedConfigs, dia := types.ListValue(
+		NamedConfigAttrType,
+		valueList,
+	)
+	diags.Append(dia...)
+	return namedConfigs
 }
 
 func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
@@ -377,6 +435,10 @@ func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagno
 	return ifaces
 }
 
+func (nm NodeModel) HasConfig() bool {
+	return !nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) > 0
+}
+
 func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
 	newNode := NodeModel{
 		ID:             types.StringValue(node.ID),
@@ -385,6 +447,7 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		State:          types.StringValue(node.State),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
 		Configuration:  NewConfigPointerValue(node.Configuration),
+		Configurations: NewNamedConfigs(ctx, node, diags),
 		Interfaces:     newInterfaces(ctx, node, diags),
 		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),
@@ -438,4 +501,21 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		)...,
 	)
 	return value
+}
+
+func GetNamedConfigs(ctx context.Context, diag diag.Diagnostics, cl basetypes.ListValue) []cmlclient.NodeConfig {
+	var configurations []cmlclient.NodeConfig
+	var nc NamedConfigModel
+	for _, el := range cl.Elements() {
+		diag.Append(tfsdk.ValueAs(ctx, el, &nc)...)
+		if diag.HasError() {
+			return nil
+		}
+		cfg := cmlclient.NodeConfig{
+			Name:    nc.Name.ValueString(),
+			Content: nc.Content.ValueString(),
+		}
+		configurations = append(configurations, cfg)
+	}
+	return configurations
 }

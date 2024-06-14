@@ -18,7 +18,7 @@ func TestProviderAttrs(t *testing.T) {
 
 	got, diag := schema.TypeAtPath(context.TODO(), path.Root("address"))
 	assert.Equal(t, types.StringType, got)
-	assert.Equal(t, 8, len(schema.Attributes))
+	assert.Equal(t, 9, len(schema.Attributes))
 	assert.False(t, diag.HasError())
 	t.Log(diag.Errors())
 }
