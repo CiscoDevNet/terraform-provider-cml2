@@ -34,7 +34,7 @@ func TestAccLifecycleResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLifecyclekResourceConfig(cfg.Cfg),
+				Config: testAccLifecycleResourceConfig(cfg.Cfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 				),
@@ -282,7 +282,7 @@ func TestAccLifecycleNamedConfigs(t *testing.T) {
 	})
 }
 
-func testAccLifecyclekResourceConfig(cfg string) string {
+func testAccLifecycleResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {

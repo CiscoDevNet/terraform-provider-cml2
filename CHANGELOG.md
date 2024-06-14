@@ -5,7 +5,7 @@ Lists the changes in the provider.
 ## Version 0.8.0
 
 - update gocmlclient to 0.1.0, supporting CML 2.7.0
-- ability to  use named configurations (added w/ 2.7.0) (partially addresses #100)
+- ability to use named configurations (added w/ 2.7.0) (partially addresses #100)
 - deprecate `use_cache` capability, there's a flag in the provider configuration to turn this on (fixes #94)
 - replace link resource when changing link slots (fixes #95)
 - update all dependencies as of June 2024
@@ -33,13 +33,13 @@ Lists the changes in the provider.
 
 ## Version 0.6.2
 
-- The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof). `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.
+- The provider (via gocmlclient) now honors proxy configuration provided via environment variables `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (or the lowercase versions thereof).  `HTTPS_PROXY` takes precedence over `HTTP_PROXY` for https requests.
 - bump gocmlclient to 0.0.21 (better handling of error conditions / proxy use)
-- added `ignore_errors` attribute to the system data source to be able to simply ignore errors when waiting for te controller to provide status.
+- added `ignore_errors` attribute to the system data source to be able to simply ignore errors when waiting for the controller to provide status.
 
 ## Version 0.6.1
 
-- allow dynamic configuration of the provider by introducing a "dynamic_config" provider config flag. This defaults to `false`. When set to `true` then the provider configuration is only validated when actual resources are read or created. This is for specific use cases like AWS deployments where the CML2 instance IP is only known after the EC2 instance has been created.
+- allow dynamic configuration of the provider by introducing a `dynamic_config` provider config flag.  This defaults to `false`.  When set to `true` then the provider configuration is only validated when actual resources are read or created.  This is for specific use cases like AWS deployments where the CML2 instance IP is only known after the EC2 instance has been created.
 - bump the gocmlclient to 0.0.18
 
 ## Version 0.6.0
@@ -52,7 +52,7 @@ Lists the changes in the provider.
 - new resources
   - "user" for user operations
   - "group" for group operations
-- changed "lists" to "sets" where applicable. That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as (ordered) lists
+- changed "lists" to "sets" where applicable.  That said, IP addresses should likely also be treated as sets (unordered, unique values) and not as (ordered) lists
 - set correct ID for node and lab data sources
 - updated dependencies
 
@@ -67,7 +67,7 @@ Lists the changes in the provider.
 
 ## Version 0.5.2
 
-- reverted `skip_verify` to pre 0.5.1 logic, fixed documentation for it
+- reverted `skip_verify` to pre-0.5.1 logic, fixed documentation for it
 - framework 1.1.1, added better provider description
 - fixed #38 to allow adding of links without specifying slots
 - dependency updates
@@ -125,7 +125,7 @@ Lists the changes in the provider.
 
 ## Version 0.3.2
 
-This releases is a large refactor of the initial code base.  It provides suppport
+This releases is a large refactor of the initial code base.  It provides support
 for a few resources and data sources:
 
 - resources
