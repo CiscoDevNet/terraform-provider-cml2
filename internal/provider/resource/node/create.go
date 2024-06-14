@@ -72,7 +72,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		node.Configuration = &value
 	}
 
-	node.Configurations = setNamedConfigsFromData(ctx, resp.Diagnostics, data)
+	node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
 
 	if !data.X.IsUnknown() {
 		node.X = int(data.X.ValueInt64())

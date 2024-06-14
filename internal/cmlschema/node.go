@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
@@ -236,7 +237,7 @@ func Node() map[string]schema.Attribute {
 			},
 		},
 		"configurations": schema.ListAttribute{
-			Description: "List of node configurations. Can be changed until the node is started once. Will require a replace in that case.",
+			Description: "List of node configurations. Can be changed until the node is started once. Will require a replace in that case. Note that this requires the `named_configs` provider setting and also at least CML 2.7.0. Using `configuration` and `configurations` is mutually exclusive!",
 			Computed:    true,
 			Optional:    true,
 			ElementType: NamedConfigAttrType,
@@ -500,4 +501,21 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		)...,
 	)
 	return value
+}
+
+func GetNamedConfigs(ctx context.Context, diag diag.Diagnostics, cl basetypes.ListValue) []cmlclient.NodeConfig {
+	var configurations []cmlclient.NodeConfig
+	var nc NamedConfigModel
+	for _, el := range cl.Elements() {
+		diag.Append(tfsdk.ValueAs(ctx, el, &nc)...)
+		if diag.HasError() {
+			return nil
+		}
+		cfg := cmlclient.NodeConfig{
+			Name:    nc.Name.ValueString(),
+			Content: nc.Content.ValueString(),
+		}
+		configurations = append(configurations, cfg)
+	}
+	return configurations
 }

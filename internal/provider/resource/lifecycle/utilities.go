@@ -128,11 +128,17 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *cmlschema.LabLifecycleModel, diags *diag.Diagnostics) {
 	tflog.Info(ctx, "injectConfigs")
 
-	if data.Configs.IsNull() {
+	if len(data.Configs.Elements()) == 0 && len(data.NamedConfigs.Elements()) == 0 {
 		tflog.Info(ctx, "injectConfigs: no configs")
 		return
 	}
 
+	if len(data.Configs.Elements()) > 0 && len(data.NamedConfigs.Elements()) > 0 {
+		diags.AddError("Configuration conflict", "Can't provide both, configuration and named configurations!")
+		return
+	}
+
+	// inject regular configuration (legacy)
 	for nodeID, config := range data.Configs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
 		if err == cmlclient.ErrElementNotFound {
@@ -151,6 +157,31 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 		if err != nil {
 			diags.AddError("set node config failed",
 				fmt.Sprintf("setting the new node configuration failed: %s", err),
+			)
+		}
+	}
+
+	// inject named configurations (from 2.7.0 and newer)
+	for nodeID, config := range data.NamedConfigs.Elements() {
+		node, err := lab.NodeByLabel(ctx, nodeID)
+		if err == cmlclient.ErrElementNotFound {
+			node = lab.Nodes[nodeID]
+		}
+		if node == nil {
+			diags.AddError(common.ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
+			continue
+		}
+		if node.State != cmlclient.NodeStateDefined {
+			diags.AddError(common.ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
+			continue
+		}
+
+		ba := config.(types.List)
+		configs := cmlschema.GetNamedConfigs(ctx, *diags, ba)
+		err = r.cfg.Client().NodeSetNamedConfigs(ctx, node, configs)
+		if err != nil {
+			diags.AddError("set node named config failed",
+				fmt.Sprintf("setting the new node configurations failed: %s", err),
 			)
 		}
 	}

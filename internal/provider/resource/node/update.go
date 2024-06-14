@@ -66,7 +66,7 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 			value := planData.Configuration.ValueString()
 			node.Configuration = &value
 		}
-		node.Configurations = setNamedConfigsFromData(ctx, resp.Diagnostics, planData)
+		node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
 		if !planData.RAM.IsUnknown() {
 			node.RAM = int(planData.RAM.ValueInt64())
 		}

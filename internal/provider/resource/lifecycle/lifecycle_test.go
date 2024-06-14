@@ -252,6 +252,36 @@ func TestAccLifecycleAddNodeToBooted(t *testing.T) {
 	})
 }
 
+func TestAccLifecycleNamedConfigs(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 0),
+			},
+			{
+				Config: testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 1),
+			},
+			{
+				Config: testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 2),
+			},
+			{
+				Config:      testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 3),
+				ExpectError: regexp.MustCompile(`Can't provide both`),
+			},
+			{
+				Config:      testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 4),
+				ExpectError: regexp.MustCompile(`node with label \w+ not found`),
+			},
+			{
+				Config:      testAccLifecycleNamedConfigs(cfg.CfgNamedConfigs, 5),
+				ExpectError: regexp.MustCompile(`node with label \w+ not found`),
+			},
+		},
+	})
+}
+
 func testAccLifecyclekResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
@@ -585,4 +615,102 @@ resource "cml2_lifecycle" "top" {
 }
 	`, cfg)
 	}
+}
+
+func testAccLifecycleNamedConfigs(cfg string, stage int) string {
+	var configs, named_configs string
+	switch stage {
+	case 0:
+		configs = ``
+		named_configs = ``
+	case 1:
+		configs = `
+		configs = {
+			"R1": "hostname r1"
+		}
+		`
+		named_configs = ``
+	case 2:
+		configs = ``
+		named_configs = `
+		named_configs = {
+			"R1": [
+				{
+					name = "node.cfg"
+					content = "hostname r1"
+				}
+			]
+		}
+		`
+	case 3:
+		configs = `
+		configs = {
+			"R1": "hostname r1"
+		}
+		`
+		named_configs = `
+		named_configs = {
+			"R1": [
+				{
+					name = "node.cfg"
+					content = "hostname r1"
+				}
+			]
+		}
+		`
+	case 4:
+		configs = `
+		configs = {
+			"xx": "hostname r1"
+		}
+		`
+		named_configs = ``
+	case 5:
+		configs = ``
+		named_configs = `
+		named_configs = {
+			"xx": [
+				{
+					name = "node.cfg"
+					content = "hostname r1"
+				}
+			]
+		}
+		`
+	}
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.this.id
+  label          = "R1"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.this.id
+  label          = "R2"
+  nodedefinition = "alpine"
+}
+
+resource "cml2_link" "l1" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.r1.id
+  node_b = cml2_node.r2.id
+}
+
+resource "cml2_lifecycle" "top" {
+	lab_id = cml2_lab.this.id
+	state = "DEFINED_ON_CORE"
+	depends_on = [
+		cml2_node.r1,
+		cml2_node.r2,
+		cml2_link.l1,
+	]
+	%[2]s
+	%[3]s
+}
+`, cfg, configs, named_configs)
 }

@@ -196,7 +196,7 @@ Optional:
 
 - `boot_disk_size` (Number) Size of boot disk volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `configuration` (String) Node configuration. Can be changed until the node is started once. Will require a replace in that case.
-- `configurations` (List of Object) List of node configurations. Can be changed until the node is started once. Will require a replace in that case. (see [below for nested schema](#nestedatt--nodes--configurations))
+- `configurations` (List of Object) List of node configurations. Can be changed until the node is started once. Will require a replace in that case. Note that this requires the `named_configs` provider setting and also at least CML 2.7.0. Using `configuration` and `configurations` is mutually exclusive! (see [below for nested schema](#nestedatt--nodes--configurations))
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
