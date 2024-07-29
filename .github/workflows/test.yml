@@ -99,9 +99,9 @@ jobs:
       - env:
           TF_VAR_username: ${{ secrets.USERNAME }}
           TF_VAR_password: ${{ secrets.PASSWORD }}
-          TF_VAR_token: ""
+          TF_VAR_token: ${{ secrets.TOKEN }}
         run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile ./internal/...
-        timeout-minutes: 20
+        timeout-minutes: 60
 
       - name: Install goveralls
         run: go install github.com/mattn/goveralls@latest

@@ -15,6 +15,7 @@ Lists the changes in the provider.
 - configurations which only differ in line endings (CR/LF vs LF, DOS / Unix) are now equivalent (fixes #106)
 - deprecate `elements` in the `lifecycle` resource, replaced by using standard `depends_on`
 - properly formatted tunnel.sh script
+- allow to use a token with the integration tests (less requests, faster)
 
 ## Version 0.7.0
 

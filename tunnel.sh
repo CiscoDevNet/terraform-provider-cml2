@@ -26,6 +26,7 @@ $cmd -h | --help | help -- shows this help
 
 Requirements:
 - TF_VAR_username and TF_VAR_password environment variables with CML credentials
+- TF_VAR_token as an alternative (and username / password empty)
 - authorized gh tool (Github cli)
 - curl, ghsecret, jq, ngrok and tmux in the path
 - ngrok authtoken provided via ~/.ngrok2/ngrok.yml
@@ -50,6 +51,7 @@ function remove_secrets() {
   gh api -XDELETE /repos/$REPO/actions/secrets/NGROK_URL
   gh api -XDELETE /repos/$REPO/actions/secrets/USERNAME
   gh api -XDELETE /repos/$REPO/actions/secrets/PASSWORD
+  gh api -XDELETE /repos/$REPO/actions/secrets/TOKEN
 }
 
 function open() {
@@ -105,6 +107,7 @@ function start() {
   ghsecret TUNNEL | gh api -XPUT /repos/$REPO/actions/secrets/NGROK_URL --input -
   ghsecret TF_VAR_username | gh api -XPUT /repos/$REPO/actions/secrets/USERNAME --input -
   ghsecret TF_VAR_password | gh api -XPUT /repos/$REPO/actions/secrets/PASSWORD --input -
+  ghsecret TF_VAR_token | gh api -XPUT /repos/$REPO/actions/secrets/TOKEN --input -
 }
 
 # check if we have everything...
