@@ -5,14 +5,16 @@ Lists the changes in the provider.
 ## Version 0.8.0
 
 - update gocmlclient to 0.1.0, supporting CML 2.7.0
+- tested w/ 2.7.1
 - ability to use named configurations (added w/ 2.7.0) (partially addresses #100)
 - deprecate `use_cache` capability, there's a flag in the provider configuration to turn this on (fixes #94)
 - replace link resource when changing link slots (fixes #95)
-- update all dependencies as of June 2024
+- update all dependencies as of July 2024
 - run acceptance tests with 1.7 and 1.8 instead of 1.4 and 1.6
 - removed github.com/hashicorp/terraform-plugin-sdk/v2 as a direct dependency, use TF framework testing module instead of SDK v2 testing module
 - configurations which only differ in line endings (CR/LF vs LF, DOS / Unix) are now equivalent (fixes #106)
 - deprecate `elements` in the `lifecycle` resource, replaced by using standard `depends_on`
+- properly formatted tunnel.sh script
 
 ## Version 0.7.0
 
