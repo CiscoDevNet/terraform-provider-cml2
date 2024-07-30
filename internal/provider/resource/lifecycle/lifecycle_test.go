@@ -308,10 +308,10 @@ resource "cml2_link" "l1" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
-	elements = [
-		cml2_node.r1.id,
-		cml2_node.r2.id,
-		cml2_link.l1.id,
+	depends_on = [
+		cml2_node.r1,
+		cml2_node.r2,
+		cml2_link.l1,
 	]
 }
 `, cfg)
@@ -380,13 +380,13 @@ resource "cml2_link" "l2" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
-	elements = [
-		cml2_node.ext.id,
-		cml2_node.ums.id,
-		cml2_node.r1.id,
-		cml2_node.r2.id,
-		cml2_link.l1.id,
-		cml2_link.l2.id,
+	depends_on = [
+		cml2_node.ext,
+		cml2_node.ums,
+		cml2_node.r1,
+		cml2_node.r2,
+		cml2_link.l1,
+		cml2_link.l2,
 	]
 	staging = {
 		stages = [ "bla" ]
@@ -404,7 +404,7 @@ resource "cml2_lab" "this" {
 }
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
-	elements = []
+	depends_on = []
 	state = %[2]q
 }
 `, cfg, state)
@@ -526,7 +526,7 @@ resource "cml2_link" "l2" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
-	elements = [
+	depends_on = [
 		cml2_node.ext.id,
 		cml2_node.ums.id,
 		cml2_node.r1.id,
@@ -601,7 +601,7 @@ resource "cml2_link" "l3" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
-	elements = [
+	depends_on = [
 		cml2_node.ext.id,
 		cml2_node.ums.id,
 		cml2_node.r1.id,

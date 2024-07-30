@@ -199,34 +199,34 @@ resource "cml2_link" "l10" {
 
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
-  elements = [
+  depends_on = [
     # Note that referencing all elements is not strictly
     # required. As an alternative, a single "sentinel"
     # node could be used which is started at the very end
     # based on its tag. In particular, links could be ommited.
-    cml2_node.ext.id,
-    cml2_node.ums1.id,
-    cml2_node.ios.id,
-    cml2_node.r1.id,
-    cml2_node.r3.id,
-    cml2_node.r4.id,
-    cml2_node.r5.id,
-    cml2_node.r6.id,
-    cml2_node.r7.id,
-    cml2_node.r8.id,
-    cml2_node.r9.id,
+    cml2_node.ext,
+    cml2_node.ums1,
+    cml2_node.ios,
+    cml2_node.r1,
+    cml2_node.r3,
+    cml2_node.r4,
+    cml2_node.r5,
+    cml2_node.r6,
+    cml2_node.r7,
+    cml2_node.r8,
+    cml2_node.r9,
 
-    cml2_link.l0.id,
-    cml2_link.l1.id,
-    cml2_link.l2.id,
-    cml2_link.l3.id,
-    cml2_link.l4.id,
-    cml2_link.l5.id,
-    cml2_link.l6.id,
-    cml2_link.l7.id,
-    cml2_link.l8.id,
-    cml2_link.l9.id,
-    cml2_link.l10.id
+    cml2_link.l0,
+    cml2_link.l1,
+    cml2_link.l2,
+    cml2_link.l3,
+    cml2_link.l4,
+    cml2_link.l5,
+    cml2_link.l6,
+    cml2_link.l7,
+    cml2_link.l8,
+    cml2_link.l9,
+    cml2_link.l10
   ]
   configs = {
     "R1" : "hostname injected-hostname"

@@ -105,18 +105,17 @@ resource "cml2_link" "l4" {
 
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
-  # the elements list has the dependencies
-  elements = [
-    cml2_node.ext.id,
-    cml2_node.ums1.id,
-    cml2_node.r1.id,
-    cml2_node.r2.id,
-    cml2_node.r3.id,
-    cml2_link.l0.id,
-    cml2_link.l1.id,
-    cml2_link.l2.id,
-    cml2_link.l3.id,
-    cml2_link.l4.id,
+  depends_on = [
+    cml2_node.ext,
+    cml2_node.ums1,
+    cml2_node.r1,
+    cml2_node.r2,
+    cml2_node.r3,
+    cml2_link.l0,
+    cml2_link.l1,
+    cml2_link.l2,
+    cml2_link.l3,
+    cml2_link.l4,
   ]
   staging = {
     stages          = ["infra", "group1"]

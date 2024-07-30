@@ -14,8 +14,8 @@ A lab resource represents a CML lab. At create time, a lab title, lab descriptio
 
 ```terraform
 # This shows the use of a lab with nodes and links the links are explicitly
-# specified with slots Nothing will be started, just basic create, read update /
-# delete.
+# specified with slots Nothing will be started, just basic create, read update
+# and delete.
 
 resource "cml2_lab" "twonode" {
   title       = "two node lab"
