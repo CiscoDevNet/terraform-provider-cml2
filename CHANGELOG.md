@@ -2,6 +2,10 @@
 
 Lists the changes in the provider.
 
+## Version 0.8.1
+
+- updated documentation, examples and tests to match code changes.
+
 ## Version 0.8.0
 
 - update gocmlclient to 0.1.0, supporting CML 2.7.0

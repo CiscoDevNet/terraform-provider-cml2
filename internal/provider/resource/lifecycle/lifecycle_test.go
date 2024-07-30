@@ -527,13 +527,13 @@ resource "cml2_link" "l2" {
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
 	depends_on = [
-		cml2_node.ext.id,
-		cml2_node.ums.id,
-		cml2_node.r1.id,
-		cml2_node.r2.id,
-		cml2_link.l0.id,
-		cml2_link.l1.id,
-		cml2_link.l2.id,
+		cml2_node.ext,
+		cml2_node.ums,
+		cml2_node.r1,
+		cml2_node.r2,
+		cml2_link.l0,
+		cml2_link.l1,
+		cml2_link.l2,
 	]
 }
 	`, cfg)
@@ -602,15 +602,15 @@ resource "cml2_link" "l3" {
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
 	depends_on = [
-		cml2_node.ext.id,
-		cml2_node.ums.id,
-		cml2_node.r1.id,
-		cml2_node.r2.id,
-		cml2_node.r3.id,
-		cml2_link.l0.id,
-		cml2_link.l1.id,
-		cml2_link.l2.id,
-		cml2_link.l3.id,
+		cml2_node.ext,
+		cml2_node.ums,
+		cml2_node.r1,
+		cml2_node.r2,
+		cml2_node.r3,
+		cml2_link.l0,
+		cml2_link.l1,
+		cml2_link.l2,
+		cml2_link.l3,
 	]
 }
 	`, cfg)
