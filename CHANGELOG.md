@@ -2,6 +2,13 @@
 
 Lists the changes in the provider.
 
+## Unreleased
+
+- go version 1.22 used
+- updated dependencies (plugin-framework 1.12.0, plugin-go 0.24.0, plugin-testing 1.10.0)
+- use newer gocmlclient which supports CML 2.8.0
+- added signing public key to repo
+
 ## Version 0.8.1
 
 - updated documentation, examples and tests to match code changes.
