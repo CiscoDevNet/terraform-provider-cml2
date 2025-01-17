@@ -37,6 +37,12 @@ jobs:
       - run: go mod download
       - run: go build -v .
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ matrix.terraform }}
+          terraform_wrapper: false
+
   generate:
     runs-on: ubuntu-latest
     steps:
