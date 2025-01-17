@@ -74,13 +74,13 @@ jobs:
         # specific IDs which must be unique... some test resource randomization
         # is needed but doesn't exist... Currently only testing w/ 1.6
         # max-parallel: 1 should fix this!
+        # Specific versions needed!
         # NOTE: required tests are configured in branch protection!
         terraform:
-          # - "1.0.*"
-          # - "1.1.*"
-          # - "1.3.*"
-          - "1.7.*"
-          - "1.8.*"
+          - "1.8.5"
+          - "1.9.8"
+          - "1.10.4"
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
