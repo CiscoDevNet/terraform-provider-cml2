@@ -1,4 +1,4 @@
-module github.com/rschmied/terraform-provider-cml2
+module github.com/ciscodevnet/terraform-provider-cml2
 
 go 1.22.0
 

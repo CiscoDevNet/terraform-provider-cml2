@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 type ProviderConfig struct {

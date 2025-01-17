@@ -21,7 +21,7 @@ permissions:
 env:
   # Go language version to use for building. This value should also be updated
   # in the release workflow if changed.
-  GO_VERSION: "1.21"
+  GO_VERSION: "1.22"
 
 jobs:
   # Ensure project builds before running testing matrix
