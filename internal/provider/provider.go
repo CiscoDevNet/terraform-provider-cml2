@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -45,6 +46,25 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// address must be https
+	parsedURL, err := url.Parse(data.Address.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Can't parse server address / URL",
+			err.Error(),
+		)
+		return
+	}
+
+	// Check if the scheme is HTTPS and we have something like a hostname
+	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
+		resp.Diagnostics.AddError(
+			"Invalid server address / URL, ensure it uses HTTPS",
+			"The address of the CML server is valid and uses HTTPS as the protocol",
+		)
 		return
 	}
 

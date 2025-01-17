@@ -2,12 +2,13 @@
 
 Lists the changes in the provider.
 
-## Unreleased
+## Version 0.8.2
 
 - go version 1.22 used
-- updated dependencies (plugin-framework 1.12.0, plugin-go 0.24.0, plugin-testing 1.10.0)
+- updated dependencies (plugin-framework 1.13.0, plugin-go 0.25.0, plugin-testing 1.10.0)
 - use newer gocmlclient which supports CML 2.8.0
 - added signing public key to repo
+- provider configuration check: Ensure valid CML host address (HTTPS)
 
 ## Version 0.8.1
 

@@ -2,13 +2,18 @@
 
 # Terraform Provider for Cisco CML2
 
-This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.6 and later. It's current state is "beta". Changes can be expected, for example:
+This repository implements a [Terraform](https://www.terraform.io) provider for
+Cisco Modeling Labs version 2.6 and later. It's current state is "beta". Changes
+can be expected, for example:
 
 - configuration (provider, resources, data-sources)
 - provider behavior
 - features (additional resources, ...)
 
-> **Note:** The provider needs CML 2.4 or newer. This is due to some additional API capabilities which were introduced with 2.4.0. Older versions are blocked within by the `gocmlclient`.
+> [!NOTE]
+> The provider needs CML 2.4 or newer. This is due to some additional API
+> capabilities which were introduced with 2.4.0. Older versions are blocked
+> within by the `gocmlclient`.
 
 The current implementation provides:
 
@@ -16,15 +21,18 @@ The current implementation provides:
   - resource `cml2_lab` to create, update and destroy labs
   - resource `cml2_node` to create, update and destroy nodes in a lab
   - resource `cml2_link` to create, update and destroy links between nodes in a lab
-  - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`, `STOPPED`), including staged starting and configuration injection
+  - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`,
+  `STOPPED`), including staged starting and configuration injection
   - resource `cml2_group` to create, update and destroy groups
   - resource `cml2_user` to create, update and destroy users
   - data source `cml2_lab` to retrieve state of an existing lab
   - data source `cml2_node` to retrieve state of an existing node in a lab
   - data source `cml2_images` to retrieve the available node images from the controller
   - data source `cml2_groups` to retrieve user groups from the controller
-  - data source `cml2_extconn` to retrieve external connector information from the controller
-  - data source `cml2_system` to retrieve system state (ready state, version, ...) from the controller
+  - data source `cml2_extconn` to retrieve external connector information from
+  the controller
+  - data source `cml2_system` to retrieve system state (ready state, version,
+  ...) from the controller
   - data source `cml2_users` to retrieve users from the controller
 - Examples (`examples/`) and generated documentation (`docs/`),
 - Miscellaneous meta files.
@@ -49,6 +57,13 @@ go install
 
 Please refer to the `examples` directory and look at the built-in documentation
 provided via the registry.
+
+> [!NOTE]
+>
+> It's recommended to use the UI token (from the User menu, top right "Copy
+> JWT") instead of the user-name and password as that will provide better
+> performance.  Using the token avoids repeated client authentication via the
+> API which takes quite a bit of time.
 
 ### HCL
 
