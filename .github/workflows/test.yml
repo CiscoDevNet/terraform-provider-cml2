@@ -9,11 +9,13 @@ on:
     paths-ignore:
       - "README.md"
       - ".github/workflows/release.yml"
+      - ".goreleaser.yml"
   push:
     branches: ["main"]
     paths-ignore:
       - "README.md"
       - ".github/workflows/release.yml"
+      - ".goreleaser.yml"
 
 # Testing only needs permissions to read the repository contents.
 permissions:
