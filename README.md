@@ -80,7 +80,7 @@ the provider binary in the `$GOPATH/bin` directory.
 
 To generate or update documentation, run `go generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`. For this
+In order to run the full suite of acceptance tests, run `make testacc`. For this
 to work, the provider needs to be configured via environment variables.  Here's
 an example:
 
@@ -90,6 +90,8 @@ an example:
 TF_VAR_username="admin"
 TF_VAR_password="secret"
 TF_VAR_address="https://cml-controller.cml.lab"
+# alternatively, this is faster:
+# TF_VAR_token="your-token-here"
 
 export TF_VAR_username TF_VAR_password TF_VAR_address
 ```
@@ -100,7 +102,11 @@ Those variables are referenced for acceptance testing in `internal/provider/test
 make testacc
 ```
 
-Acceptance testing with Github actions can be achieved using the provided
-`tunnel.sh` script which uses tools like `gh` CLI and `ngrok` to forward the API
-calls to a locally installed CML instance.  See `tunnel.sh` and the `ghsecret`
-[CLI tool](https://github.com/rschmied/ghsecret) for additional details.
+Acceptance testing with GitHub actions must properly set secrets which are used
+in the test workflow:
+
+- the NGROK_URL where where the CML API is reachable
+- the USERNAME and PASSWORD or alternatively, the CML API TOKEN
+
+This can use Ngrok or other tunneling tools if the CML API isn't directly
+reachable from the internet.
