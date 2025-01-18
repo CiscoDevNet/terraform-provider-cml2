@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/rschmied/terraform-provider-cml2/internal/provider"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for

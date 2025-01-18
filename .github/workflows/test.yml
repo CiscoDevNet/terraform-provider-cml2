@@ -21,7 +21,7 @@ permissions:
 env:
   # Go language version to use for building. This value should also be updated
   # in the release workflow if changed.
-  GO_VERSION: "1.21"
+  GO_VERSION: "1.22"
 
 jobs:
   # Ensure project builds before running testing matrix
@@ -37,8 +37,17 @@ jobs:
       - run: go mod download
       - run: go build -v .
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ matrix.terraform }}
+          terraform_wrapper: false
+
   generate:
+    # this seems to cause an error as the generation now wants to exec
+    # terraform and it's not available here.  need to consider what to do.
     runs-on: ubuntu-latest
+    if: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -65,13 +74,13 @@ jobs:
         # specific IDs which must be unique... some test resource randomization
         # is needed but doesn't exist... Currently only testing w/ 1.6
         # max-parallel: 1 should fix this!
+        # Specific versions needed!
         # NOTE: required tests are configured in branch protection!
         terraform:
-          # - "1.0.*"
-          # - "1.1.*"
-          # - "1.3.*"
-          - "1.7.*"
-          - "1.8.*"
+          - "1.8.5"
+          - "1.9.8"
+          - "1.10.4"
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -100,6 +109,7 @@ jobs:
           TF_VAR_username: ${{ secrets.USERNAME }}
           TF_VAR_password: ${{ secrets.PASSWORD }}
           TF_VAR_token: ${{ secrets.TOKEN }}
+          TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
         run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile ./internal/...
         timeout-minutes: 60
 
