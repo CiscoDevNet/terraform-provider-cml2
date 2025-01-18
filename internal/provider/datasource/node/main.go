@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
-	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces

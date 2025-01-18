@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlvalidator"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
 var GroupLabAttrType = map[string]attr.Type{

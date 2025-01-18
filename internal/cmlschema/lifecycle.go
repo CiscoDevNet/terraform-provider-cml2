@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlvalidator"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
 type LabLifecycleModel struct {

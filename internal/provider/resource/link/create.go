@@ -11,8 +11,8 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
-	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
