@@ -8,10 +8,12 @@ on:
     branches: ["main"]
     paths-ignore:
       - "README.md"
+      - ".github/workflows/release.yml"
   push:
     branches: ["main"]
     paths-ignore:
       - "README.md"
+      - ".github/workflows/release.yml"
 
 # Testing only needs permissions to read the repository contents.
 permissions:

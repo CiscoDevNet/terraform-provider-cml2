@@ -17,7 +17,7 @@ permissions:
 env:
   # Go language version to use for building. This value should also be updated
   # in the testing workflow if changed.
-  GO_VERSION: "1.21"
+  GO_VERSION: "1.22"
 
 jobs:
   goreleaser:
@@ -41,7 +41,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
@@ -50,4 +50,3 @@ jobs:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-
