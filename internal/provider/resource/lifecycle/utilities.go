@@ -14,8 +14,8 @@ import (
 
 	cmlclient "github.com/rschmied/gocmlclient"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
-	"github.com/rschmied/terraform-provider-cml2/internal/common"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func getTimeouts(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostics) *labLifecycleTimeouts {

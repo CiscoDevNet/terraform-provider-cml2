@@ -32,6 +32,8 @@ provider "cml2" {
 
   # credentials, either a JWT or username/password are required
   # an error is raised if neither token or username / password are set
+  # Note: Using a token is a lot faster than using username and password
+
   # token   = var.token
   username = var.username
   password = var.password

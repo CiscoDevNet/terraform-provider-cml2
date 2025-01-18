@@ -2,28 +2,29 @@ package provider
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/common"
-	d_extconn "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/extconn"
-	d_groups "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/groups"
-	d_images "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/images"
-	d_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/lab"
-	d_node "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/node"
-	d_system "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/system"
-	d_users "github.com/rschmied/terraform-provider-cml2/internal/provider/datasource/users"
-	r_group "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/group"
-	r_lab "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lab"
-	r_lifecycle "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/lifecycle"
-	r_link "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/link"
-	r_node "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/node"
-	r_user "github.com/rschmied/terraform-provider-cml2/internal/provider/resource/user"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	d_extconn "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/extconn"
+	d_groups "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/groups"
+	d_images "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/images"
+	d_lab "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/lab"
+	d_node "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/node"
+	d_system "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/system"
+	d_users "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/users"
+	r_group "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/group"
+	r_lab "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lab"
+	r_lifecycle "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lifecycle"
+	r_link "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/link"
+	r_node "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/node"
+	r_user "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/user"
 
-	"github.com/rschmied/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -45,6 +46,25 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// address must be https
+	parsedURL, err := url.Parse(data.Address.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Can't parse server address / URL",
+			err.Error(),
+		)
+		return
+	}
+
+	// Check if the scheme is HTTPS and we have something like a hostname
+	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
+		resp.Diagnostics.AddError(
+			"Invalid server address / URL, ensure it uses HTTPS",
+			"The address of the CML server is valid and uses HTTPS as the protocol",
+		)
 		return
 	}
 

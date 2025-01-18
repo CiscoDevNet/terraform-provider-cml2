@@ -2,13 +2,18 @@
 
 # Terraform Provider for Cisco CML2
 
-This repository implements a [Terraform](https://www.terraform.io) provider for Cisco Modeling Labs version 2.4 and later. It's current state is "beta". Changes can be expected, for example:
+This repository implements a [Terraform](https://www.terraform.io) provider for
+Cisco Modeling Labs version 2.6 and later. It's current state is "beta". Changes
+can be expected, for example:
 
 - configuration (provider, resources, data-sources)
 - provider behavior
 - features (additional resources, ...)
 
-> **Note:** The provider needs CML 2.4 or newer. This is due to some additional API capabilities which were introduced with 2.4.0. Older versions are blocked within by the `gocmlclient`.
+> [!NOTE]
+> The provider needs CML 2.4 or newer. This is due to some additional API
+> capabilities which were introduced with 2.4.0. Older versions are blocked
+> within by the `gocmlclient`.
 
 The current implementation provides:
 
@@ -16,15 +21,18 @@ The current implementation provides:
   - resource `cml2_lab` to create, update and destroy labs
   - resource `cml2_node` to create, update and destroy nodes in a lab
   - resource `cml2_link` to create, update and destroy links between nodes in a lab
-  - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`, `STOPPED`), including staged starting and configuration injection
+  - resource `cml2_lifecycle` to control the state of a lab (like `STARTED`,
+  `STOPPED`), including staged starting and configuration injection
   - resource `cml2_group` to create, update and destroy groups
   - resource `cml2_user` to create, update and destroy users
   - data source `cml2_lab` to retrieve state of an existing lab
   - data source `cml2_node` to retrieve state of an existing node in a lab
   - data source `cml2_images` to retrieve the available node images from the controller
   - data source `cml2_groups` to retrieve user groups from the controller
-  - data source `cml2_extconn` to retrieve external connector information from the controller
-  - data source `cml2_system` to retrieve system state (ready state, version, ...) from the controller
+  - data source `cml2_extconn` to retrieve external connector information from
+  the controller
+  - data source `cml2_system` to retrieve system state (ready state, version,
+  ...) from the controller
   - data source `cml2_users` to retrieve users from the controller
 - Examples (`examples/`) and generated documentation (`docs/`),
 - Miscellaneous meta files.
@@ -32,7 +40,7 @@ The current implementation provides:
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21
+- [Go](https://golang.org/doc/install) >= 1.22
 - [CML2](https://cisco.com/go/cml) >= 2.6.0
 
 ## Building The Provider
@@ -50,6 +58,13 @@ go install
 Please refer to the `examples` directory and look at the built-in documentation
 provided via the registry.
 
+> [!NOTE]
+>
+> It's recommended to use the UI token (from the User menu, top right "Copy
+> JWT") instead of the user-name and password as that will provide better
+> performance.  Using the token avoids repeated client authentication via the
+> API which takes quite a bit of time.
+
 ### HCL
 
 For some basic examples look in the `examples` directory
@@ -65,7 +80,7 @@ the provider binary in the `$GOPATH/bin` directory.
 
 To generate or update documentation, run `go generate`.
 
-In order to run the full suite of Acceptance tests, run `make testacc`. For this
+In order to run the full suite of acceptance tests, run `make testacc`. For this
 to work, the provider needs to be configured via environment variables.  Here's
 an example:
 
@@ -75,6 +90,8 @@ an example:
 TF_VAR_username="admin"
 TF_VAR_password="secret"
 TF_VAR_address="https://cml-controller.cml.lab"
+# alternatively, this is faster:
+# TF_VAR_token="your-token-here"
 
 export TF_VAR_username TF_VAR_password TF_VAR_address
 ```
@@ -85,7 +102,11 @@ Those variables are referenced for acceptance testing in `internal/provider/test
 make testacc
 ```
 
-Acceptance testing with Github actions can be achieved using the provided
-`tunnel.sh` script which uses tools like `gh` CLI and `ngrok` to forward the API
-calls to a locally installed CML instance.  See `tunnel.sh` and the `ghsecret`
-[CLI tool](https://github.com/rschmied/ghsecret) for additional details.
+Acceptance testing with GitHub actions must properly set secrets which are used
+in the test workflow:
+
+- the NGROK_URL where where the CML API is reachable
+- the USERNAME and PASSWORD or alternatively, the CML API TOKEN
+
+This can use Ngrok or other tunneling tools if the CML API isn't directly
+reachable from the internet.
