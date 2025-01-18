@@ -10,6 +10,7 @@ Lists the changes in the provider.
 - added signing public key to repo
 - provider configuration check: Ensure valid CML host address (HTTPS)
 - moved package name from rschmied to ciscodevnet (cosmetic)
+- updated documentation
 
 ## Version 0.8.1
 
