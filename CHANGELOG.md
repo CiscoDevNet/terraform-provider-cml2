@@ -2,6 +2,13 @@
 
 Lists the changes in the provider.
 
+## Version 0.8.3
+
+- only check the CML host address a) if not dynamic provider configuration and
+  b) when initializing the CML client. This fixes an issue with the cloud-cml
+  deployment tooling where dynamic provider configuration is used.
+- GH release action: take go version from go.mod
+
 ## Version 0.8.2
 
 - go version 1.22 used

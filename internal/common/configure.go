@@ -3,15 +3,16 @@ package common
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync"
 
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 type ProviderConfig struct {
@@ -82,6 +83,24 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 			"A server address must be configured to use the CML2 provider",
 		)
 	}
+
+	// address must be https
+	parsedURL, err := url.Parse(r.data.Address.ValueString())
+	if err != nil {
+		diag.AddError(
+			"Can't parse server address / URL",
+			err.Error(),
+		)
+	}
+
+	// Check if the scheme is HTTPS and we have something like a hostname
+	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
+		diag.AddError(
+			"Invalid server address / URL, ensure it uses HTTPS",
+			"A valid CML server URL using HTTPS must be provided.",
+		)
+	}
+
 	if r.data.SkipVerify.IsNull() {
 		tflog.Warn(ctx, "Unspecified certificate verification, will verify")
 		r.data.SkipVerify = types.BoolValue(false)

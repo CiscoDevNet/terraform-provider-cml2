@@ -49,25 +49,6 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	// address must be https
-	parsedURL, err := url.Parse(data.Address.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Can't parse server address / URL",
-			err.Error(),
-		)
-		return
-	}
-
-	// Check if the scheme is HTTPS and we have something like a hostname
-	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
-		resp.Diagnostics.AddError(
-			"Invalid server address / URL, ensure it uses HTTPS",
-			"The address of the CML server is valid and uses HTTPS as the protocol",
-		)
-		return
-	}
-
 	// https://dev.to/camptocamp-ops/how-to-allow-dynamic-terraform-provider-configuration-20ik
 	dynamic_config := false
 	if data.DynamicConfig.IsNull() {
@@ -78,6 +59,29 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		// 	"Dynamic configuration",
 		// 	With "\"dynamic_config\", late binding of the provider configuration is enabled",
 		// )
+	}
+
+	// Only check this for non-dynamic configurations, otherwise the address
+	// is possibly empty as it can be provided at a later stage
+	if !dynamic_config {
+		// address must be https
+		parsedURL, err := url.Parse(data.Address.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Can't parse server address / URL",
+				err.Error(),
+			)
+			return
+		}
+
+		// Check if the scheme is HTTPS and we have something like a hostname
+		if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
+			resp.Diagnostics.AddError(
+				"Invalid server address / URL, ensure it uses HTTPS",
+				"A valid CML server URL using HTTPS must be provided.",
+			)
+			return
+		}
 	}
 
 	config := common.NewProviderConfig(&data)

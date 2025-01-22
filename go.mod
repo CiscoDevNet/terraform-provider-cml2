@@ -1,8 +1,6 @@
 module github.com/ciscodevnet/terraform-provider-cml2
 
-go 1.22.7
-
-toolchain go1.22.10
+go 1.22.10
 
 require (
 	github.com/google/go-cmp v0.6.0
