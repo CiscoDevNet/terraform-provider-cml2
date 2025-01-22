@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"testing"
 
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -26,7 +26,7 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccHTTPScheck(t *testing.T) {
-	re := regexp.MustCompile(`valid and uses HTTPS`)
+	re := regexp.MustCompile(`A valid CML server URL using HTTPS must be provided.`)
 	for _, url := range []string{"()!@*(#$&", "https://"} {
 		resource.Test(t, resource.TestCase{
 			PreCheck:                 func() { testAccPreCheck(t) },
