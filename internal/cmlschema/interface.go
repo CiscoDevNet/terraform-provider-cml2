@@ -16,7 +16,7 @@ import (
 )
 
 type InterfaceModel struct {
-	Id          types.String `tfsdk:"id"`
+	ID          types.String `tfsdk:"id"`
 	Label       types.String `tfsdk:"label"`
 	State       types.String `tfsdk:"state"`
 	MACaddress  types.String `tfsdk:"mac_address"`
@@ -117,7 +117,7 @@ func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.D
 	}
 
 	newIface := InterfaceModel{
-		Id:          types.StringValue(iface.ID),
+		ID:          types.StringValue(iface.ID),
 		Label:       types.StringValue(iface.Label),
 		State:       types.StringValue(iface.State),
 		IsConnected: types.BoolValue(iface.IsConnected),

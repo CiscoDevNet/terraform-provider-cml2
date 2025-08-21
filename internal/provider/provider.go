@@ -1,3 +1,4 @@
+// Package provider implements the CML2 Terraform provider
 package provider
 
 import (
@@ -50,11 +51,11 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	// https://dev.to/camptocamp-ops/how-to-allow-dynamic-terraform-provider-configuration-20ik
-	dynamic_config := false
+	dynamicConfig := false
 	if data.DynamicConfig.IsNull() {
 		data.DynamicConfig = types.BoolValue(false)
 	} else if data.DynamicConfig.ValueBool() {
-		dynamic_config = true
+		dynamicConfig = true
 		// resp.Diagnostics.AddWarning(
 		// 	"Dynamic configuration",
 		// 	With "\"dynamic_config\", late binding of the provider configuration is enabled",
@@ -63,7 +64,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	// Only check this for non-dynamic configurations, otherwise the address
 	// is possibly empty as it can be provided at a later stage
-	if !dynamic_config {
+	if !dynamicConfig {
 		// address must be https
 		parsedURL, err := url.Parse(data.Address.ValueString())
 		if err != nil {
@@ -85,7 +86,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	config := common.NewProviderConfig(&data)
-	if !dynamic_config {
+	if !dynamicConfig {
 		config.Initialize(ctx, resp.Diagnostics)
 	}
 	resp.DataSourceData = config

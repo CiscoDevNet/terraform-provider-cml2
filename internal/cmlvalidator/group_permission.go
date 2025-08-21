@@ -22,7 +22,7 @@ func (v GroupPermission) MarkdownDescription(ctx context.Context) string {
 	return "valid states are `read_write` and `read_only`"
 }
 
-// Validate runs the main validation logic of the validator, reading
+// ValidateString runs the main validation logic of the validator, reading
 // configuration data out of `req` and updating `resp` with diagnostics.
 func (v GroupPermission) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	var permission types.String

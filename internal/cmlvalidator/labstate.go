@@ -1,3 +1,5 @@
+// Package cmlvalidator provides functions and types which validate CML related
+// types
 package cmlvalidator
 
 import (
@@ -23,7 +25,7 @@ func (v LabState) MarkdownDescription(ctx context.Context) string {
 	return "valid states are `DEFINED_ON_CORE`, `STOPPED` and `STARTED`"
 }
 
-// Validate runs the main validation logic of the validator, reading
+// ValidateString runs the main validation logic of the validator, reading
 // configuration data out of `req` and updating `resp` with diagnostics.
 func (v LabState) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
 	var labState types.String

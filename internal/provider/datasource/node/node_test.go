@@ -1,8 +1,7 @@
-package groups_test
+package node_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
@@ -22,46 +21,40 @@ func testAccPreCheck(t *testing.T) {
 	// are common to see in a pre-check function.
 }
 
-func TestGroupDataSource(t *testing.T) {
-	re1 := regexp.MustCompile(`\w+`)
-
+func TestNodeDataSource(t *testing.T) {
+	title := "thislab"
+	label := "thetestnode"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// {
-			// 	Config:      testSystemDataSourceConfig(cfg.CfgBroken, 8),
-			// 	ExpectError: re1,
-			// },
-			// {
-			// 	Config: testGroupDataSourceConfig(cfg.Cfg),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckOutput("bla", "false"),
-			// 	),
-			// },
 			{
-				Config: testGroupDataSourceConfig(cfg.Cfg),
+				Config: testNodeDataSourceConfig(cfg.Cfg, title, label),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchOutput("bla", re1),
+					resource.TestCheckOutput("theoutput", label),
 				),
 			},
 		},
 	})
 }
 
-func testGroupDataSourceConfig(cfg string) string {
+func testNodeDataSourceConfig(cfg, title, label string) string {
 	return fmt.Sprintf(`
 	%[1]s
-	resource "cml2_group" "thegroup" {
-        description = "the students"
-        name = "students"
+	resource "cml2_lab" "lab" {
+			title = %[2]q
 	}
-	data "cml2_groups" "test" {
-		name = "students"
-		depends_on = [ cml2_group.thegroup ]
+	resource "cml2_node" "node" {
+		  lab_id = cml2_lab.lab.id
+		  nodedefinition = "alpine"
+			label = %[3]q
 	}
-	output "bla" {
-		value = data.cml2_groups.test.groups[0].name
+	data "cml2_node" "acc_test" {
+		id = cml2_node.node.id
+		lab_id = cml2_lab.lab.id
 	}
-	`, cfg)
+	output "theoutput" {
+		value = data.cml2_node.acc_test.node.label
+	}
+	`, cfg, title, label)
 }

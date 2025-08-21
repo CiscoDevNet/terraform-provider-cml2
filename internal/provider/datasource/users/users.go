@@ -1,3 +1,4 @@
+// Package users implements the CML2 user datasource.
 package users
 
 import (

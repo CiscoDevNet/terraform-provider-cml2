@@ -1,3 +1,4 @@
+// Package testing provides base configuration for (integration) testing
 package testing
 
 var Cfg string = `

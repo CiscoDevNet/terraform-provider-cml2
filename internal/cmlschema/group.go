@@ -3,6 +3,7 @@ package cmlschema
 import (
 	"context"
 
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
 var GroupLabAttrType = map[string]attr.Type{

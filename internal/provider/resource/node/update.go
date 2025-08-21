@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -98,25 +98,34 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// work around the fact that updating an external connector will "resolve"
-	// the device name (if given, worked in previous versions" with the
-	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We want to keep
-	// the original value in this case, otherwise we run into inconsistent
-	// state!
+	// Work around the fact that updating an external connector can "resolve" the
+	// device name (if given, worked in previous versions" with the label... e.g.
+	// virbr0 -> NAT, bridge0 -> System Bridge. We want to keep the original
+	// value in this case, otherwise we run into inconsistent state!
 	if node.NodeDefinition == "external_connector" {
-		// this is currently not needed but makes the provider a bit future
-		// proof in case external connectors have named configs eventually.
-		nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
-		if !planData.Configurations.Equal(nnc) {
-			resp.Diagnostics.AddError(
-				"External connector configurations",
-				fmt.Sprintf("Provide proper external connector configurations, not a device name (deprecated)."),
-			)
-			return
+		// working with single string configuration or named configurations?
+		if len(*newNode.Configuration) > 0 {
+			nnc := cmlschema.NewConfigValue(*newNode.Configuration)
+			if !planData.Configuration.Equal(nnc) {
+				resp.Diagnostics.AddError(
+					"External connector configuration (single)",
+					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
+				)
+				return
+			}
+		} else {
+			nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
+			if !planData.Configurations.Equal(nnc) {
+				resp.Diagnostics.AddError(
+					"External connector configurations (named)",
+					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
+				)
+				return
+			}
 		}
 	}
 
-	// when updating with named configs on, we need to move over the returned
+	// When updating with named configs on, we need to move over the returned
 	// named config into the single configuration if it was previously used.
 	// tflog.Warn(ctx, "###u", map[string]any{"null": stateData.Configuration.IsNull(), "unknown": stateData.Configuration.IsUnknown(), "len": len(node.Configurations)})
 	if !stateData.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {

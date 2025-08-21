@@ -1,3 +1,4 @@
+// Package system implements the CML2 system datasource.
 package system
 
 import (
@@ -14,9 +15,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	cmlclient "github.com/rschmied/gocmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces

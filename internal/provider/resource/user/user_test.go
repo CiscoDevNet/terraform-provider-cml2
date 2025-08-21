@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
-	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during

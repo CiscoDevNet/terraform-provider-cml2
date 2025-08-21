@@ -392,8 +392,8 @@ func NewNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diag
 		return types.ListNull(NamedConfigAttrType)
 	}
 	valueList := make([]attr.Value, 0)
-	for _, named_config := range node.Configurations {
-		valueList = append(valueList, newNamedConfig(ctx, named_config, diags))
+	for _, namedConfig := range node.Configurations {
+		valueList = append(valueList, newNamedConfig(ctx, namedConfig, diags))
 	}
 	namedConfigs, dia := types.ListValue(
 		NamedConfigAttrType,
@@ -408,8 +408,8 @@ func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Dia
 		return types.ListNull(SerialDevicesAttrType)
 	}
 	valueList := make([]attr.Value, 0)
-	for _, serial_device := range node.SerialDevices {
-		valueList = append(valueList, newSerialDevice(ctx, serial_device, diags))
+	for _, serialDevice := range node.SerialDevices {
+		valueList = append(valueList, newSerialDevice(ctx, serialDevice, diags))
 	}
 	serialDevices, dia := types.ListValue(
 		SerialDevicesAttrType,

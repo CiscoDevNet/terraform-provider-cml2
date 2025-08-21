@@ -1,3 +1,4 @@
+// Package cmlschema provides types and functions for the CML data model
 package cmlschema
 
 import (

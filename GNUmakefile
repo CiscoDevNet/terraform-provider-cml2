@@ -9,7 +9,11 @@ VERSION := $(shell git describe --long | sed -re 's/^v(.*)$$/\1/')
 DEST := ~/.terraform.d/plugins/$(ORG)/$(NAME)/$(VERSION)/$(ARCH)
 
 MIRROR := /tmp/terraform/$(ORG)/$(NAME)
-TESTARGS := -cover -v
+
+COVEROUT := coverage
+COVERAGE := -cover -coverprofile $(COVEROUT).out
+
+TESTARGS := -v $(COVERAGE)
 
 # Run tests
 .PHONY: tests
@@ -35,3 +39,13 @@ mirror:
 	goreleaser release --skip-publish --rm-dist
 	test -d $(DEST) || mkdir -p $(MIRROR)
 	cp dist/*.zip $(MIRROR)
+
+.PHONY: cover
+cover:
+	# go test -v -coverprofile $(NAME).out ./...
+	go tool cover -html $(COVEROUT).out -o $(COVEROUT).html
+	open $(COVEROUT).html
+
+.PHONY: clean
+clean:
+	@bash -c "rm -f $(COVEROUT).{html,out}"

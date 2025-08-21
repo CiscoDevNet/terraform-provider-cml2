@@ -1,3 +1,4 @@
+// Package node implements the CML2 node datasource.
 package node
 
 import (
@@ -22,12 +23,12 @@ func NewDataSource() datasource.DataSource {
 	return &NodeDataSource{}
 }
 
-// ExampleDataSource defines the data source implementation.
+// NodeDataSource defines the data source implementation.
 type NodeDataSource struct {
 	cfg *common.ProviderConfig
 }
 
-// ExampleDataSourceModel describes the data source data model.
+// NodeDataSourceModel describes the data source data model.
 type NodeDataSourceModel struct {
 	ID    types.String `tfsdk:"id"`
 	LabID types.String `tfsdk:"lab_id"`

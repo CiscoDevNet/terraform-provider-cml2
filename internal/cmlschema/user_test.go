@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	cmlclient "github.com/rschmied/gocmlclient"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/stretchr/testify/assert"
 )
 

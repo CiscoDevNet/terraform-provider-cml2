@@ -1,3 +1,4 @@
+// Package group implements the CML2 group resource.
 package group
 
 import (

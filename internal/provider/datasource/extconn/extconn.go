@@ -1,8 +1,10 @@
+// Package extconn implements the CML2 extconn datasource.
 package extconn
 
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -97,13 +99,7 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 			continue
 		}
 		if !data.Tag.IsNull() {
-			found := false
-			for _, tag := range connector.Tags {
-				if tag == data.Tag.ValueString() {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(connector.Tags, data.Tag.ValueString())
 			if !found {
 				continue
 			}
