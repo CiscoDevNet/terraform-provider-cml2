@@ -48,15 +48,14 @@ jobs:
           terraform_wrapper: false
 
   generate:
-    # this seems to cause an error as the generation now wants to exec
-    # terraform and it's not available here.  need to consider what to do.
+    # go generate needs Terraform in the path, use latest version
     runs-on: ubuntu-latest
-    # if: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+      - uses: hashicorp/setup-terraform@v3
       - run: go generate ./...
       - name: git diff
         run: |
