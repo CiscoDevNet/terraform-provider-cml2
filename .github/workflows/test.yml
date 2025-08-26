@@ -73,17 +73,20 @@ jobs:
       max-parallel: 1
       fail-fast: false
       matrix:
-        # list whatever Terraform versions here you would like to support
-        # jobs run in parallel -- some tests create resources with
-        # specific IDs which must be unique... some test resource randomization
-        # is needed but doesn't exist... Currently only testing w/ 1.6
-        # max-parallel: 1 should fix this!
+        # list whatever Terraform versions here you would like to support jobs
+        # run in parallel -- some tests create resources with specific IDs
+        # which must be unique... some test resource randomization is needed
+        # but doesn't exist... Currently only testing w/ 1.6 max-parallel: 1
+        # should fix this!
         # Specific versions needed!
         # NOTE: required tests are configured in branch protection!
+        #
+        # https://releases.hashicorp.com/terraform/
+        #
         terraform:
-          - "1.8.5"
-          - "1.9.8"
-          - "1.10.4"
+          - "1.11.4"
+          - "1.12.2"
+          - "1.13.0"
 
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +117,7 @@ jobs:
           TF_VAR_password: ${{ secrets.PASSWORD }}
           TF_VAR_token: ${{ secrets.TOKEN }}
           TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
-        run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile ./internal/...
+        run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile -coverpkg=./internal/... ./internal/...
         timeout-minutes: 60
 
       - name: Install goveralls
