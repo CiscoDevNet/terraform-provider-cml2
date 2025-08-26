@@ -11,9 +11,9 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-// ImageDefModel is the TF representation of a CML2 image definition
-// it does not contain all attributes as defined by the API endpoint
-// the ones ommitted are irrelevant for TF operations (e.g. disk paths)
+// ImageDefinitionModel is the TF representation of a CML2 image definition it
+// does not contain all attributes as defined by the API endpoint the ones
+// ommitted are irrelevant for TF operations (e.g. disk paths)
 type ImageDefinitionModel struct {
 	ID            types.String `tfsdk:"id"`
 	NodeDefID     types.String `tfsdk:"nodedefinition"`

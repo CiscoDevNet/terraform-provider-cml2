@@ -1,3 +1,4 @@
+// Package lab implements the CML2 lab resource.
 package lab
 
 import (

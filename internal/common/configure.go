@@ -1,3 +1,5 @@
+// Package common provides functions and types used by several other packages
+// of the CML2 Terraform provider.
 package common
 
 import (

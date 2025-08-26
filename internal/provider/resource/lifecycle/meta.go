@@ -1,3 +1,4 @@
+// Package lifecycle implements the CML2 lifecycle resource.
 package lifecycle
 
 import (

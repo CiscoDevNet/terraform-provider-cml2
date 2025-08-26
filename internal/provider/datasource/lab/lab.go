@@ -1,3 +1,4 @@
+// Package lab implements the CML2 lab datasource.
 package lab
 
 import (
@@ -10,9 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	cmlclient "github.com/rschmied/gocmlclient"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -31,7 +32,7 @@ func NewDataSource() datasource.DataSource {
 	return &LabDataSource{}
 }
 
-// ExampleDataSource defines the data source implementation.
+// LabDataSource defines the data source implementation.
 type LabDataSource struct {
 	cfg *common.ProviderConfig
 }

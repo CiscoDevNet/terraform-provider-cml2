@@ -137,7 +137,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if node.NodeDefinition == "external_connector" && !node.SameConfig(*newNode) {
 		resp.Diagnostics.AddError(
 			"External connector configuration",
-			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated)."),
+			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
 		)
 		return
 	}

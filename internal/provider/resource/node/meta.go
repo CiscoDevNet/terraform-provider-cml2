@@ -1,3 +1,4 @@
+// Package node implements the CML2 node resource.
 package node
 
 import (

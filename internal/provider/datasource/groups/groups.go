@@ -1,3 +1,4 @@
+// Package groups implements the CML2 groups datasource.
 package groups
 
 import (

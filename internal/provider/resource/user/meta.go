@@ -1,3 +1,4 @@
+// Package user implements the CML2 user resource.
 package user
 
 import (

@@ -96,8 +96,8 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 	}
 
 	// start nodes in stages
-	for _, stage_elem := range start.staging.Stages.Elements() {
-		stage := stage_elem.(types.String).ValueString()
+	for _, stageElem := range start.staging.Stages.Elements() {
+		stage := stageElem.(types.String).ValueString()
 		for _, node := range start.lab.Nodes {
 			for _, tag := range node.Tags {
 				if tag == stage {
@@ -152,8 +152,8 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 			diags.AddError(common.ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
 			continue
 		}
-		config_string := config.(types.String).ValueString()
-		err = r.cfg.Client().NodeSetConfig(ctx, node, config_string)
+		configString := config.(types.String).ValueString()
+		err = r.cfg.Client().NodeSetConfig(ctx, node, configString)
 		if err != nil {
 			diags.AddError("set node config failed",
 				fmt.Sprintf("setting the new node configuration failed: %s", err),

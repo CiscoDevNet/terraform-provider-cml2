@@ -11,7 +11,7 @@ import (
 	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnostics, id string, timeout string) {
+func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnostics, id, timeout string) {
 	converged := false
 	waited := 0
 	snoozeFor := 5 // seconds

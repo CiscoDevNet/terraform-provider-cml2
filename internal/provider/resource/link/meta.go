@@ -1,3 +1,4 @@
+// Package link implements the CML2 link resource.
 package link
 
 import (
