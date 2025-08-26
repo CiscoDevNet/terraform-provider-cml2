@@ -51,7 +51,7 @@ jobs:
     # this seems to cause an error as the generation now wants to exec
     # terraform and it's not available here.  need to consider what to do.
     runs-on: ubuntu-latest
-    if: false
+    # if: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
