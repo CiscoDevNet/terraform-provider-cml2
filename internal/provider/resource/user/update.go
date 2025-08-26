@@ -27,7 +27,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	node := &cmlclient.User{
+	user := &cmlclient.User{
 		ID:       data.ID.ValueString(),
 		Username: data.Username.ValueString(),
 		// passwords can't be changed by just setting the new password
@@ -35,23 +35,23 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	if !data.Fullname.IsUnknown() {
-		node.Fullname = data.Fullname.ValueString()
+		user.Fullname = data.Fullname.ValueString()
 	}
 
 	if !data.Email.IsUnknown() {
-		node.Email = data.Email.ValueString()
+		user.Email = data.Email.ValueString()
 	}
 
 	if !data.Description.IsUnknown() {
-		node.Description = data.Description.ValueString()
+		user.Description = data.Description.ValueString()
 	}
 
 	if !data.IsAdmin.IsUnknown() {
-		node.IsAdmin = data.IsAdmin.ValueBool()
+		user.IsAdmin = data.IsAdmin.ValueBool()
 	}
 
 	if !data.ResourcePool.IsUnknown() {
-		node.ResourcePool = data.ResourcePool.ValueStringPointer()
+		user.ResourcePool = data.ResourcePool.ValueStringPointer()
 	}
 
 	groups := make([]string, 0)
@@ -62,12 +62,12 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			groups = append(groups, group.ValueString())
 		}
 	}
-	node.Groups = groups
+	user.Groups = groups
 
 	// can't update password
-	node.Password = ""
+	user.Password = ""
 
-	updatedUser, err := r.cfg.Client().UserUpdate(ctx, node)
+	updatedUser, err := r.cfg.Client().UserUpdate(ctx, user)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

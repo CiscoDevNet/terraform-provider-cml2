@@ -1,6 +1,6 @@
 module github.com/ciscodevnet/terraform-provider-cml2
 
-go 1.24
+go 1.24.6
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.28.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
-	github.com/rschmied/gocmlclient v0.1.0
+	github.com/rschmied/gocmlclient v0.1.1
 	github.com/stretchr/testify v1.10.0
 )
 
@@ -47,7 +47,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.23.0 // indirect
 	github.com/hashicorp/terraform-json v0.25.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0 // indirect
-	github.com/hashicorp/terraform-registry-address v0.3.0 // indirect
+	github.com/hashicorp/terraform-registry-address v0.4.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
@@ -81,11 +81,11 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient
+// replace github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient

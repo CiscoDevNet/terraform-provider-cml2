@@ -39,14 +39,6 @@ func TestAccUserResource(t *testing.T) {
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "is_admin", "true"),
 				),
 			},
-			// ImportState testing
-			{
-				ResourceName:      "cml2_user.acc_test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				// password will be unknown at import
-				ImportStateVerifyIgnore: []string{"password"},
-			},
 			// Update and Read testing
 			{
 				Config: testAccUserResourceConfigUpdate(cfg.Cfg),
@@ -57,6 +49,14 @@ func TestAccUserResource(t *testing.T) {
 				),
 				// PlanOnly:           true,
 				// ExpectNonEmptyPlan: true,
+			},
+			// ImportState testing
+			{
+				ResourceName:      "cml2_user.acc_test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// password will be unknown at import
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 			// Delete testing automatically occurs in TestCase
 		},

@@ -2,12 +2,12 @@
 
 Lists the changes in the provider.
 
-## Version 0.9.0
+## Version 0.8.4
 
 - ensure the provider works / passes all tests against a 2.9.0 instance
 - uses Go 1.24
 - updated all dependencies including the gocmlclient which should now work
-a lot faster when a token (vs username/password) is used
+a bit faster when a token (vs username/password) is used
 - added some more tests for data sources
 - formatting and naming best practices
 - fix external connector update check for single configurations
@@ -61,7 +61,8 @@ are now equivalent (fixes #106)
 - return error for external connector configuration when device name is
 provided instead of "NAT" or "System Bridge", fixes #81
 - updated all package dependencies
-- fix CPULimit property for UMS and ExtConn (they are now always NULL starting with 2.6.0)
+- fix CPULimit property for UMS and ExtConn (they are now always NULL starting
+with 2.6.0)
 - some cosmetic and test changes
 - added a add-to-booted-lab lifecycle test (addresses #75 but can't reproduce)
 - formatted code base w/ gofumpt

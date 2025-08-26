@@ -9,14 +9,17 @@ variable "address" {
 variable "username" {
 	description = "CML controller username"
 	type        = string
+	default     = ""
 }
 variable "password" {
 	description = "CML controller password"
 	type        = string
+	default     = ""
 }
 variable "token" {
 	description = "CML controller JWT"
 	type        = string
+	default     = ""
 }
 provider "cml2" {
 	address = var.address
@@ -36,10 +39,12 @@ variable "address" {
 variable "username" {
 	description = "CML controller username"
 	type        = string
+	default     = ""
 }
 variable "password" {
 	description = "CML controller password"
 	type        = string
+	default     = ""
 }
 variable "token" {
 	description = "CML controller JWT"
@@ -63,10 +68,12 @@ variable "address" {
 variable "username" {
 	description = "CML controller username"
 	type        = string
+	default     = ""
 }
 variable "password" {
 	description = "CML controller password"
 	type        = string
+	default     = ""
 }
 provider "cml2" {
 	# something non-existent

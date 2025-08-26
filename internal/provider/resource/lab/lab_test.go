@@ -77,9 +77,9 @@ func TestAccLabResource(t *testing.T) {
 }
 
 func testAccLabResourceConfig(cfg, title, description string, group int) string {
-	var group_cfg string
+	var groupCfg string
 	if group == 1 {
-		group_cfg = `
+		groupCfg = `
 		{
 			id = cml2_group.group1.id
 			permission = "read_only"
@@ -90,7 +90,7 @@ func testAccLabResourceConfig(cfg, title, description string, group int) string 
 		}
 		`
 	} else {
-		group_cfg = `
+		groupCfg = `
 		{
 			id = cml2_group.group2.id
 			permission = "read_write"
@@ -122,5 +122,5 @@ resource "cml2_lab" "test" {
 		%[4]s
 	]
 }
-`, cfg, title, description, group_cfg)
+`, cfg, title, description, groupCfg)
 }
