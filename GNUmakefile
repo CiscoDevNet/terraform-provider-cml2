@@ -15,6 +15,12 @@ COVERAGE := -cover -coverprofile $(COVEROUT).out
 
 TESTARGS := -v $(COVERAGE)
 
+# Update
+.PHONY: update
+update:
+	go get -u ./...
+	go mod download && go mod verify && go mod tidy
+
 # Run tests
 .PHONY: tests
 tests:
