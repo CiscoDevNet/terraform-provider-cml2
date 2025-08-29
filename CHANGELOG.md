@@ -2,6 +2,13 @@
 
 Lists the changes in the provider.
 
+## Version 0.8.5
+
+- use gocmlclient 0.1.2 (0.1.1 was broken when doing user/pass auth instead of
+token authentication)
+- update GH actions to recommended versions
+- update terraform-plugin-docs to 0.22.0
+
 ## Version 0.8.4
 
 - ensure the provider works / passes all tests against a 2.9.0 instance
