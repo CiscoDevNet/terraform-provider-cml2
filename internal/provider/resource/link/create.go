@@ -68,6 +68,9 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// Some node definitions don't have stable/meaningful interface slots for
+	// links. Keep the API-reported values and avoid forcing replacement.
+
 	tflog.Info(ctx, fmt.Sprintf("src slot %d", newLink.SrcSlot))
 	tflog.Info(ctx, fmt.Sprintf("dst slot %d", newLink.DstSlot))
 

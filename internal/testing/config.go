@@ -49,6 +49,7 @@ variable "password" {
 variable "token" {
 	description = "CML controller JWT"
 	type        = string
+	default     = ""
 }
 provider "cml2" {
 	address = var.address
