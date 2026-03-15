@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
-
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -28,32 +27,35 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	lab := cmlclient.Lab{}
+	createReq := models.LabCreateRequest{}
 	if !labModel.Notes.IsNull() {
-		lab.Notes = labModel.Notes.ValueString()
+		createReq.Notes = labModel.Notes.ValueString()
 	}
 	if !labModel.Description.IsNull() {
-		lab.Description = labModel.Description.ValueString()
+		createReq.Description = labModel.Description.ValueString()
 	}
 	if !labModel.Title.IsNull() {
-		lab.Title = labModel.Title.ValueString()
+		createReq.Title = labModel.Title.ValueString()
 	}
 
-	groupList := make([]*cmlclient.LabGroup, 0)
-	if !labModel.Groups.IsUnknown() {
-		var model cmlschema.LabGroupModel
+	if !labModel.Groups.IsUnknown() && !labModel.Groups.IsNull() {
+		groups := make([]models.LabGroup, 0)
+		var g cmlschema.LabGroupModel
 		for _, elem := range labModel.Groups.Elements() {
-			tfsdk.ValueAs(ctx, elem, &model)
-			el := cmlclient.LabGroup{
-				ID:         model.ID.ValueString(),
-				Permission: model.Permission.ValueString(),
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &g)...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-			groupList = append(groupList, &el)
+			perm := models.OldPermissionReadOnly
+			if g.Permission.ValueString() == string(models.OldPermissionReadWrite) {
+				perm = models.OldPermissionReadWrite
+			}
+			groups = append(groups, models.LabGroup{ID: models.UUID(g.ID.ValueString()), Permission: perm})
 		}
+		createReq.Groups = groups
 	}
-	lab.Groups = groupList
 
-	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
+	newLab, err := r.cfg.Client().Lab.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -62,13 +64,15 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	// Refresh to get populated groups from API.
+	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
+		return
+	}
+
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
-			&labModel,
-		)...,
+		tfsdk.ValueFrom(ctx, cmlschema.NewLab(ctx, &fullLab, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.LabAttrType}, &labModel)...,
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &labModel)...)
 

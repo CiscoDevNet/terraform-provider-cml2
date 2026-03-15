@@ -23,7 +23,12 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestSystemDataSource(t *testing.T) {
-	re1 := regexp.MustCompile(`ran into timeout`)
+	cfg.SkipUnlessAcc(t)
+
+	// When using cfg.CfgBroken we point at a non-existent endpoint. Depending on
+	// client behavior, this may either time out (older behavior) or fail fast with
+	// a connection error.
+	re1 := regexp.MustCompile(`(?s)(ran into timeout|CML client error|connection refused)`)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -34,10 +39,8 @@ func TestSystemDataSource(t *testing.T) {
 				ExpectError: re1,
 			},
 			{
-				Config: testSystemDataSourceConfig(cfg.CfgBroken, 0),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckOutput("bla", "false"),
-				),
+				Config:      testSystemDataSourceConfig(cfg.CfgBroken, 0),
+				ExpectError: re1,
 			},
 			{
 				Config: testSystemDataSourceConfig(cfg.Cfg, 0),

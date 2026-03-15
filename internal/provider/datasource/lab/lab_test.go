@@ -23,6 +23,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestLabDataSource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	title := "thislab"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

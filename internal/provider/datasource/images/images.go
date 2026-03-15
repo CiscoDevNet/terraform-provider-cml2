@@ -98,7 +98,6 @@ func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves image definitions from the controller. The optional `nodedefinition` ID can be provided to filter the list of image definitions for the specified node definition. If no node definition ID is provided, the complete image definition list known to the controller is returned."
-	resp.Diagnostics = nil
 }
 
 func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -112,7 +111,7 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	images, err := d.cfg.Client().ImageDefinitions(ctx)
+	images, err := d.cfg.Client().ImageDefinition.ImageDefinitions(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

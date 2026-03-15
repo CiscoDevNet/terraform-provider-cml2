@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -66,12 +66,12 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	// but only if there were no errors from config injection
 	if !resp.Diagnostics.HasError() &&
 		(data.State.IsUnknown() ||
-			data.State.ValueString() == cmlclient.LabStateStarted) {
+			data.State.ValueString() == string(models.LabStateStarted)) {
 		r.startNodes(ctx, &resp.Diagnostics, start)
 	}
 
 	// fetch lab again, with nodes and interfaces
-	lab, err := r.cfg.Client().LabGet(ctx, start.lab.ID, true)
+	lab, err := r.cfg.Client().LabGet(ctx, string(start.lab.ID), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -80,8 +80,8 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.LabID = types.StringValue(lab.ID)
-	data.State = types.StringValue(lab.State)
+	data.LabID = types.StringValue(string(lab.ID))
+	data.State = types.StringValue(string(lab.State))
 	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 

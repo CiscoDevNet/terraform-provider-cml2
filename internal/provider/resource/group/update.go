@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -27,8 +27,8 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	group := &cmlclient.Group{
-		ID:   data.ID.ValueString(),
+	group := models.Group{
+		ID:   models.UUID(data.ID.ValueString()),
 		Name: data.Name.ValueString(),
 	}
 
@@ -36,31 +36,33 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		group.Description = data.Description.ValueString()
 	}
 
-	members := make([]string, 0)
+	members := make([]models.UUID, 0)
 	if !data.Members.IsUnknown() {
 		var user types.String
 		for _, elem := range data.Members.Elements() {
 			tfsdk.ValueAs(ctx, elem, &user)
-			members = append(members, user.ValueString())
+			members = append(members, models.UUID(user.ValueString()))
 		}
 	}
 	group.Members = members
 
-	labList := make([]cmlclient.GroupLab, 0)
-	if !data.Labs.IsUnknown() {
-		var model cmlschema.GroupLabModel
+	assocs := make([]models.Association, 0)
+	if !data.Labs.IsUnknown() && !data.Labs.IsNull() {
+		var lab cmlschema.GroupLabModel
 		for _, elem := range data.Labs.Elements() {
-			tfsdk.ValueAs(ctx, elem, &model)
-			lab := cmlclient.GroupLab{
-				ID:         model.ID.ValueString(),
-				Permission: model.Permission.ValueString(),
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &lab)...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-			labList = append(labList, lab)
+			assocs = append(assocs, models.Association{
+				ID:          models.UUID(lab.ID.ValueString()),
+				Permissions: cmlschema.AssociationPermissionsFromTFGroupPermission(lab.Permission.ValueString()),
+			})
 		}
 	}
-	group.Labs = labList
+	group.Associations = assocs
 
-	updatedGroup, err := r.cfg.Client().GroupUpdate(ctx, group)
+	updatedGroup, err := r.cfg.Client().Group.Update(ctx, group)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -70,12 +72,7 @@ func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewGroup(ctx, updatedGroup, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.GroupAttrType},
-			&data,
-		)...,
+		tfsdk.ValueFrom(ctx, cmlschema.NewGroup(ctx, &updatedGroup, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.GroupAttrType}, &data)...,
 	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

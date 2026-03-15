@@ -28,6 +28,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccLifecycleResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -59,6 +61,8 @@ func TestAccLifecycleResource(t *testing.T) {
 }
 
 func TestAccLifecycleImport(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -79,6 +83,8 @@ func TestAccLifecycleImport(t *testing.T) {
 }
 
 func TestAccLifecycleConfigCheck(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	// this was deprecated and replaced by depends_on with 0.1.0
 	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
 	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
@@ -101,6 +107,8 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 }
 
 func TestAccLifecycleImportLab(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	const (
 		initialAlpineConfig = "new config for alpine"
 		changedAlpineConfig = "changed config for alpine"
@@ -151,6 +159,8 @@ func uuidCheck(value string) error {
 }
 
 func TestAccLifecycleResourceState(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	re1 := regexp.MustCompile(`can't transition from no state to STOPPED`)
 	re2 := regexp.MustCompile(`can't transition from DEFINED_ON_CORE to STOPPED`)
 
@@ -175,6 +185,8 @@ func TestAccLifecycleResourceState(t *testing.T) {
 }
 
 func TestAccLifecycleSequence(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -232,6 +244,8 @@ func TestAccLifecycleSequence(t *testing.T) {
 }
 
 func TestAccLifecycleAddNodeToBooted(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -253,6 +267,8 @@ func TestAccLifecycleAddNodeToBooted(t *testing.T) {
 }
 
 func TestAccLifecycleNamedConfigs(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

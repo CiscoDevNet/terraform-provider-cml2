@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // LabModel is the TF representation of a CML2 lab
@@ -140,25 +140,21 @@ func Lab() map[string]schema.Attribute {
 }
 
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
-func NewLab(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) attr.Value {
-	valueSet := make([]attr.Value, 0)
-	for _, group := range lab.Groups {
-		value := NewLabGroup(ctx, group, diags)
-		valueSet = append(valueSet, value)
+func NewLab(ctx context.Context, lab *models.Lab, diags *diag.Diagnostics) attr.Value {
+	valueSet := make([]attr.Value, 0, len(lab.Groups))
+	for i := range lab.Groups {
+		valueSet = append(valueSet, NewLabGroup(ctx, &lab.Groups[i], diags))
 	}
-	groups, diag := types.SetValue(
-		types.ObjectType{AttrTypes: LabGroupAttrType},
-		valueSet,
-	)
+	groups, diag := types.SetValue(types.ObjectType{AttrTypes: LabGroupAttrType}, valueSet)
 	diags.Append(diag...)
 
 	newLab := LabModel{
-		ID:          types.StringValue(lab.ID),
-		State:       types.StringValue(lab.State),
+		ID:          types.StringValue(string(lab.ID)),
+		State:       types.StringValue(string(lab.State)),
 		Created:     types.StringValue(lab.Created),
 		Modified:    types.StringValue(lab.Modified),
 		Title:       types.StringValue(lab.Title),
-		Owner:       types.StringValue(lab.Owner.ID),
+		Owner:       types.StringValue(string(lab.OwnerID)),
 		Description: types.StringValue(lab.Description),
 		NodeCount:   types.Int64Value(int64(lab.NodeCount)),
 		LinkCount:   types.Int64Value(int64(lab.LinkCount)),

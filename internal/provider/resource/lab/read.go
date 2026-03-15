@@ -8,7 +8,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -22,12 +22,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	var (
-		lab *cmlclient.Lab
-		err error
-	)
-
-	lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -37,7 +32,7 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	// Save data into Terraform state
-	value := cmlschema.NewLab(ctx, lab, &resp.Diagnostics)
+	value := cmlschema.NewLab(ctx, &lab, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
 
 	tflog.Info(ctx, "Resource Lab READ done")

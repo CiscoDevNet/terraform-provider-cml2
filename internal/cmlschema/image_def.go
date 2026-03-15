@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // ImageDefinitionModel is the TF representation of a CML2 image definition it
@@ -92,9 +92,9 @@ func ImageDef() map[string]schema.Attribute {
 	}
 }
 
-func NewImageDefinition(ctx context.Context, image *cmlclient.ImageDefinition, diags *diag.Diagnostics) attr.Value {
+func NewImageDefinition(ctx context.Context, image *models.ImageDefinition, diags *diag.Diagnostics) attr.Value {
 	newImage := ImageDefinitionModel{
-		ID:            types.StringValue(image.ID),
+		ID:            types.StringValue(string(image.ID)),
 		NodeDefID:     types.StringValue(image.NodeDefID),
 		Label:         types.StringValue(image.Label),
 		Description:   types.StringValue(image.Description),

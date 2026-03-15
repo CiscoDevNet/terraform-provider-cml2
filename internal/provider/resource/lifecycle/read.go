@@ -33,8 +33,8 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, fmt.Sprintf("Read: lab state: %s", lab.State))
 
-	data.LabID = types.StringValue(lab.ID)
-	data.State = types.StringValue(lab.State)
+	data.LabID = types.StringValue(string(lab.ID))
+	data.State = types.StringValue(string(lab.State))
 	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 

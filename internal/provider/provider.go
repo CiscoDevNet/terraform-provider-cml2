@@ -87,7 +87,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	config := common.NewProviderConfig(&data)
 	if !dynamicConfig {
-		config.Initialize(ctx, resp.Diagnostics)
+		config.Initialize(ctx, &resp.Diagnostics)
 	}
 	resp.DataSourceData = config
 	resp.ResourceData = config
@@ -101,7 +101,6 @@ routers, switches and endpoints and their connectivity) as well as import existi
 topologies. It also includes fine-grained lifecycle control (staged start up),
 configuration injection, IP address retrieval from network devices, and more.`
 	resp.Schema.Attributes = cmlschema.Provider()
-	resp.Diagnostics = nil
 }
 
 func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {

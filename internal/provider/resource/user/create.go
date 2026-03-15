@@ -6,11 +6,13 @@ import (
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -26,7 +28,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	user := cmlclient.User{}
+	user := models.User{}
 	user.Username = data.Username.ValueString()
 	user.Password = data.Password.ValueString()
 	user.Fullname = data.Fullname.ValueString()
@@ -34,19 +36,25 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	user.Description = data.Description.ValueString()
 	user.IsAdmin = data.IsAdmin.ValueBool()
 
-	stringList := make([]string, 0)
-	if !data.Groups.IsUnknown() {
-		var elem types.String
-		for _, bb := range data.Groups.Elements() {
-			tfsdk.ValueAs(ctx, bb, &elem)
-			stringList = append(stringList, elem.ValueString())
-		}
-	}
-	user.Groups = stringList
+	// Groups are reconciled via group membership updates after user creation.
+	// The users API can return additional/normalized group IDs and omit the
+	// submitted list, which triggers Terraform set correlation errors.
+	plannedGroups := userGroupIDsFromSet(ctx, &resp.Diagnostics, data.Groups)
+	user.Groups = nil
 
-	user.ResourcePool = nil
-	if !data.ResourcePool.IsUnknown() {
-		user.ResourcePool = data.ResourcePool.ValueStringPointer()
+	if !data.ResourcePool.IsUnknown() && !data.ResourcePool.IsNull() {
+		rpRaw := data.ResourcePool.ValueString()
+		rpUUID, err := uuid.Parse(rpRaw)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", err))
+			return
+		}
+		if rpUUID.Version() != 4 {
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", "resource_pool must be a UUIDv4.")
+			return
+		}
+		ptr := models.UUID(rpUUID.String())
+		user.ResourcePool = &ptr
 	}
 
 	newUser, err := r.cfg.Client().UserCreate(ctx, &user)
@@ -55,6 +63,16 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to create user, got error: %s", err),
 		)
+		return
+	}
+
+	r.reconcileGroupMembership(ctx, &resp.Diagnostics, newUser.ID, nil, plannedGroups)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	newUser, err = r.cfg.Client().UserGet(ctx, string(newUser.ID))
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get user, got error: %s", err))
 		return
 	}
 

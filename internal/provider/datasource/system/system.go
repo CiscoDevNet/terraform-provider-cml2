@@ -17,7 +17,7 @@ import (
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	cmlclient "github.com/rschmied/gocmlclient"
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -76,7 +76,6 @@ func (d *SystemDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves system state information from the controller. If a `timeout` is set then this will only return when the system responds."
-	resp.Diagnostics = nil
 }
 
 func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -104,19 +103,20 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	tov, err := time.ParseDuration(timeout)
 	if err != nil {
-		panic("can't parse timeout -- should be validated")
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("invalid timeout %q: %s", timeout, err))
+		return
 	}
 
 	snoozeFor := 5 * time.Second
 	endTime := time.Now().Add(tov)
-	waited := time.Duration(0)
+	attempts := 0
 
 	for {
 		err = d.cfg.Client().Ready(ctx)
 		if err == nil {
 			break
 		}
-		if !(errors.Is(err, cmlclient.ErrSystemNotReady) || ignoreErrors) {
+		if !(errors.Is(err, cmlerrors.ErrSystemNotReady) || ignoreErrors) {
 			resp.Diagnostics.AddError("CML client error", err.Error())
 			return
 		}
@@ -138,10 +138,10 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			)
 			return
 		}
-		waited++
+		attempts++
 		tflog.Info(
 			ctx, "wait for system ready",
-			map[string]any{"seconds": waited * snoozeFor},
+			map[string]any{"seconds": time.Duration(attempts) * snoozeFor},
 		)
 	}
 

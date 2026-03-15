@@ -10,26 +10,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 var LabGroupAttrType = map[string]attr.Type{
 	"id":         types.StringType,
-	"name":       types.StringType,
 	"permission": types.StringType,
 }
 
 type LabGroupModel struct {
 	ID         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
 	Permission types.String `tfsdk:"permission"`
 }
 
-func NewLabGroup(ctx context.Context, group *cmlclient.LabGroup, diags *diag.Diagnostics) attr.Value {
+func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value {
 	newGroup := LabGroupModel{
-		ID:         types.StringValue(group.ID),
-		Name:       types.StringValue(group.Name),
-		Permission: types.StringValue(group.Permission),
+		ID:         types.StringValue(string(group.ID)),
+		Permission: types.StringValue(string(group.Permission)),
 	}
 	var value attr.Value
 	diags.Append(
@@ -48,13 +45,6 @@ func LabGroup() map[string]schema.Attribute {
 		"id": schema.StringAttribute{
 			Description: "Group ID (UUID).",
 			Optional:    true,
-			Computed:    true,
-			// PlanModifiers: []planmodifier.String{
-			// 	stringplanmodifier.UseStateForUnknown(),
-			// },
-		},
-		"name": schema.StringAttribute{
-			Description: "Descriptive group name.",
 			Computed:    true,
 			// PlanModifiers: []planmodifier.String{
 			// 	stringplanmodifier.UseStateForUnknown(),

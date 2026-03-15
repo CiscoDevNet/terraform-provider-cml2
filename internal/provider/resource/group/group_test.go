@@ -26,6 +26,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccGroupResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -81,6 +83,8 @@ func TestAccGroupResource(t *testing.T) {
 }
 
 func TestAccGroupResourceNoLists(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

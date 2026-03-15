@@ -4,7 +4,10 @@ package common
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
 
@@ -14,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	cmlclient "github.com/rschmied/gocmlclient/pkg/client"
 )
 
 type ProviderConfig struct {
@@ -47,7 +50,7 @@ func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	}
 }
 
-func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) *ProviderConfig {
+func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics) *ProviderConfig {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -58,7 +61,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	// check if provided auth configuration makes sense
 	if r.data.Token.IsNull() &&
 		(r.data.Username.IsNull() || r.data.Password.IsNull()) {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"null check: either username and password or a token must be provided",
 		)
@@ -66,21 +69,21 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 
 	if len(r.data.Token.ValueString()) == 0 &&
 		(len(r.data.Username.ValueString()) == 0 || len(r.data.Password.ValueString()) == 0) {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"value check: either username and password or a token must be provided",
 		)
 	}
 
 	if len(r.data.Token.ValueString()) > 0 && len(r.data.Username.ValueString()) > 0 {
-		diag.AddWarning(
+		diags.AddWarning(
 			"Conflicting configuration",
 			"both token and username / password were provided")
 	}
 
 	// an address must be specified
 	if len(r.data.Address.ValueString()) == 0 {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"A server address must be configured to use the CML2 provider",
 		)
@@ -89,7 +92,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	// address must be https
 	parsedURL, err := url.Parse(r.data.Address.ValueString())
 	if err != nil {
-		diag.AddError(
+		diags.AddError(
 			"Can't parse server address / URL",
 			err.Error(),
 		)
@@ -97,7 +100,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 
 	// Check if the scheme is HTTPS and we have something like a hostname
 	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
-		diag.AddError(
+		diags.AddError(
 			"Invalid server address / URL, ensure it uses HTTPS",
 			"A valid CML server URL using HTTPS must be provided.",
 		)
@@ -111,7 +114,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if r.data.NamedConfigs.IsNull() {
 		r.data.NamedConfigs = types.BoolValue(false)
 	} else if r.data.NamedConfigs.ValueBool() {
-		diag.AddWarning(
+		diags.AddWarning(
 			"Feature",
 			"\"named_configs\" is enabled",
 		)
@@ -120,39 +123,68 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if r.data.UseCache.IsNull() {
 		r.data.UseCache = types.BoolValue(false)
 	} else if r.data.UseCache.ValueBool() {
-		diag.AddError(
+		diags.AddError(
 			"Experimental feature deprecated",
 			"\"use_cache\" has been deprecated",
 		)
 	}
 
-	// create a new CML2 client
-	client := cmlclient.New(
-		r.data.Address.ValueString(),
-		r.data.SkipVerify.ValueBool(),
-	)
+	// build client options
+	opts := make([]cmlclient.Option, 0)
+
+	// Policy: do not readiness-check at init (see spec/02-readiness-behavior.md)
+	opts = append(opts, cmlclient.SkipReadyCheck())
+
+	// Policy: named configs default OFF unless explicitly enabled
+	if !r.data.NamedConfigs.ValueBool() {
+		opts = append(opts, cmlclient.WithoutNamedConfigs())
+	}
+
+	// Auth
+	if len(r.data.Token.ValueString()) > 0 {
+		opts = append(opts, cmlclient.WithToken(r.data.Token.ValueString()))
+	}
 	if len(r.data.Username.ValueString()) > 0 {
-		client.SetUsernamePassword(
+		opts = append(opts, cmlclient.WithUsernamePassword(
 			r.data.Username.ValueString(),
 			r.data.Password.ValueString(),
-		)
+		))
 	}
-	if len(r.data.Token.ValueString()) > 0 {
-		client.SetToken(r.data.Token.ValueString())
-	}
-	if r.data.NamedConfigs.ValueBool() {
-		tflog.Warn(ctx, "Want to use named configurations")
-		client.UseNamedConfigs()
+
+	// HTTP/TLS
+	if r.data.SkipVerify.ValueBool() {
+		opts = append(opts, cmlclient.WithInsecureTLS())
 	}
 	if len(r.data.CAcert.ValueString()) > 0 {
-		err := client.SetCACert([]byte(r.data.CAcert.ValueString()))
-		if err != nil {
-			diag.AddError(
+		caCertPool := x509.NewCertPool()
+		ok := caCertPool.AppendCertsFromPEM([]byte(r.data.CAcert.ValueString()))
+		if !ok {
+			diags.AddError(
 				"Configuration issue",
-				fmt.Sprintf("Provided certificate could not be used: %s", err),
+				"Provided certificate could not be parsed as PEM",
 			)
+		} else {
+			tr := http.DefaultTransport.(*http.Transport).Clone()
+			if tr.TLSClientConfig == nil {
+				tr.TLSClientConfig = &tls.Config{}
+			}
+			tr.TLSClientConfig.RootCAs = caCertPool
+			// Keep SkipVerify behavior consistent if both are set
+			tr.TLSClientConfig.InsecureSkipVerify = r.data.SkipVerify.ValueBool()
+			hc := &http.Client{Transport: tr}
+			opts = append(opts, cmlclient.WithHTTPClient(hc))
 		}
 	}
+
+	client, err := cmlclient.New(r.data.Address.ValueString(), opts...)
+	if err != nil {
+		diags.AddError(
+			"CML client initialization failed",
+			err.Error(),
+		)
+		return r
+	}
+
 	r.client = client
 	return r
 }
@@ -170,7 +202,7 @@ func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, r
 		)
 		return nil
 	}
-	return config.Initialize(ctx, resp.Diagnostics)
+	return config.Initialize(ctx, &resp.Diagnostics)
 }
 
 func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) *ProviderConfig {
@@ -187,5 +219,5 @@ func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp 
 		)
 		return nil
 	}
-	return config.Initialize(ctx, resp.Diagnostics)
+	return config.Initialize(ctx, &resp.Diagnostics)
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/errors"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -74,7 +74,7 @@ func (r *LabLifecycleResource) wipe(ctx context.Context, diags diag.Diagnostics,
 
 func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Diagnostics, start startData) {
 	tflog.Info(ctx, "lab start")
-	err := r.cfg.Client().LabStart(ctx, start.lab.ID)
+	err := r.cfg.Client().LabStart(ctx, string(start.lab.ID))
 	if err != nil {
 		diags.AddError(
 			common.ErrorLabel,
@@ -84,7 +84,7 @@ func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Di
 	tflog.Info(ctx, "lab start done")
 	if start.wait {
 		timeout := start.timeouts.Create.ValueString()
-		common.Converge(ctx, r.cfg.Client(), diags, start.lab.ID, timeout)
+		common.Converge(ctx, r.cfg.Client(), diags, string(start.lab.ID), timeout)
 	}
 }
 
@@ -102,7 +102,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 			for _, tag := range node.Tags {
 				if tag == stage {
 					tflog.Info(ctx, fmt.Sprintf("starting node %s", node.Label))
-					err := r.cfg.Client().NodeStart(ctx, node)
+					err := r.cfg.Client().Node.Start(ctx, start.lab.ID, node.ID)
 					if err != nil {
 						diags.AddError(
 							common.ErrorLabel,
@@ -115,7 +115,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 		// this is not 100% correct as the timeout is applied to each stage
 		// should be: timeout applied to all stages combined
 		timeout := start.timeouts.Create.ValueString()
-		common.Converge(ctx, r.cfg.Client(), diags, start.lab.ID, timeout)
+		common.Converge(ctx, r.cfg.Client(), diags, string(start.lab.ID), timeout)
 	}
 
 	// start remaining nodes, if indicated
@@ -125,7 +125,7 @@ func (r *LabLifecycleResource) startNodes(ctx context.Context, diags *diag.Diagn
 	}
 }
 
-func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient.Lab, data *cmlschema.LabLifecycleModel, diags *diag.Diagnostics) {
+func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.Lab, data *cmlschema.LabLifecycleModel, diags *diag.Diagnostics) {
 	tflog.Info(ctx, "injectConfigs")
 
 	if len(data.Configs.Elements()) == 0 && len(data.NamedConfigs.Elements()) == 0 {
@@ -141,14 +141,14 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 	// inject regular configuration (legacy)
 	for nodeID, config := range data.Configs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if err == cmlclient.ErrElementNotFound {
-			node = lab.Nodes[nodeID]
+		if err == errors.ErrElementNotFound {
+			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {
 			diags.AddError(common.ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
 			continue
 		}
-		if node.State != cmlclient.NodeStateDefined {
+		if node.State != models.NodeStateDefined {
 			diags.AddError(common.ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
 			continue
 		}
@@ -164,14 +164,14 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 	// inject named configurations (from 2.7.0 and newer)
 	for nodeID, config := range data.NamedConfigs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if err == cmlclient.ErrElementNotFound {
-			node = lab.Nodes[nodeID]
+		if err == errors.ErrElementNotFound {
+			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {
 			diags.AddError(common.ErrorLabel, fmt.Sprintf("node with label %s not found", nodeID))
 			continue
 		}
-		if node.State != cmlclient.NodeStateDefined {
+		if node.State != models.NodeStateDefined {
 			diags.AddError(common.ErrorLabel, fmt.Sprintf("unexpected node state %s", node.State))
 			continue
 		}
@@ -188,9 +188,9 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *cmlclient
 	tflog.Info(ctx, "injectConfigs: done")
 }
 
-func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *cmlclient.Lab, diags *diag.Diagnostics) types.Map {
+func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *models.Lab, diags *diag.Diagnostics) types.Map {
 	// we want this as a stable sort by node UUID
-	nodeList := []*cmlclient.Node{}
+	nodeList := []*models.Node{}
 	for _, node := range lab.Nodes {
 		nodeList = append(nodeList, node)
 	}
@@ -199,7 +199,7 @@ func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *cmlclient
 	})
 	valueMap := make(map[string]attr.Value, 0)
 	for _, node := range nodeList {
-		valueMap[node.ID] = cmlschema.NewNode(ctx, node, diags)
+		valueMap[string(node.ID)] = cmlschema.NewNode(ctx, node, diags)
 	}
 	nodes, _ := types.MapValue(
 		types.ObjectType{AttrTypes: cmlschema.NodeAttrType},

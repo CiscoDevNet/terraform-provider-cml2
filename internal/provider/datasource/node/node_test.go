@@ -22,6 +22,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestNodeDataSource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	title := "thislab"
 	label := "thetestnode"
 	resource.Test(t, resource.TestCase{

@@ -22,6 +22,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestUsersDataSource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

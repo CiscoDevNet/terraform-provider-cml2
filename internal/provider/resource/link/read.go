@@ -23,9 +23,7 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	link, err := r.cfg.Client().LinkGet(
-		ctx, data.LabID.ValueString(), data.ID.ValueString(), true,
-	)
+	link, err := r.cfg.Client().LinkGet(ctx, data.LabID.ValueString(), data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

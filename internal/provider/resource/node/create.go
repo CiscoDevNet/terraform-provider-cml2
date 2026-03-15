@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -48,9 +48,9 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	node := cmlclient.Node{}
+	node := models.Node{}
 
-	node.LabID = data.LabID.ValueString()
+	node.LabID = models.UUID(data.LabID.ValueString())
 
 	if !data.Label.IsUnknown() {
 		node.Label = data.Label.ValueString()
@@ -67,12 +67,13 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	node.Tags = tags
 
-	if !(data.Configuration.IsUnknown()) {
-		value := data.Configuration.ValueString()
-		node.Configuration = &value
+	if !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
+		node.Configuration = data.Configuration.ValueString()
 	}
 
-	node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
+	if !data.Configurations.IsUnknown() && !data.Configurations.IsNull() {
+		node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
+	}
 
 	if !data.X.IsUnknown() {
 		node.X = int(data.X.ValueInt64())
@@ -81,25 +82,33 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		node.Y = int(data.Y.ValueInt64())
 	}
 	if !data.HideLinks.IsUnknown() {
-		node.HideLinks = bool(data.HideLinks.ValueBool())
+		v := data.HideLinks.ValueBool()
+		node.HideLinks = &v
 	}
-	if !data.RAM.IsUnknown() {
-		node.RAM = int(data.RAM.ValueInt64())
+	if !data.RAM.IsUnknown() && !data.RAM.IsNull() {
+		v := int(data.RAM.ValueInt64())
+		node.RAM = &v
 	}
-	if !data.CPUs.IsUnknown() {
+	if !data.CPUs.IsUnknown() && !data.CPUs.IsNull() {
 		node.CPUs = int(data.CPUs.ValueInt64())
 	}
-	if !data.CPUlimit.IsUnknown() {
-		node.CPUlimit = int(data.CPUlimit.ValueInt64())
+	if !data.CPUlimit.IsUnknown() && !data.CPUlimit.IsNull() {
+		v := int(data.CPUlimit.ValueInt64())
+		node.CPUlimit = &v
 	}
-	if !data.BootDiskSize.IsUnknown() {
-		node.BootDiskSize = int(data.BootDiskSize.ValueInt64())
+	if !data.BootDiskSize.IsUnknown() && !data.BootDiskSize.IsNull() {
+		v := int(data.BootDiskSize.ValueInt64())
+		node.BootDiskSize = &v
 	}
-	if !data.DataVolume.IsUnknown() {
-		node.DataVolume = int(data.DataVolume.ValueInt64())
+	if !data.DataVolume.IsUnknown() && !data.DataVolume.IsNull() {
+		v := int(data.DataVolume.ValueInt64())
+		node.DataVolume = &v
 	}
-	if !data.ImageDefinition.IsUnknown() {
-		node.ImageDefinition = data.ImageDefinition.ValueString()
+	if !data.ImageDefinition.IsUnknown() && !data.ImageDefinition.IsNull() {
+		v := data.ImageDefinition.ValueString()
+		if v != "" {
+			node.ImageDefinition = &v
+		}
 	}
 
 	// can't set a configuration for an unmanaged switch
@@ -123,10 +132,19 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// When named configs are disabled provider-side, normalize any server-returned
+	// named configs back into the single configuration field to avoid state drift.
+	if !r.cfg.UseNamedConfigs() && len(newNode.Configurations) > 0 {
+		if newNode.Configuration == nil {
+			newNode.Configuration = newNode.Configurations[0].Content
+		}
+		newNode.Configurations = nil
+	}
+
 	// WAS UNKNOWN??
 	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
 	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
-		newNode.Configuration = &newNode.Configurations[0].Content
+		newNode.Configuration = newNode.Configurations[0].Content
 		newNode.Configurations = nil
 	}
 
@@ -134,10 +152,12 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// the device name (if given, worked in previous versions" with the
 	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We return an
 	// error in this case, otherwise we'd run into inconsistent state!
-	if node.NodeDefinition == "external_connector" && !node.SameConfig(*newNode) {
+	if node.NodeDefinition == "external_connector" && !node.SameConfig(newNode) {
+		oldCfg, _ := node.Configuration.(string)
+		newCfg, _ := newNode.Configuration.(string)
 		resp.Diagnostics.AddError(
 			"External connector configuration",
-			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
+			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", oldCfg, newCfg),
 		)
 		return
 	}

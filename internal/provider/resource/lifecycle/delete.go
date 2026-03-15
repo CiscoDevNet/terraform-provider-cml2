@@ -6,8 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -37,8 +36,8 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	if lab.State != cmlclient.LabStateDefined {
-		if lab.State == cmlclient.LabStateStarted {
+	if lab.State != models.LabStateDefined {
+		if lab.State == models.LabStateStarted {
 			r.stop(ctx, resp.Diagnostics, data.LabID.ValueString())
 		}
 		r.wipe(ctx, resp.Diagnostics, data.LabID.ValueString())

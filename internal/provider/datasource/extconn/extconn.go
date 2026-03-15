@@ -70,7 +70,6 @@ func (d *ConnectorDataSource) Schema(ctx context.Context, req datasource.SchemaR
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves external connectors information from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -84,7 +83,7 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	connectors, err := d.cfg.Client().ExtConnectors(ctx)
+	connectors, err := d.cfg.Client().ExtConn.List(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -104,9 +103,7 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 				continue
 			}
 		}
-		result = append(result, cmlschema.NewExtConn(
-			ctx, connector, &resp.Diagnostics),
-		)
+		result = append(result, cmlschema.NewExtConn(ctx, connector, &resp.Diagnostics))
 
 	}
 

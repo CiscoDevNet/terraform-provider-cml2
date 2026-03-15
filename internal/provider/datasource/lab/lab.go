@@ -13,7 +13,7 @@ import (
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -62,7 +62,6 @@ func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest
 		},
 	}
 	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
@@ -93,7 +92,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	}
 
 	var (
-		lab *cmlclient.Lab
+		lab *models.Lab
 		err error
 	)
 	if data.ID.IsNull() {
@@ -109,7 +108,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		return
 	}
 
-	data.ID = types.StringValue(lab.ID)
+	data.ID = types.StringValue(string(lab.ID))
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

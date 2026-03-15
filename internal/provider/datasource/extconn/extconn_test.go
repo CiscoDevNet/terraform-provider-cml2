@@ -24,6 +24,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestExtConnDataSource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

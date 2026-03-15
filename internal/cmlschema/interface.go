@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 type InterfaceModel struct {
@@ -91,7 +91,7 @@ func Interface() map[string]schema.Attribute {
 	}
 }
 
-func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
+func NewInterface(ctx context.Context, iface *models.Interface, diags *diag.Diagnostics) attr.Value {
 	ip4List := types.ListNull(types.StringType)
 	ip6List := types.ListNull(types.StringType)
 	var macAddress types.String
@@ -111,15 +111,19 @@ func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.D
 		ip6List, _ = types.ListValue(types.StringType, list)
 	}
 	if iface.Exists() {
-		macAddress = types.StringValue(iface.MACaddress)
+		if iface.Operational != nil && iface.Operational.MACaddress != nil {
+			macAddress = types.StringValue(*iface.Operational.MACaddress)
+		} else {
+			macAddress = types.StringNull()
+		}
 	} else {
 		macAddress = types.StringNull()
 	}
 
 	newIface := InterfaceModel{
-		ID:          types.StringValue(iface.ID),
+		ID:          types.StringValue(string(iface.ID)),
 		Label:       types.StringValue(iface.Label),
-		State:       types.StringValue(iface.State),
+		State:       types.StringValue(string(iface.State)),
 		IsConnected: types.BoolValue(iface.IsConnected),
 		MACaddress:  macAddress,
 		IP4:         ip4List,

@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
 )
 
 func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -24,11 +23,7 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	node := &cmlclient.Node{
-		LabID: data.LabID.ValueString(),
-		ID:    data.ID.ValueString(),
-	}
-	node, err := r.cfg.Client().NodeGet(ctx, node)
+	node, err := r.cfg.Client().NodeGet(ctx, data.LabID.ValueString(), data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -37,9 +32,18 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	// tflog.Warn(ctx, "###1", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
-	if !data.Configuration.IsNull() && len(node.Configurations) > 0 {
-		node.Configuration = &node.Configurations[0].Content
+	// Prefer the format that was used in config/state to avoid drift between
+	// `configuration` (single) and `configurations` (named).
+	if !r.cfg.UseNamedConfigs() && len(node.Configurations) > 0 {
+		if node.Configuration == nil {
+			node.Configuration = node.Configurations[0].Content
+		}
+		node.Configurations = nil
+	} else if !data.Configurations.IsNull() {
+		node.Configuration = nil
+		// keep node.Configurations as-is
+	} else if !data.Configuration.IsNull() && len(node.Configurations) > 0 {
+		node.Configuration = node.Configurations[0].Content
 		node.Configurations = nil
 	}
 

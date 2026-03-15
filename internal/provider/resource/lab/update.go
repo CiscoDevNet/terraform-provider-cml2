@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -25,28 +25,30 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	lab := cmlclient.Lab{
-		ID:          data.ID.ValueString(),
-		Notes:       data.Notes.ValueString(),
-		Description: data.Description.ValueString(),
+	updateReq := models.LabUpdateRequest{
 		Title:       data.Title.ValueString(),
+		Description: data.Description.ValueString(),
+		Notes:       data.Notes.ValueString(),
 	}
 
-	groupList := make([]*cmlclient.LabGroup, 0)
-	if !data.Groups.IsUnknown() {
-		var model cmlschema.LabGroupModel
+	if !data.Groups.IsUnknown() && !data.Groups.IsNull() {
+		groups := make([]models.LabGroup, 0)
+		var g cmlschema.LabGroupModel
 		for _, elem := range data.Groups.Elements() {
-			tfsdk.ValueAs(ctx, elem, &model)
-			el := cmlclient.LabGroup{
-				ID:         model.ID.ValueString(),
-				Permission: model.Permission.ValueString(),
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &g)...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-			groupList = append(groupList, &el)
+			perm := models.OldPermissionReadOnly
+			if g.Permission.ValueString() == string(models.OldPermissionReadWrite) {
+				perm = models.OldPermissionReadWrite
+			}
+			groups = append(groups, models.LabGroup{ID: models.UUID(g.ID.ValueString()), Permission: perm})
 		}
+		updateReq.Groups = groups
 	}
-	lab.Groups = groupList
 
-	newLab, err := r.cfg.Client().LabUpdate(ctx, lab)
+	newLab, err := r.cfg.Client().Lab.Update(ctx, models.UUID(data.ID.ValueString()), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -55,7 +57,14 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	value := cmlschema.NewLab(ctx, newLab, &resp.Diagnostics)
+	// Refresh to get populated groups from API.
+	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
+		return
+	}
+
+	value := cmlschema.NewLab(ctx, &fullLab, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
 
 	tflog.Info(ctx, "Resource Lab UPDATE done")

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 type LinkModel struct {
@@ -148,17 +148,17 @@ func Link() map[string]schema.Attribute {
 	}
 }
 
-func NewLink(ctx context.Context, link *cmlclient.Link, diags *diag.Diagnostics) attr.Value {
+func NewLink(ctx context.Context, link *models.Link, diags *diag.Diagnostics) attr.Value {
 	newLink := LinkModel{
-		ID:         types.StringValue(link.ID),
+		ID:         types.StringValue(string(link.ID)),
 		Label:      types.StringValue(link.Label),
 		State:      types.StringValue(link.State),
-		CaptureKey: types.StringValue(link.PCAPkey),
-		LabID:      types.StringValue(link.LabID),
-		InterfaceA: types.StringValue(link.SrcID),
-		InterfaceB: types.StringValue(link.DstID),
-		NodeA:      types.StringValue(link.SrcNode),
-		NodeB:      types.StringValue(link.DstNode),
+		CaptureKey: types.StringValue(string(link.PCAPkey)),
+		LabID:      types.StringValue(string(link.LabID)),
+		InterfaceA: types.StringValue(string(link.SrcID)),
+		InterfaceB: types.StringValue(string(link.DstID)),
+		NodeA:      types.StringValue(string(link.SrcNode)),
+		NodeB:      types.StringValue(string(link.DstNode)),
 		// -1 is "don't care, use next free"
 		SlotA: types.Int64Value(-1),
 		SlotB: types.Int64Value(-1),

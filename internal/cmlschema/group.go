@@ -2,6 +2,7 @@ package cmlschema
 
 import (
 	"context"
+	"strings"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -13,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 var GroupLabAttrType = map[string]attr.Type{
@@ -48,36 +49,57 @@ type GroupModel struct {
 	Labs        types.Set    `tfsdk:"labs"`
 }
 
-func newLabs(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) types.Set {
-	if len(group.Labs) == 0 {
-		return types.SetNull(types.ObjectType{AttrTypes: GroupLabAttrType})
-	}
-	valueSet := make([]attr.Value, 0)
-	for _, lab := range group.Labs {
-		var value attr.Value
-		newLab := GroupLabModel{
-			ID:         types.StringValue(lab.ID),
-			Permission: types.StringValue(lab.Permission),
+func tfGroupPermissionFromAssociation(perms models.Permissions) string {
+	for _, p := range perms {
+		s := string(p)
+		if s == string(models.PermissionAdmin) || s == string(models.PermissionEdit) || s == string(models.PermissionExec) {
+			return "read_write"
 		}
-		diags.Append(tfsdk.ValueFrom(
-			ctx,
-			newLab,
-			types.ObjectType{AttrTypes: GroupLabAttrType},
-			&value,
-		)...)
-		valueSet = append(valueSet, value)
 	}
-	newSet, dia := types.SetValue(types.ObjectType{AttrTypes: GroupLabAttrType}, valueSet)
-	diags.Append(dia...)
-	return newSet
+	return "read_only"
 }
 
-func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) attr.Value {
+func AssociationPermissionsFromTFGroupPermission(p string) models.Permissions {
+	switch strings.TrimSpace(strings.ToLower(p)) {
+	case "read_write":
+		return models.Permissions{models.PermissionView, models.PermissionEdit, models.PermissionExec}
+	case "read_only":
+		fallthrough
+	default:
+		return models.Permissions{models.PermissionView}
+	}
+}
+
+func newLabs(ctx context.Context, group *models.Group, diags *diag.Diagnostics) types.Set {
+	if group == nil {
+		return types.SetNull(types.ObjectType{AttrTypes: GroupLabAttrType})
+	}
+	if len(group.Associations) == 0 {
+		return types.SetValueMust(types.ObjectType{AttrTypes: GroupLabAttrType}, []attr.Value{})
+	}
+
+	vals := make([]attr.Value, 0, len(group.Associations))
+	for _, assoc := range group.Associations {
+		m := GroupLabModel{
+			ID:         types.StringValue(string(assoc.ID)),
+			Permission: types.StringValue(tfGroupPermissionFromAssociation(assoc.Permissions)),
+		}
+		var v attr.Value
+		diags.Append(tfsdk.ValueFrom(ctx, m, types.ObjectType{AttrTypes: GroupLabAttrType}, &v)...)
+		vals = append(vals, v)
+	}
+
+	set, d := types.SetValue(types.ObjectType{AttrTypes: GroupLabAttrType}, vals)
+	diags.Append(d...)
+	return set
+}
+
+func NewGroup(ctx context.Context, group *models.Group, diags *diag.Diagnostics) attr.Value {
 	newGroup := GroupModel{
-		ID:          types.StringValue(group.ID),
+		ID:          types.StringValue(string(group.ID)),
 		Description: types.StringValue(group.Description),
 		Name:        types.StringValue(group.Name),
-		Members:     newStringSet(ctx, group.Members, diags),
+		Members:     newUUIDSet(ctx, group.Members, diags),
 		Labs:        newLabs(ctx, group, diags),
 	}
 

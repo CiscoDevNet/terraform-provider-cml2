@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // ModifyPlan is called when the provider has an opportunity to modify the
@@ -58,7 +58,7 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 
 	// if the node was started once (e.g. not in state DEFINED anymore) then
 	// changing certain attributes require a replace
-	nodeExists := stateData.State.ValueString() != cmlclient.NodeStateDefined
+	nodeExists := stateData.State.ValueString() != string(models.NodeStateDefined)
 
 	// tflog.Warn(ctx, "### CONDITION ###", map[string]any{
 	// 	"type_state": stateData.NodeDefinition.ValueString(),

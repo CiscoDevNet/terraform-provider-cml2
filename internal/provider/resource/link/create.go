@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -44,10 +44,10 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	link := cmlclient.Link{
-		LabID:   data.LabID.ValueString(),
-		SrcNode: data.NodeA.ValueString(),
-		DstNode: data.NodeB.ValueString(),
+	link := models.Link{
+		LabID:   models.UUID(data.LabID.ValueString()),
+		SrcNode: models.UUID(data.NodeA.ValueString()),
+		DstNode: models.UUID(data.NodeB.ValueString()),
 		SrcSlot: -1,
 		DstSlot: -1,
 	}

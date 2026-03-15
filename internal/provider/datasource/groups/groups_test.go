@@ -23,6 +23,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestGroupDataSource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	re1 := regexp.MustCompile(`\w+`)
 
 	resource.Test(t, resource.TestCase{

@@ -63,7 +63,6 @@ func (d *UsersDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 		},
 	}
 	resp.Schema.MarkdownDescription = "A data source that retrieves a list of users from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {

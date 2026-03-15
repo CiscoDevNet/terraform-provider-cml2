@@ -7,8 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -57,11 +56,11 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// this is very blunt ...
-		if stateData.State.ValueString() == cmlclient.LabStateStarted {
-			if planData.State.ValueString() == cmlclient.LabStateStopped {
+		if stateData.State.ValueString() == string(models.LabStateStarted) {
+			if planData.State.ValueString() == string(models.LabStateStopped) {
 				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
-			if planData.State.ValueString() == cmlclient.LabStateDefined {
+			if planData.State.ValueString() == string(models.LabStateDefined) {
 				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 				timeout := start.timeouts.Update.ValueString()
 				common.Converge(
@@ -72,17 +71,17 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 			}
 		}
 
-		if stateData.State.ValueString() == cmlclient.LabStateStopped {
-			if planData.State.ValueString() == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == string(models.LabStateStopped) {
+			if planData.State.ValueString() == string(models.LabStateStarted) {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
-			if planData.State.ValueString() == cmlclient.LabStateDefined {
+			if planData.State.ValueString() == string(models.LabStateDefined) {
 				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
 		}
 
-		if stateData.State.ValueString() == cmlclient.LabStateDefined {
-			if planData.State.ValueString() == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == string(models.LabStateDefined) {
+			if planData.State.ValueString() == string(models.LabStateStarted) {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 		}
@@ -110,7 +109,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
-	planData.State = types.StringValue(lab.State)
+	planData.State = types.StringValue(string(lab.State))
 	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	planData.Booted = types.BoolValue(lab.Booted())
 

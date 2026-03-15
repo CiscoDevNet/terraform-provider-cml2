@@ -34,7 +34,6 @@ func (r *GroupResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 	// server.
 	resp.Schema.Description = "A resource which handles permission groups."
 	resp.Schema.Attributes = cmlschema.Group()
-	resp.Diagnostics = nil
 }
 
 func (r *GroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

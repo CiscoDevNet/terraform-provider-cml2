@@ -14,6 +14,7 @@ import (
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -60,7 +61,6 @@ func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 		},
 	}
 	resp.Schema.MarkdownDescription = "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -83,7 +83,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	node, found := lab.Nodes[data.ID.ValueString()]
+	node, found := lab.Nodes[models.UUID(data.ID.ValueString())]
 	if !found {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -92,7 +92,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	data.ID = types.StringValue(node.ID)
+	data.ID = types.StringValue(string(node.ID))
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

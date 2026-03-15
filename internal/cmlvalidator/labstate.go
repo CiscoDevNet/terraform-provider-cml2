@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 var _ validator.String = LabState{}
@@ -39,9 +39,9 @@ func (v LabState) ValidateString(ctx context.Context, req validator.StringReques
 		return
 	}
 
-	if labState.ValueString() != cmlclient.LabStateDefined &&
-		labState.ValueString() != cmlclient.LabStateStopped &&
-		labState.ValueString() != cmlclient.LabStateStarted {
+	if labState.ValueString() != string(models.LabStateDefined) &&
+		labState.ValueString() != string(models.LabStateStopped) &&
+		labState.ValueString() != string(models.LabStateStarted) {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid lab state",

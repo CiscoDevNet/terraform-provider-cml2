@@ -23,7 +23,7 @@ func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	err = r.cfg.Client().GroupDestroy(ctx, data.ID.ValueString())
+	err = r.cfg.Client().Group.Delete(ctx, data.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

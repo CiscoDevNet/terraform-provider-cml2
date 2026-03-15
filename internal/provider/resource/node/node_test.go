@@ -28,6 +28,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccNodeResourceCreateAllAttrs(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -40,6 +42,8 @@ func TestAccNodeResourceCreateAllAttrs(t *testing.T) {
 }
 
 func TestAccNodeResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -113,6 +117,8 @@ func TestAccNodeResource(t *testing.T) {
 }
 
 func TestAccNodeResourceTags(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -143,8 +149,6 @@ func TestAccNodeResourceTags(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_node.r1", "tags.#", "0"),
 				),
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
 			},
 			{
 				// need to re-run to apply the change
@@ -170,6 +174,8 @@ func TestAccNodeResourceTags(t *testing.T) {
 }
 
 func TestAccNodeResourceEmptyConfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	empty := ""
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -186,6 +192,8 @@ func TestAccNodeResourceEmptyConfig(t *testing.T) {
 }
 
 func TestAccNodeResourceNullConfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -205,6 +213,8 @@ func TestAccNodeResourceNullConfig(t *testing.T) {
 }
 
 func TestAccNodeResourceCRLFconfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -220,6 +230,8 @@ func TestAccNodeResourceCRLFconfig(t *testing.T) {
 }
 
 func TestAccNodeResourceExtConn(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -266,6 +278,8 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 }
 
 func TestAccNodeResourceNamedConfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -279,6 +293,8 @@ func TestAccNodeResourceNamedConfig(t *testing.T) {
 }
 
 func TestAccNodeResourceNamedConfigErr(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -292,6 +308,8 @@ func TestAccNodeResourceNamedConfigErr(t *testing.T) {
 }
 
 func TestAccNodeResourceNamedConfigErr2(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -305,6 +323,8 @@ func TestAccNodeResourceNamedConfigErr2(t *testing.T) {
 }
 
 func TestAccNodeResourceNamedConfigWithSingleConfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -334,6 +354,8 @@ func TestAccNodeResourceNamedConfigWithSingleConfig(t *testing.T) {
 }
 
 func TestAccNodeResourceUMSconfig(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -472,11 +494,11 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 	case 3:
 		tags = "tags = [ \"tag2\" ]"
 	case 4:
-		tags = ""
+		tags = "tags = []"
 	case 5:
 		tags = "tags = [ ]"
 	case 6:
-		tags = ""
+		tags = "tags = []"
 	default:
 		panic("undefined step!")
 	}

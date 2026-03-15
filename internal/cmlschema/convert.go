@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	r_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attribute {
@@ -125,4 +126,12 @@ func newStringSet(ctx context.Context, elements []string, diags *diag.Diagnostic
 	newSet, diag := types.SetValueFrom(ctx, types.StringType, elements)
 	diags.Append(diag...)
 	return newSet
+}
+
+func newUUIDSet(ctx context.Context, elements []models.UUID, diags *diag.Diagnostics) types.Set {
+	strings := make([]string, 0, len(elements))
+	for _, el := range elements {
+		strings = append(strings, string(el))
+	}
+	return newStringSet(ctx, strings, diags)
 }

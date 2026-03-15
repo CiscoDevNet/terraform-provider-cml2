@@ -35,7 +35,6 @@ func (r *LabResource) Schema(ctx context.Context, req resource.SchemaRequest, re
 	// server.
 	resp.Schema.Description = "A lab resource represents a CML lab. At create time, a lab title, lab description and lab notes can be provided."
 	resp.Schema.Attributes = cmlschema.Lab()
-	resp.Diagnostics = nil
 }
 
 func (r *LabResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

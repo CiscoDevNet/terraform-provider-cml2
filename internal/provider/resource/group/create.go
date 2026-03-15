@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -26,36 +26,38 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	group := cmlclient.Group{}
+	group := models.Group{}
 	group.Name = data.Name.ValueString()
 	group.Description = data.Description.ValueString()
 
-	memberList := make([]string, 0)
+	memberList := make([]models.UUID, 0)
 	if !data.Members.IsUnknown() {
 		var member types.String
 		for _, userID := range data.Members.Elements() {
 			tfsdk.ValueAs(ctx, userID, &member)
-			el := member.ValueString()
-			memberList = append(memberList, el)
+			memberList = append(memberList, models.UUID(member.ValueString()))
 		}
 	}
 	group.Members = memberList
 
-	labList := make([]cmlclient.GroupLab, 0)
-	if !data.Labs.IsUnknown() {
-		var glModel cmlschema.GroupLabModel
-		for _, bb := range data.Labs.Elements() {
-			tfsdk.ValueAs(ctx, bb, &glModel)
-			el := cmlclient.GroupLab{
-				ID:         glModel.ID.ValueString(),
-				Permission: glModel.Permission.ValueString(),
+	// Lab permissions are represented via Associations in the new client model.
+	assocs := make([]models.Association, 0)
+	if !data.Labs.IsUnknown() && !data.Labs.IsNull() {
+		var lab cmlschema.GroupLabModel
+		for _, elem := range data.Labs.Elements() {
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &lab)...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-			labList = append(labList, el)
+			assocs = append(assocs, models.Association{
+				ID:          models.UUID(lab.ID.ValueString()),
+				Permissions: cmlschema.AssociationPermissionsFromTFGroupPermission(lab.Permission.ValueString()),
+			})
 		}
 	}
-	group.Labs = labList
+	group.Associations = assocs
 
-	newGroup, err := r.cfg.Client().GroupCreate(ctx, &group)
+	newGroup, err := r.cfg.Client().Group.Create(ctx, group)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -65,12 +67,7 @@ func (r *GroupResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewGroup(ctx, newGroup, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.GroupAttrType},
-			&data,
-		)...,
+		tfsdk.ValueFrom(ctx, cmlschema.NewGroup(ctx, &newGroup, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.GroupAttrType}, &data)...,
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 

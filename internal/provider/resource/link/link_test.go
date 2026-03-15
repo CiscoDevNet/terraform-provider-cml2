@@ -26,6 +26,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccLinkResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -63,6 +65,8 @@ func TestAccLinkResource(t *testing.T) {
 }
 
 func TestAccLifecycleResourceDaniel(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -75,6 +79,8 @@ func TestAccLifecycleResourceDaniel(t *testing.T) {
 }
 
 func TestAccLifecycleResourceSlotChange(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

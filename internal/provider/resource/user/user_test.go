@@ -26,13 +26,20 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccUserResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	suffix := resource.UniqueId()
+	if len(suffix) > 8 {
+		suffix = suffix[:8]
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccUserResourceConfig(cfg.Cfg),
+				Config: testAccUserResourceConfig(cfg.Cfg, suffix),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "description", "acc test user description"),
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "groups.#", "2"),
@@ -41,7 +48,7 @@ func TestAccUserResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccUserResourceConfigUpdate(cfg.Cfg),
+				Config: testAccUserResourceConfigUpdate(cfg.Cfg, suffix),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "description", "has changed"),
 					resource.TestCheckResourceAttr("cml2_user.acc_test", "groups.#", "0"),
@@ -63,20 +70,20 @@ func TestAccUserResource(t *testing.T) {
 	})
 }
 
-func testAccUserResourceConfig(cfg string) string {
+func testAccUserResourceConfig(cfg, suffix string) string {
 	return fmt.Sprintf(`
 %[1]s
 
 resource "cml2_group" "group1" {
-	name       = "user_acc_test1_group1"
+	name       = "user_acc_test1_group1_%[2]s"
 }
 
 resource "cml2_group" "group2" {
-	name       = "user_acc_test1_group2"
+	name       = "user_acc_test1_group2_%[2]s"
 }
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_user"
+	username      = "acc_test_user_%[2]s"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -85,23 +92,23 @@ resource "cml2_user" "acc_test" {
 	# resource_pool = "e0e18ef5-9d1f-4cbb-99e8-a6da60c20113"
 	groups = [ cml2_group.group1.id, cml2_group.group2.id ]
 }
-`, cfg)
+`, cfg, suffix)
 }
 
-func testAccUserResourceConfigUpdate(cfg string) string {
+func testAccUserResourceConfigUpdate(cfg, suffix string) string {
 	return fmt.Sprintf(`
 %[1]s
 
 resource "cml2_group" "group1" {
-	name       = "user_acc_test2_group1"
+	name       = "user_acc_test2_group1_%[2]s"
 }
 
 resource "cml2_group" "group2" {
-	name       = "user_acc_test2_group2"
+	name       = "user_acc_test2_group2_%[2]s"
 }
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_user"
+	username      = "acc_test_user_%[2]s"
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -110,5 +117,5 @@ resource "cml2_user" "acc_test" {
 	# resource_pool = "e0e18ef5-9d1f-4cbb-99e8-a6da60c20113"
 	groups = []
 }
-`, cfg)
+`, cfg, suffix)
 }
