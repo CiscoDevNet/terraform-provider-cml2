@@ -125,7 +125,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		// working with single string configuration or named configurations?
 		if cfg, ok := newNode.Configuration.(string); ok && len(cfg) > 0 {
 			nnc := cmlschema.NewConfigValue(cfg)
-			if !planData.Configuration.Equal(nnc) {
+			if !planData.Configuration.IsNull() && !planData.Configuration.Equal(nnc) {
 				resp.Diagnostics.AddError(
 					"External connector configuration (single)",
 					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated)."),
@@ -134,7 +134,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			}
 		} else {
 			nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
-			if !planData.Configurations.Equal(nnc) {
+			if !planData.Configurations.IsNull() && !planData.Configurations.Equal(nnc) {
 				oldCfg, _ := node.Configuration.(string)
 				newCfg, _ := newNode.Configuration.(string)
 				resp.Diagnostics.AddError(

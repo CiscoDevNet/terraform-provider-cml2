@@ -148,18 +148,19 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		newNode.Configurations = nil
 	}
 
-	// work around the fact that creating an external connector will "resolve"
-	// the device name (if given, worked in previous versions" with the
-	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We return an
-	// error in this case, otherwise we'd run into inconsistent state!
-	if node.NodeDefinition == "external_connector" && !node.SameConfig(newNode) {
+	// External connector special-case: if configuration is empty, CML will
+	// normalize it to a label (typically NAT). Accept this to avoid forcing
+	// practitioners to hardcode environment-specific connector labels.
+	if node.NodeDefinition == "external_connector" {
 		oldCfg, _ := node.Configuration.(string)
-		newCfg, _ := newNode.Configuration.(string)
-		resp.Diagnostics.AddError(
-			"External connector configuration",
-			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", oldCfg, newCfg),
-		)
-		return
+		if oldCfg != "" && !node.SameConfig(newNode) {
+			newCfg, _ := newNode.Configuration.(string)
+			resp.Diagnostics.AddError(
+				"External connector configuration",
+				fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", oldCfg, newCfg),
+			)
+			return
+		}
 	}
 
 	resp.Diagnostics.Append(
