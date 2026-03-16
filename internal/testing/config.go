@@ -26,6 +26,8 @@ provider "cml2" {
 	username = var.username
 	password = var.password
 	token = var.token
+	token_cache = true
+	// token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = false
 }
@@ -56,6 +58,8 @@ provider "cml2" {
 	username = var.username
 	password = var.password
 	token = var.token
+	token_cache = true
+	// token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = true
 }

@@ -107,6 +107,10 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		v := data.HideLinks.ValueBool()
 		node.HideLinks = &v
 	}
+	if !data.Priority.IsUnknown() && !data.Priority.IsNull() {
+		v := int(data.Priority.ValueInt64())
+		node.Priority = &v
+	}
 	if !data.RAM.IsUnknown() && !data.RAM.IsNull() {
 		v := int(data.RAM.ValueInt64())
 		node.RAM = &v

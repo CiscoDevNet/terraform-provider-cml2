@@ -22,6 +22,7 @@ type NodeModel struct {
 	ID              types.String `tfsdk:"id"`
 	LabID           types.String `tfsdk:"lab_id"`
 	Label           types.String `tfsdk:"label"`
+	Priority        types.Int64  `tfsdk:"priority"`
 	State           types.String `tfsdk:"state"`
 	NodeDefinition  types.String `tfsdk:"nodedefinition"`
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
@@ -121,6 +122,7 @@ var NodeAttrType = map[string]attr.Type{
 	"id":              types.StringType,
 	"lab_id":          types.StringType,
 	"label":           types.StringType,
+	"priority":        types.Int64Type,
 	"state":           types.StringType,
 	"nodedefinition":  types.StringType,
 	"imagedefinition": types.StringType,
@@ -179,6 +181,14 @@ func Node() map[string]schema.Attribute {
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"priority": schema.Int64Attribute{
+			Description: "Node scheduling priority. Lower values typically start earlier.",
+			Computed:    true,
+			Optional:    true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
 		},
 		"state": schema.StringAttribute{
@@ -460,6 +470,7 @@ func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) at
 		ID:             types.StringValue(string(node.ID)),
 		LabID:          types.StringValue(string(node.LabID)),
 		Label:          types.StringValue(node.Label),
+		Priority:       types.Int64Null(),
 		State:          types.StringValue(string(node.State)),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
 		Configuration:  NewConfigPointerValue(cfgPtr),
@@ -482,13 +493,14 @@ func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) at
 		DataVolume:      types.Int64Null(),
 	}
 
+	if node.Priority != nil {
+		newNode.Priority = types.Int64Value(int64(*node.Priority))
+	}
+
 	// Default config template: some node definitions return a default config even
 	// if the user did not set one. Keep the server value; it must be known after
 	// apply to avoid Terraform errors.
 
-	if node.VNCkey != nil {
-		newNode.VNCkey = types.StringValue(string(*node.VNCkey))
-	}
 	if node.CPUlimit != nil {
 		newNode.CPUlimit = types.Int64Value(int64(*node.CPUlimit))
 	}
@@ -508,15 +520,15 @@ func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) at
 		if node.Operational.ComputeID != nil {
 			newNode.ComputeID = types.StringValue(string(*node.Operational.ComputeID))
 		}
+		if node.Operational.VNCkey != nil {
+			newNode.VNCkey = types.StringValue(string(*node.Operational.VNCkey))
+		}
 	}
 	if node.BootDiskSize != nil {
 		newNode.BootDiskSize = types.Int64Value(int64(*node.BootDiskSize))
 	}
 	if node.DataVolume != nil {
 		newNode.DataVolume = types.Int64Value(int64(*node.DataVolume))
-	}
-	if node.ComputeID != nil {
-		newNode.ComputeID = types.StringValue(string(*node.ComputeID))
 	}
 	if node.ImageDefinition != nil {
 		newNode.ImageDefinition = types.StringValue(*node.ImageDefinition)

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -18,12 +19,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient/pkg/client"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 type ProviderConfig struct {
 	client *cmlclient.Client
 	data   *cmlschema.ProviderModel
 	mu     *sync.Mutex
+
+	// nodeDefs caches node definitions for plan-time heuristics.
+	// It is loaded lazily on first use.
+	nodeDefs       models.NodeDefinitionMap
+	nodeDefsLoaded bool
 }
 
 func (r *ProviderConfig) Client() *cmlclient.Client {
@@ -44,10 +51,34 @@ func (r *ProviderConfig) Unlock() {
 
 func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	return &ProviderConfig{
-		client: nil,
-		mu:     new(sync.Mutex),
-		data:   data,
+		client:         nil,
+		mu:             new(sync.Mutex),
+		data:           data,
+		nodeDefs:       nil,
+		nodeDefsLoaded: false,
 	}
+}
+
+// NodeDefinitions returns the controller's node definition map.
+// The result is cached for the lifetime of the provider instance.
+func (r *ProviderConfig) NodeDefinitions(ctx context.Context) (models.NodeDefinitionMap, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.nodeDefsLoaded {
+		return r.nodeDefs, nil
+	}
+	if r.client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	defs, err := r.client.NodeDefinition.NodeDefinitions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	r.nodeDefs = defs
+	r.nodeDefsLoaded = true
+	return r.nodeDefs, nil
 }
 
 func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics) *ProviderConfig {
@@ -154,6 +185,35 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 			r.data.Username.ValueString(),
 			r.data.Password.ValueString(),
 		))
+	}
+
+	// Optional token caching (username/password only). This is intentionally
+	// ignored when a token is explicitly configured.
+	if r.data.TokenCache.IsNull() {
+		r.data.TokenCache = types.BoolValue(false)
+	}
+	if r.data.TokenCacheFile.IsNull() {
+		r.data.TokenCacheFile = types.StringNull()
+	}
+	if r.data.TokenCache.ValueBool() && len(r.data.Token.ValueString()) == 0 && len(r.data.Username.ValueString()) > 0 {
+		cacheFile := r.data.TokenCacheFile.ValueString()
+		if len(cacheFile) == 0 {
+			hostKey := parsedURL.Host
+			hostKey = strings.Map(func(r rune) rune {
+				switch {
+				case r >= 'a' && r <= 'z':
+					return r
+				case r >= 'A' && r <= 'Z':
+					return r
+				case r >= '0' && r <= '9':
+					return r
+				default:
+					return '_'
+				}
+			}, hostKey)
+			cacheFile = fmt.Sprintf("/tmp/terraform-provider-cml2-token-%s.json", hostKey)
+		}
+		opts = append(opts, cmlclient.WithTokenStorageFile(cacheFile))
 	}
 
 	// HTTP/TLS

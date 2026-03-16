@@ -103,8 +103,37 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				// The controller commonly returns cpu_limit=100 even when a node is in
 				// DEFINED_ON_CORE. Keep the planned value aligned with what we will
 				// observe after apply to avoid "inconsistent result after apply".
-				if node.NodeDefinition.ValueString() != "external_connector" && node.NodeDefinition.ValueString() != "unmanaged_switch" {
-					node.CPUlimit = types.Int64Value(100)
+				if !common.IsBuiltInNodeDefinition(node.NodeDefinition.ValueString()) {
+					// Determine node type from node definition metadata.
+					var libvirtDriver, linuxDriver string
+					var isLibvirt bool
+					var ndFound bool
+					var fetchErr error
+					if defs, err := r.cfg.NodeDefinitions(ctx); err == nil {
+						if nd, ok := defs[models.UUID(node.NodeDefinition.ValueString())]; ok {
+							ndFound = true
+							libvirtDriver = common.NodeDefLibvirtDomainDriver(nd)
+							linuxDriver = common.NodeDefLinuxDriver(nd)
+							isLibvirt = common.NodeDefIsLibvirtBacked(nd)
+						}
+					} else {
+						fetchErr = err
+					}
+					tflog.Info(ctx, "lifecycle node type probe (cpu_limit heuristic)", map[string]any{
+						"lab_state":             plannedState,
+						"node_id":               id,
+						"nodedefinition":        node.NodeDefinition.ValueString(),
+						"nodedefinition_found":  ndFound,
+						"nodedefinition_error":  common.ErrorString(fetchErr),
+						"libvirt_domain_driver": libvirtDriver,
+						"driver":                linuxDriver,
+						"is_libvirt":            isLibvirt,
+					})
+					if isLibvirt {
+						node.CPUlimit = types.Int64Value(100)
+					} else {
+						node.CPUlimit = types.Int64Null()
+					}
 				} else {
 					node.CPUlimit = types.Int64Null()
 				}
@@ -123,8 +152,30 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				// field was null in the prior state. If we keep it unknown here, the
 				// nested schema's UseStateForUnknown modifier will pin it to null and
 				// Terraform will error with "inconsistent result after apply".
-				if node.NodeDefinition.ValueString() != "external_connector" && node.NodeDefinition.ValueString() != "unmanaged_switch" {
-					node.CPUlimit = types.Int64Value(100)
+				if !common.IsBuiltInNodeDefinition(node.NodeDefinition.ValueString()) {
+					// Determine node type from node definition metadata.
+					var libvirtDriver, linuxDriver string
+					var isLibvirt bool
+					if defs, err := r.cfg.NodeDefinitions(ctx); err == nil {
+						if nd, ok := defs[models.UUID(node.NodeDefinition.ValueString())]; ok {
+							libvirtDriver = common.NodeDefLibvirtDomainDriver(nd)
+							linuxDriver = common.NodeDefLinuxDriver(nd)
+							isLibvirt = common.NodeDefIsLibvirtBacked(nd)
+						}
+					}
+					tflog.Debug(ctx, "lifecycle node cpu_limit heuristic", map[string]any{
+						"lab_state":             plannedState,
+						"node_id":               id,
+						"nodedefinition":        node.NodeDefinition.ValueString(),
+						"libvirt_domain_driver": libvirtDriver,
+						"driver":                linuxDriver,
+						"is_libvirt":            isLibvirt,
+					})
+					if isLibvirt {
+						node.CPUlimit = types.Int64Value(100)
+					} else {
+						node.CPUlimit = types.Int64Null()
+					}
 				} else {
 					node.CPUlimit = types.Int64Null()
 				}

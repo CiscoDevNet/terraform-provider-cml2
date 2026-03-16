@@ -36,6 +36,7 @@ func TestAccNodeResourceCreateAllAttrs(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccNodeResourceCreateAllAttrs(cfg.Cfg),
+				Check:  resource.TestCheckResourceAttr("cml2_node.r1", "priority", "10"),
 			},
 		},
 	})
@@ -426,6 +427,7 @@ func testAccNodeResourceCreateAllAttrs(cfg string) string {
 			x               = 100
 			y               = 100
 			nodedefinition  = "alpine"
+			priority        = 10
 			tags            = [ "test" ]
 			configuration   = "hostname bla"
 			ram             = 2048

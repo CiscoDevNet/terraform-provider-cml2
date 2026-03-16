@@ -23,6 +23,7 @@ var (
 		computeID := models.UUID("f3678fb5-985d-45c2-b0f5-e54174798912")
 		bootDisk := 16
 		dataVol := 64
+		prio := 10
 		vnc := models.UUID("b1bea19f-e2b9-4a72-98f7-7663339cf317")
 		cfg := config
 		return &models.Node{
@@ -43,10 +44,13 @@ var (
 			},
 			SerialDevices: []models.SerialDevice{{ConsoleKey: "1eab9ba0-c92e-4568-a742-6b4b2244c5b2", DeviceNumber: 0}},
 			Tags:          []string{"red", "blue"},
-			ComputeID:     &computeID,
+			Priority:      &prio,
 			BootDiskSize:  &bootDisk,
 			DataVolume:    &dataVol,
-			VNCkey:        &vnc,
+			Operational: &models.NodeOperational{
+				ComputeID: &computeID,
+				VNCkey:    &vnc,
+			},
 		}
 	}()
 )
@@ -102,7 +106,7 @@ func TestNodeAttrs(t *testing.T) {
 
 	got, diag := nodeschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 21, len(nodeschema.Attributes))
+	assert.Equal(t, 22, len(nodeschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }

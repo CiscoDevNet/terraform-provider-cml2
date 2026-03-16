@@ -48,6 +48,10 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		v := planData.HideLinks.ValueBool()
 		node.HideLinks = &v
 	}
+	if !planData.Priority.IsUnknown() && !planData.Priority.IsNull() {
+		v := int(planData.Priority.ValueInt64())
+		node.Priority = &v
+	}
 	if !planData.Label.IsNull() {
 		node.Label = planData.Label.ValueString()
 	}

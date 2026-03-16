@@ -688,21 +688,21 @@ resource "cml2_lifecycle" "top" {
 }
 
 func testAccLifecycleNamedConfigs(cfg string, stage int) string {
-	var configs, named_configs string
+	var configs, namedConfigs string
 	switch stage {
 	case 0:
 		configs = ``
-		named_configs = ``
+		namedConfigs = ``
 	case 1:
 		configs = `
 		configs = {
 			"R1": "hostname r1"
 		}
 		`
-		named_configs = ``
+		namedConfigs = ``
 	case 2:
 		configs = ``
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"R1": [
 				{
@@ -718,7 +718,7 @@ func testAccLifecycleNamedConfigs(cfg string, stage int) string {
 			"R1": "hostname r1"
 		}
 		`
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"R1": [
 				{
@@ -734,10 +734,10 @@ func testAccLifecycleNamedConfigs(cfg string, stage int) string {
 			"xx": "hostname r1"
 		}
 		`
-		named_configs = ``
+		namedConfigs = ``
 	case 5:
 		configs = ``
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"xx": [
 				{
@@ -782,5 +782,5 @@ resource "cml2_lifecycle" "top" {
 	%[2]s
 	%[3]s
 }
-`, cfg, configs, named_configs)
+`, cfg, configs, namedConfigs)
 }

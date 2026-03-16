@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -84,6 +85,13 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configurations"))
 	}
 
+	if !configData.Priority.IsNull() && !configData.Priority.Equal(stateData.Priority) {
+		planData.Priority = configData.Priority
+	}
+	if planData.Priority.IsUnknown() {
+		planData.Priority = types.Int64Null()
+	}
+
 	if !configData.ImageDefinition.IsNull() && !configData.ImageDefinition.Equal(stateData.ImageDefinition) {
 		if nodeExists {
 			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("imagedefinition"))
@@ -120,15 +128,42 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		}
 		planData.CPUlimit = configData.CPUlimit
 	}
-	if planData.CPUlimit.IsUnknown() && planData.NodeDefinition.ValueString() != "external_connector" && planData.NodeDefinition.ValueString() != "unmanaged_switch" {
-		// CPUlimit is the weird one here as it is possible to set the value to null
-		// and this actually works on updating on the controller (PATCH). However,
-		// when reading the data again, the value comes back as 100.
-		// See SIMPLE-5052 and cmlclient.NodeGet()
-		// Also: Need to restrict this to devices other than UMS and ExtConn as those
-		// do always return NULL for the value w/ 2.6.0
-		// TODO: need to see what IOL returns in 2.7.0
-		planData.CPUlimit = types.Int64Value(int64(100))
+	// Some node types (docker-style) return cpu_limit=null, while VM/libvirt
+	// nodes often return cpu_limit=100 even when unset.
+	if planData.CPUlimit.IsUnknown() {
+		nodeDefID := planData.NodeDefinition.ValueString()
+		var libvirtDriver, linuxDriver string
+		var isLibvirt bool
+		var ndFound bool
+		var fetchErr error
+		if defs, err := r.cfg.NodeDefinitions(ctx); err == nil {
+			if nd, ok := defs[models.UUID(nodeDefID)]; ok {
+				ndFound = true
+				libvirtDriver = common.NodeDefLibvirtDomainDriver(nd)
+				linuxDriver = common.NodeDefLinuxDriver(nd)
+				isLibvirt = common.NodeDefIsLibvirtBacked(nd)
+			}
+		} else {
+			fetchErr = err
+		}
+		tflog.Info(ctx, "node type probe (cpu_limit heuristic)", map[string]any{
+			"nodedefinition":        nodeDefID,
+			"nodedefinition_found":  ndFound,
+			"nodedefinition_error":  common.ErrorString(fetchErr),
+			"libvirt_domain_driver": libvirtDriver,
+			"driver":                linuxDriver,
+			"is_libvirt":            isLibvirt,
+		})
+
+		if !common.IsBuiltInNodeDefinition(nodeDefID) && isLibvirt {
+			// CPUlimit is the weird one here as it is possible to set the value to null
+			// and this actually works on updating on the controller (PATCH). However,
+			// when reading the data again, the value comes back as 100.
+			// See SIMPLE-5052 and cmlclient.NodeGet()
+			// Also: Need to restrict this to devices other than UMS and ExtConn as those
+			// do always return NULL for the value.
+			planData.CPUlimit = types.Int64Value(int64(100))
+		}
 	}
 
 	if !configData.DataVolume.IsNull() && !configData.DataVolume.Equal(stateData.DataVolume) {
