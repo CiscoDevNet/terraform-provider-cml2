@@ -14,10 +14,13 @@ import (
 )
 
 type AnnotationModel struct {
-	ID    types.String `tfsdk:"id"`
-	LabID types.String `tfsdk:"lab_id"`
-	Type  types.String `tfsdk:"type"`
-	Text  types.Object `tfsdk:"text"`
+	ID        types.String `tfsdk:"id"`
+	LabID     types.String `tfsdk:"lab_id"`
+	Type      types.String `tfsdk:"type"`
+	Text      types.Object `tfsdk:"text"`
+	Rectangle types.Object `tfsdk:"rectangle"`
+	Ellipse   types.Object `tfsdk:"ellipse"`
+	Line      types.Object `tfsdk:"line"`
 }
 
 type AnnotationTextModel struct {
@@ -30,6 +33,40 @@ type AnnotationTextModel struct {
 	ZIndex      types.Float64 `tfsdk:"z_index"`
 }
 
+type AnnotationRectangleModel struct {
+	X1          types.Float64 `tfsdk:"x1"`
+	Y1          types.Float64 `tfsdk:"y1"`
+	X2          types.Float64 `tfsdk:"x2"`
+	Y2          types.Float64 `tfsdk:"y2"`
+	Color       types.String  `tfsdk:"color"`
+	BorderColor types.String  `tfsdk:"border_color"`
+	Thickness   types.Float64 `tfsdk:"thickness"`
+	ZIndex      types.Float64 `tfsdk:"z_index"`
+}
+
+type AnnotationEllipseModel struct {
+	X1          types.Float64 `tfsdk:"x1"`
+	Y1          types.Float64 `tfsdk:"y1"`
+	X2          types.Float64 `tfsdk:"x2"`
+	Y2          types.Float64 `tfsdk:"y2"`
+	Color       types.String  `tfsdk:"color"`
+	BorderColor types.String  `tfsdk:"border_color"`
+	Thickness   types.Float64 `tfsdk:"thickness"`
+	ZIndex      types.Float64 `tfsdk:"z_index"`
+}
+
+type AnnotationLineModel struct {
+	X1        types.Float64 `tfsdk:"x1"`
+	Y1        types.Float64 `tfsdk:"y1"`
+	X2        types.Float64 `tfsdk:"x2"`
+	Y2        types.Float64 `tfsdk:"y2"`
+	Color     types.String  `tfsdk:"color"`
+	Thickness types.Float64 `tfsdk:"thickness"`
+	ZIndex    types.Float64 `tfsdk:"z_index"`
+	LineStart types.String  `tfsdk:"line_start"`
+	LineEnd   types.String  `tfsdk:"line_end"`
+}
+
 var AnnotationTextAttrType = map[string]attr.Type{
 	"text_content": types.StringType,
 	"x1":           types.Float64Type,
@@ -40,11 +77,48 @@ var AnnotationTextAttrType = map[string]attr.Type{
 	"z_index":      types.Float64Type,
 }
 
+var AnnotationRectangleAttrType = map[string]attr.Type{
+	"x1":           types.Float64Type,
+	"y1":           types.Float64Type,
+	"x2":           types.Float64Type,
+	"y2":           types.Float64Type,
+	"color":        types.StringType,
+	"border_color": types.StringType,
+	"thickness":    types.Float64Type,
+	"z_index":      types.Float64Type,
+}
+
+var AnnotationEllipseAttrType = map[string]attr.Type{
+	"x1":           types.Float64Type,
+	"y1":           types.Float64Type,
+	"x2":           types.Float64Type,
+	"y2":           types.Float64Type,
+	"color":        types.StringType,
+	"border_color": types.StringType,
+	"thickness":    types.Float64Type,
+	"z_index":      types.Float64Type,
+}
+
+var AnnotationLineAttrType = map[string]attr.Type{
+	"x1":         types.Float64Type,
+	"y1":         types.Float64Type,
+	"x2":         types.Float64Type,
+	"y2":         types.Float64Type,
+	"color":      types.StringType,
+	"thickness":  types.Float64Type,
+	"z_index":    types.Float64Type,
+	"line_start": types.StringType,
+	"line_end":   types.StringType,
+}
+
 var AnnotationAttrType = map[string]attr.Type{
-	"id":     types.StringType,
-	"lab_id": types.StringType,
-	"type":   types.StringType,
-	"text":   types.ObjectType{AttrTypes: AnnotationTextAttrType},
+	"id":        types.StringType,
+	"lab_id":    types.StringType,
+	"type":      types.StringType,
+	"text":      types.ObjectType{AttrTypes: AnnotationTextAttrType},
+	"rectangle": types.ObjectType{AttrTypes: AnnotationRectangleAttrType},
+	"ellipse":   types.ObjectType{AttrTypes: AnnotationEllipseAttrType},
+	"line":      types.ObjectType{AttrTypes: AnnotationLineAttrType},
 }
 
 func Annotation() map[string]schema.Attribute {
@@ -64,7 +138,7 @@ func Annotation() map[string]schema.Attribute {
 			},
 		},
 		"type": schema.StringAttribute{
-			Description: "Annotation type. Currently supported: text.",
+			Description: "Annotation type. Supported: text, rectangle, ellipse, line.",
 			Required:    true,
 		},
 		"text": schema.SingleNestedAttribute{
@@ -98,15 +172,61 @@ func Annotation() map[string]schema.Attribute {
 				},
 			},
 		},
+		"rectangle": schema.SingleNestedAttribute{
+			Description: "Rectangle annotation attributes (required when type = \"rectangle\").",
+			Optional:    true,
+			Attributes: map[string]schema.Attribute{
+				"x1":           schema.Float64Attribute{Required: true},
+				"y1":           schema.Float64Attribute{Required: true},
+				"x2":           schema.Float64Attribute{Required: true},
+				"y2":           schema.Float64Attribute{Required: true},
+				"color":        schema.StringAttribute{Optional: true, Computed: true},
+				"border_color": schema.StringAttribute{Optional: true, Computed: true},
+				"thickness":    schema.Float64Attribute{Optional: true, Computed: true},
+				"z_index":      schema.Float64Attribute{Optional: true, Computed: true},
+			},
+		},
+		"ellipse": schema.SingleNestedAttribute{
+			Description: "Ellipse annotation attributes (required when type = \"ellipse\").",
+			Optional:    true,
+			Attributes: map[string]schema.Attribute{
+				"x1":           schema.Float64Attribute{Required: true},
+				"y1":           schema.Float64Attribute{Required: true},
+				"x2":           schema.Float64Attribute{Required: true},
+				"y2":           schema.Float64Attribute{Required: true},
+				"color":        schema.StringAttribute{Optional: true, Computed: true},
+				"border_color": schema.StringAttribute{Optional: true, Computed: true},
+				"thickness":    schema.Float64Attribute{Optional: true, Computed: true},
+				"z_index":      schema.Float64Attribute{Optional: true, Computed: true},
+			},
+		},
+		"line": schema.SingleNestedAttribute{
+			Description: "Line annotation attributes (required when type = \"line\").",
+			Optional:    true,
+			Attributes: map[string]schema.Attribute{
+				"x1":         schema.Float64Attribute{Required: true},
+				"y1":         schema.Float64Attribute{Required: true},
+				"x2":         schema.Float64Attribute{Required: true},
+				"y2":         schema.Float64Attribute{Required: true},
+				"color":      schema.StringAttribute{Optional: true, Computed: true},
+				"thickness":  schema.Float64Attribute{Optional: true, Computed: true},
+				"z_index":    schema.Float64Attribute{Optional: true, Computed: true},
+				"line_start": schema.StringAttribute{Optional: true, Computed: true},
+				"line_end":   schema.StringAttribute{Optional: true, Computed: true},
+			},
+		},
 	}
 }
 
 func NewAnnotation(ctx context.Context, labID models.UUID, a models.Annotation, diags *diag.Diagnostics) attr.Value {
 	model := AnnotationModel{
-		ID:    types.StringNull(),
-		LabID: types.StringValue(string(labID)),
-		Type:  types.StringValue(string(a.Type)),
-		Text:  types.ObjectNull(AnnotationTextAttrType),
+		ID:        types.StringNull(),
+		LabID:     types.StringValue(string(labID)),
+		Type:      types.StringValue(string(a.Type)),
+		Text:      types.ObjectNull(AnnotationTextAttrType),
+		Rectangle: types.ObjectNull(AnnotationRectangleAttrType),
+		Ellipse:   types.ObjectNull(AnnotationEllipseAttrType),
+		Line:      types.ObjectNull(AnnotationLineAttrType),
 	}
 
 	switch a.Type {
@@ -125,6 +245,58 @@ func NewAnnotation(ctx context.Context, labID models.UUID, a models.Annotation, 
 			var v attr.Value
 			diags.Append(tfsdk.ValueFrom(ctx, text, types.ObjectType{AttrTypes: AnnotationTextAttrType}, &v)...)
 			model.Text = v.(types.Object)
+		}
+	case models.AnnotationTypeRectangle:
+		if a.Rectangle != nil {
+			rec := AnnotationRectangleModel{
+				X1:          types.Float64Value(a.Rectangle.X1),
+				Y1:          types.Float64Value(a.Rectangle.Y1),
+				X2:          types.Float64Value(a.Rectangle.X2),
+				Y2:          types.Float64Value(a.Rectangle.Y2),
+				Color:       types.StringValue(a.Rectangle.Color),
+				BorderColor: types.StringValue(a.Rectangle.BorderColor),
+				Thickness:   types.Float64Value(a.Rectangle.Thickness),
+				ZIndex:      types.Float64Value(a.Rectangle.ZIndex),
+			}
+			model.ID = types.StringValue(string(a.Rectangle.ID))
+			var v attr.Value
+			diags.Append(tfsdk.ValueFrom(ctx, rec, types.ObjectType{AttrTypes: AnnotationRectangleAttrType}, &v)...)
+			model.Rectangle = v.(types.Object)
+		}
+	case models.AnnotationTypeEllipse:
+		if a.Ellipse != nil {
+			el := AnnotationEllipseModel{
+				X1:          types.Float64Value(a.Ellipse.X1),
+				Y1:          types.Float64Value(a.Ellipse.Y1),
+				X2:          types.Float64Value(a.Ellipse.X2),
+				Y2:          types.Float64Value(a.Ellipse.Y2),
+				Color:       types.StringValue(a.Ellipse.Color),
+				BorderColor: types.StringValue(a.Ellipse.BorderColor),
+				Thickness:   types.Float64Value(a.Ellipse.Thickness),
+				ZIndex:      types.Float64Value(a.Ellipse.ZIndex),
+			}
+			model.ID = types.StringValue(string(a.Ellipse.ID))
+			var v attr.Value
+			diags.Append(tfsdk.ValueFrom(ctx, el, types.ObjectType{AttrTypes: AnnotationEllipseAttrType}, &v)...)
+			model.Ellipse = v.(types.Object)
+		}
+	case models.AnnotationTypeLine:
+		if a.Line != nil {
+			ln := AnnotationLineModel{
+				X1:        types.Float64Value(a.Line.X1),
+				Y1:        types.Float64Value(a.Line.Y1),
+				X2:        types.Float64Value(a.Line.X2),
+				Y2:        types.Float64Value(a.Line.Y2),
+				Color:     types.StringValue(a.Line.Color),
+				Thickness: types.Float64Value(a.Line.Thickness),
+				ZIndex:    types.Float64Value(a.Line.ZIndex),
+				LineStart: types.StringValue(string(a.Line.LineStart)),
+				LineEnd:   types.StringValue(string(a.Line.LineEnd)),
+			}
+			model.ID = types.StringValue(string(a.Line.ID))
+			var v attr.Value
+			diags.Append(tfsdk.ValueFrom(ctx, ln, types.ObjectType{AttrTypes: AnnotationLineAttrType}, &v)...)
+			model.Line = v.(types.Object)
 		}
 	default:
 		// unsupported types remain null blocks

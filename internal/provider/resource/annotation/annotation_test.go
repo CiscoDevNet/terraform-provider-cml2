@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var testAccAnnotationProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
@@ -38,7 +37,73 @@ func TestAccAnnotationResourceText(t *testing.T) {
 	})
 }
 
-func testAccAnnotationText(cfg string, content string) string {
+func TestAccAnnotationResourceRectangle(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() {},
+		ProtoV6ProviderFactories: testAccAnnotationProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAnnotationRectangle(cfg.Cfg, 10, 20, 30, 40),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_annotation.a", "type", "rectangle"),
+					resource.TestCheckResourceAttr("cml2_annotation.a", "rectangle.x2", "30"),
+				),
+			},
+			{
+				Config: testAccAnnotationRectangle(cfg.Cfg, 10, 20, 35, 45),
+				Check:  resource.TestCheckResourceAttr("cml2_annotation.a", "rectangle.x2", "35"),
+			},
+		},
+	})
+}
+
+func TestAccAnnotationResourceEllipse(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() {},
+		ProtoV6ProviderFactories: testAccAnnotationProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAnnotationEllipse(cfg.Cfg, 10, 20, 30, 40),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_annotation.a", "type", "ellipse"),
+					resource.TestCheckResourceAttr("cml2_annotation.a", "ellipse.x2", "30"),
+				),
+			},
+			{
+				Config: testAccAnnotationEllipse(cfg.Cfg, 10, 20, 35, 45),
+				Check:  resource.TestCheckResourceAttr("cml2_annotation.a", "ellipse.x2", "35"),
+			},
+		},
+	})
+}
+
+func TestAccAnnotationResourceLine(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() {},
+		ProtoV6ProviderFactories: testAccAnnotationProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAnnotationLine(cfg.Cfg, 10, 20, 30, 40),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_annotation.a", "type", "line"),
+					resource.TestCheckResourceAttr("cml2_annotation.a", "line.x2", "30"),
+				),
+			},
+			{
+				Config: testAccAnnotationLine(cfg.Cfg, 10, 20, 35, 45),
+				Check:  resource.TestCheckResourceAttr("cml2_annotation.a", "line.x2", "35"),
+			},
+		},
+	})
+}
+
+func testAccAnnotationText(cfgStr string, content string) string {
 	return fmt.Sprintf(`
 %[1]s
 
@@ -56,18 +121,73 @@ resource "cml2_annotation" "a" {
 		y1          = 20
 	}
 }
-`, cfg, content)
+`, cfgStr, content)
 }
 
-func testAccAnnotationImportID(s *terraform.State) (string, error) {
-	rs, ok := s.RootModule().Resources["cml2_annotation.a"]
-	if !ok {
-		return "", fmt.Errorf("resource not found")
+func testAccAnnotationRectangle(cfgStr string, x1, y1, x2, y2 int) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_lab" "l" {
+	title = "acc annotation rectangle"
+}
+
+resource "cml2_annotation" "a" {
+	lab_id = cml2_lab.l.id
+	type   = "rectangle"
+
+	rectangle = {
+		x1 = %[2]d
+		y1 = %[3]d
+		x2 = %[4]d
+		y2 = %[5]d
 	}
-	labID := rs.Primary.Attributes["lab_id"]
-	annID := rs.Primary.ID
-	if labID == "" || annID == "" {
-		return "", fmt.Errorf("missing lab_id or id")
+}
+`, cfgStr, x1, y1, x2, y2)
+}
+
+func testAccAnnotationEllipse(cfgStr string, x1, y1, x2, y2 int) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_lab" "l" {
+	title = "acc annotation ellipse"
+}
+
+resource "cml2_annotation" "a" {
+	lab_id = cml2_lab.l.id
+	type   = "ellipse"
+
+	ellipse = {
+		x1 = %[2]d
+		y1 = %[3]d
+		x2 = %[4]d
+		y2 = %[5]d
 	}
-	return fmt.Sprintf("%s/%s", labID, annID), nil
+}
+`, cfgStr, x1, y1, x2, y2)
+}
+
+func testAccAnnotationLine(cfgStr string, x1, y1, x2, y2 int) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_lab" "l" {
+	title = "acc annotation line"
+}
+
+resource "cml2_annotation" "a" {
+	lab_id = cml2_lab.l.id
+	type   = "line"
+
+	line = {
+		x1 = %[2]d
+		y1 = %[3]d
+		x2 = %[4]d
+		y2 = %[5]d
+		line_start = "arrow"
+		line_end   = "arrow"
+	}
+}
+`, cfgStr, x1, y1, x2, y2)
 }

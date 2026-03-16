@@ -23,36 +23,19 @@ func (r *AnnotationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	if plan.Type.ValueString() != string(models.AnnotationTypeText) {
-		resp.Diagnostics.AddError(common.ErrorLabel, "unsupported annotation type (currently only \"text\" is supported)")
-		return
-	}
-	if plan.Text.IsNull() {
-		resp.Diagnostics.AddError(common.ErrorLabel, "text block must be set when type = \"text\"")
+	if err := validateAnnotationBlocks(plan); err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, err.Error())
 		return
 	}
 
-	var text cmlschema.AnnotationTextModel
-	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, plan.Text, &text)...)
-	if resp.Diagnostics.HasError() {
+	upd, err := buildAnnotationUpdate(ctx, plan, &resp.Diagnostics)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, err.Error())
 		return
 	}
 
 	labID := models.UUID(plan.LabID.ValueString())
 	annID := models.UUID(plan.ID.ValueString())
-
-	content := text.TextContent.ValueString()
-	x1 := text.X1.ValueFloat64()
-	y1 := text.Y1.ValueFloat64()
-	upd := models.AnnotationUpdate{
-		Type: models.AnnotationTypeText,
-		Text: &models.TextAnnotationPartial{
-			Type:        models.AnnotationTypeText,
-			TextContent: &content,
-			X1:          &x1,
-			Y1:          &y1,
-		},
-	}
 
 	updated, err := r.cfg.Client().Annotation.Update(ctx, labID, annID, upd)
 	if err != nil {

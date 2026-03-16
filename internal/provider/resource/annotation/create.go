@@ -23,62 +23,18 @@ func (r *AnnotationResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	if data.Type.ValueString() != string(models.AnnotationTypeText) {
-		resp.Diagnostics.AddError(common.ErrorLabel, "unsupported annotation type (currently only \"text\" is supported)")
-		return
-	}
-	if data.Text.IsNull() {
-		resp.Diagnostics.AddError(common.ErrorLabel, "text block must be set when type = \"text\"")
+	if err := validateAnnotationBlocks(data); err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, err.Error())
 		return
 	}
 
-	var text cmlschema.AnnotationTextModel
-	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, data.Text, &text)...)
-	if resp.Diagnostics.HasError() {
+	create, err := buildAnnotationCreate(ctx, data, &resp.Diagnostics)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, err.Error())
 		return
 	}
 
 	labID := models.UUID(data.LabID.ValueString())
-	borderColor := "#000000"
-	if !text.BorderColor.IsNull() {
-		borderColor = text.BorderColor.ValueString()
-	}
-	color := "#ffffff"
-	if !text.Color.IsNull() {
-		color = text.Color.ValueString()
-	}
-	thickness := 1.0
-	if !text.Thickness.IsNull() {
-		thickness = text.Thickness.ValueFloat64()
-		if thickness < 1 {
-			thickness = 1
-		}
-	}
-	z := 0.0
-	if !text.ZIndex.IsNull() {
-		z = text.ZIndex.ValueFloat64()
-	}
-
-	create := models.AnnotationCreate{
-		Type: models.AnnotationTypeText,
-		Text: &models.TextAnnotation{
-			Type:        models.AnnotationTypeText,
-			Rotation:    0,
-			BorderColor: borderColor,
-			BorderStyle: "",
-			Color:       color,
-			Thickness:   thickness,
-			X1:          text.X1.ValueFloat64(),
-			Y1:          text.Y1.ValueFloat64(),
-			ZIndex:      z,
-			TextBold:    false,
-			TextContent: text.TextContent.ValueString(),
-			TextFont:    "sans",
-			TextItalic:  false,
-			TextSize:    12,
-			TextUnit:    "px",
-		},
-	}
 
 	created, err := r.cfg.Client().Annotation.Create(ctx, labID, create)
 	if err != nil {
