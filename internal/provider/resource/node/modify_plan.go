@@ -36,9 +36,9 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 
 	tflog.Info(ctx, "Resource Node MODIFYPLAN")
 
-	// when deleting, there's no plan
-	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
-		tflog.Info(ctx, "there is no plan or state")
+	// When deleting, there's no plan.
+	if req.Plan.Raw.IsNull() {
+		tflog.Info(ctx, "there is no plan")
 		return
 	}
 
@@ -51,14 +51,20 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
-	if resp.Diagnostics.HasError() {
-		return
+	// State is null during Create; still allow plan normalization.
+	if !req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
-	// if the node was started once (e.g. not in state DEFINED anymore) then
-	// changing certain attributes require a replace
-	nodeExists := stateData.State.ValueString() != string(models.NodeStateDefined)
+	// If the node was started once (e.g. not in state DEFINED anymore) then
+	// changing certain attributes require a replace.
+	nodeExists := !req.State.Raw.IsNull() && stateData.State.ValueString() != string(models.NodeStateDefined)
+
+	// Note: We intentionally do not normalize the planned configuration value.
+	// Terraform requires that any explicit config value is preserved in the plan.
 
 	// tflog.Warn(ctx, "### CONDITION ###", map[string]any{
 	// 	"type_state": stateData.NodeDefinition.ValueString(),

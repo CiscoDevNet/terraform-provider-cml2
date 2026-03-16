@@ -34,6 +34,15 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	// Prefer the format that was used in config/state to avoid drift between
 	// `configuration` (single) and `configurations` (named).
+	//
+	// External connector back-compat: if configuration was set in state, keep it
+	// in state even if the controller returns the label form. This preserves
+	// deprecated device-name configs (e.g. "virbr0") and prevents perpetual diffs.
+	if node.NodeDefinition == "external_connector" && !data.Configuration.IsNull() && !data.Configuration.IsUnknown() {
+		node.Configuration = data.Configuration.ValueString()
+		node.Configurations = nil
+	}
+
 	if !r.cfg.UseNamedConfigs() && len(node.Configurations) > 0 {
 		if node.Configuration == nil {
 			node.Configuration = node.Configurations[0].Content

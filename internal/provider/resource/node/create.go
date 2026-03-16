@@ -17,8 +17,9 @@ import (
 
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
-		data cmlschema.NodeModel
-		err  error
+		data            cmlschema.NodeModel
+		err             error
+		extConnStateCfg string
 	)
 
 	tflog.Info(ctx, "Resource Node CREATE")
@@ -59,6 +60,23 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		node.NodeDefinition = data.NodeDefinition.ValueString()
 	}
 
+	// External connector back-compat: accept device name (e.g. "virbr0") and
+	// map to connector label (e.g. "NAT"). Keep the original config value in the
+	// plan, but send the normalized label to the API.
+	if node.NodeDefinition == "external_connector" && !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
+		inCfg := data.Configuration.ValueString()
+		normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, inCfg)
+		if nerr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
+			return
+		}
+		if changed {
+			resp.Diagnostics.AddWarning("External connector configuration normalized", warn)
+			node.Configuration = normalized
+			extConnStateCfg = inCfg
+		}
+	}
+
 	// We always need to create a tag list as the API always returns a list of
 	// tags even if none are set... e.g. no tags --> [] (instead of null).
 	tags := []string{}
@@ -68,7 +86,11 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	node.Tags = tags
 
 	if !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
-		node.Configuration = data.Configuration.ValueString()
+		// Only set configuration from plan if we did not already normalize it for
+		// external connectors.
+		if !(node.NodeDefinition == "external_connector" && extConnStateCfg != "") {
+			node.Configuration = data.Configuration.ValueString()
+		}
 	}
 
 	if !data.Configurations.IsUnknown() && !data.Configurations.IsNull() {
@@ -141,6 +163,13 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		newNode.Configurations = nil
 	}
 
+	// If we accepted a deprecated device name (e.g. "virbr0"), keep the device
+	// name in state to match the user's config value and avoid Terraform drift.
+	if node.NodeDefinition == "external_connector" && extConnStateCfg != "" {
+		newNode.Configuration = extConnStateCfg
+		newNode.Configurations = nil
+	}
+
 	// WAS UNKNOWN??
 	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
 	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
@@ -148,20 +177,8 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		newNode.Configurations = nil
 	}
 
-	// External connector special-case: if configuration is empty, CML will
-	// normalize it to a label (typically NAT). Accept this to avoid forcing
-	// practitioners to hardcode environment-specific connector labels.
-	if node.NodeDefinition == "external_connector" {
-		oldCfg, _ := node.Configuration.(string)
-		if oldCfg != "" && !node.SameConfig(newNode) {
-			newCfg, _ := newNode.Configuration.(string)
-			resp.Diagnostics.AddError(
-				"External connector configuration",
-				fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", oldCfg, newCfg),
-			)
-			return
-		}
-	}
+	// External connector: device-name inputs (e.g. virbr0) are normalized to
+	// labels (e.g. NAT) during planning for back-compat. Do not hard-fail here.
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(

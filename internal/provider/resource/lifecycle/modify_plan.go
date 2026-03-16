@@ -100,7 +100,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.RAM = types.Int64Null()
 				node.BootDiskSize = types.Int64Null()
 				node.State = types.StringValue(string(models.NodeStateDefined))
-				node.CPUlimit = types.Int64Null()
+				// The controller commonly returns cpu_limit=100 even when a node is in
+				// DEFINED_ON_CORE. Keep the planned value aligned with what we will
+				// observe after apply to avoid "inconsistent result after apply".
+				if node.NodeDefinition.ValueString() != "external_connector" && node.NodeDefinition.ValueString() != "unmanaged_switch" {
+					node.CPUlimit = types.Int64Value(100)
+				} else {
+					node.CPUlimit = types.Int64Null()
+				}
 				node.ImageDefinition = types.StringNull()
 			}
 			if plannedState == string(models.LabStateStarted) {
@@ -112,7 +119,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.RAM = types.Int64Unknown()
 				node.BootDiskSize = types.Int64Unknown()
 				node.State = types.StringUnknown()
-				node.CPUlimit = types.Int64Unknown()
+				// The controller returns cpu_limit=100 for most started nodes even if the
+				// field was null in the prior state. If we keep it unknown here, the
+				// nested schema's UseStateForUnknown modifier will pin it to null and
+				// Terraform will error with "inconsistent result after apply".
+				if node.NodeDefinition.ValueString() != "external_connector" && node.NodeDefinition.ValueString() != "unmanaged_switch" {
+					node.CPUlimit = types.Int64Value(100)
+				} else {
+					node.CPUlimit = types.Int64Null()
+				}
 				node.ImageDefinition = types.StringUnknown()
 			}
 			if plannedState == string(models.LabStateStopped) {

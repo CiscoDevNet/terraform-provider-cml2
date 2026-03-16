@@ -140,6 +140,11 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 		opts = append(opts, cmlclient.WithoutNamedConfigs())
 	}
 
+	// Policy: always request node configurations explicitly to avoid server-default
+	// drift (CML 2.9 returns string when unset; CML 2.10 returns named-config list).
+	// This is independent from the user-facing named_configs setting.
+	opts = append(opts, cmlclient.WithNodeExcludeConfigurations(false))
+
 	// Auth
 	if len(r.data.Token.ValueString()) > 0 {
 		opts = append(opts, cmlclient.WithToken(r.data.Token.ValueString()))

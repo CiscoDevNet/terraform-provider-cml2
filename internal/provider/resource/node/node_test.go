@@ -259,8 +259,14 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 			},
 			// this tests the error condition in Update!
 			{
-				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				ExpectError: regexp.MustCompile("Provide proper external connector config"),
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
+				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
+					expected := "virbr0"
+					if value == expected {
+						return nil
+					}
+					return fmt.Errorf("expected %q to equal %q", value, expected)
+				}),
 			},
 		},
 	})
@@ -270,8 +276,15 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				ExpectError: regexp.MustCompile("Provide proper external connector config"),
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
+				// ExpectNonEmptyPlan: true,
+				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
+					expected := "virbr0"
+					if value == expected {
+						return nil
+					}
+					return fmt.Errorf("expected %q to equal %q", value, expected)
+				}),
 			},
 		},
 	})

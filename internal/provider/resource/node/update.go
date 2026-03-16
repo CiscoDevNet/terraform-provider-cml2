@@ -67,7 +67,19 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// these can only be changed when the node is DEFINED_ON_CORE
 	if stateData.State.ValueString() == string(models.NodeStateDefined) {
 		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
-			node.Configuration = planData.Configuration.ValueString()
+			cfgVal := planData.Configuration.ValueString()
+			if node.NodeDefinition == "external_connector" {
+				normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, cfgVal)
+				if nerr != nil {
+					resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
+					return
+				}
+				if changed {
+					resp.Diagnostics.AddWarning("External connector configuration normalized", warn)
+					cfgVal = normalized
+				}
+			}
+			node.Configuration = cfgVal
 		}
 		if !planData.Configurations.IsUnknown() && !planData.Configurations.IsNull() {
 			node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
@@ -117,34 +129,20 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		newNode.Configurations = nil
 	}
 
-	// Work around the fact that updating an external connector can "resolve" the
-	// device name (if given, worked in previous versions" with the label... e.g.
-	// virbr0 -> NAT, bridge0 -> System Bridge. We want to keep the original
-	// value in this case, otherwise we run into inconsistent state!
-	if node.NodeDefinition == "external_connector" {
-		// working with single string configuration or named configurations?
-		if cfg, ok := newNode.Configuration.(string); ok && len(cfg) > 0 {
-			nnc := cmlschema.NewConfigValue(cfg)
-			if !planData.Configuration.IsNull() && !planData.Configuration.Equal(nnc) {
-				resp.Diagnostics.AddError(
-					"External connector configuration (single)",
-					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated)."),
-				)
-				return
-			}
-		} else {
-			nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
-			if !planData.Configurations.IsNull() && !planData.Configurations.Equal(nnc) {
-				oldCfg, _ := node.Configuration.(string)
-				newCfg, _ := newNode.Configuration.(string)
-				resp.Diagnostics.AddError(
-					"External connector configurations (named)",
-					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", oldCfg, newCfg),
-				)
-				return
-			}
+	// External connector back-compat: if the user provided a device name (e.g.
+	// "virbr0"), keep the config value in state to match the user's config.
+	// We still sent the normalized label to the API.
+	if node.NodeDefinition == "external_connector" && !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
+		inCfg := planData.Configuration.ValueString()
+		_, changed, _, _ := normalizeExtConnConfig(ctx, r.cfg, inCfg)
+		if changed {
+			newNode.Configuration = inCfg
+			newNode.Configurations = nil
 		}
 	}
+
+	// External connector: device-name inputs (e.g. virbr0) are normalized to
+	// labels (e.g. NAT) during planning for back-compat. Do not hard-fail here.
 
 	// When updating with named configs on, we need to move over the returned
 	// named config into the single configuration if it was previously used.
