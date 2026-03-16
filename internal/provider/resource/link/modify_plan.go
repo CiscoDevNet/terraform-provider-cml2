@@ -32,11 +32,16 @@ func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	}
 
 	if !stateData.SlotA.Equal(planData.SlotA) {
-		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_a"))
+		// Only force replacement when slot is explicitly configured.
+		if !planData.SlotA.IsNull() {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_a"))
+		}
 	}
 
 	if !stateData.SlotB.Equal(planData.SlotB) {
-		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_b"))
+		if !planData.SlotB.IsNull() {
+			resp.RequiresReplace = append(resp.RequiresReplace, path.Root("slot_b"))
+		}
 	}
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)

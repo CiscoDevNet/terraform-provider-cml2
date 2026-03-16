@@ -81,9 +81,8 @@ func Lifecycle() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: Node(),
 			},
-			PlanModifiers: []planmodifier.Map{
-				mapplanmodifier.UseStateForUnknown(),
-			},
+			// Do not pin computed nodes to prior state values.
+			// The simulator may update coordinates and other fields during apply.
 		},
 		"configs": schema.MapAttribute{
 			Description: "Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.",

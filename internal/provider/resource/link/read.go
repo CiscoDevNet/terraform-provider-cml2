@@ -32,6 +32,15 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	// Preserve explicit slot selections from state; the API does not reliably
+	// report slot numbers for all node types.
+	if !data.SlotA.IsNull() && !data.SlotA.IsUnknown() {
+		link.SrcSlot = int(data.SlotA.ValueInt64())
+	}
+	if !data.SlotB.IsNull() && !data.SlotB.IsUnknown() {
+		link.DstSlot = int(data.SlotB.ValueInt64())
+	}
+
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

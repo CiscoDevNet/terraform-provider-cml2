@@ -84,6 +84,12 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		plannedState := planData.State.ValueString()
 
 		for id, node := range nodes {
+			// Coordinates can change outside of Terraform (manual drag/drop in UI or
+			// auto-layout). During a lifecycle state transition, avoid pinning x/y to
+			// prior known values or Terraform may report an "inconsistent result after
+			// apply" when the controller returns updated coordinates.
+			node.X = types.Int64Unknown()
+			node.Y = types.Int64Unknown()
 
 			if plannedState == string(models.LabStateDefined) {
 				node.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)

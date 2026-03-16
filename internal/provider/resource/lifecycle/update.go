@@ -109,7 +109,12 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
-	planData.State = types.StringValue(string(lab.State))
+	// If the user explicitly configured a desired state, keep it in state after
+	// apply to avoid "inconsistent result" errors when the simulator returns a
+	// transitional/lagging state (e.g. wait=false).
+	if configData.State.IsNull() {
+		planData.State = types.StringValue(string(lab.State))
+	}
 	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
 	planData.Booted = types.BoolValue(lab.Booted())
 

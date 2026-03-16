@@ -389,6 +389,12 @@ func newTags(_ context.Context, node *models.Node, diags *diag.Diagnostics) type
 
 func NewNamedConfigs(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {
+		// For some node definitions (e.g. unmanaged_switch) the API provides a
+		// default named config even if the client did not request named configs.
+		// Returning null for empty keeps state stable.
+		return types.ListNull(NamedConfigAttrType)
+	}
+	if len(node.Configurations) == 1 && node.Configurations[0].Name == "default" {
 		return types.ListNull(NamedConfigAttrType)
 	}
 	valueList := make([]attr.Value, 0)

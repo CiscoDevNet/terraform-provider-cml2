@@ -126,7 +126,6 @@ func Link() map[string]schema.Attribute {
 			Computed:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
 			},
 		},
 		"slot_b": schema.Int64Attribute{
@@ -135,7 +134,6 @@ func Link() map[string]schema.Attribute {
 			Computed:    true,
 			PlanModifiers: []planmodifier.Int64{
 				int64planmodifier.UseStateForUnknown(),
-				int64planmodifier.RequiresReplace(),
 			},
 		},
 		"state": schema.StringAttribute{
