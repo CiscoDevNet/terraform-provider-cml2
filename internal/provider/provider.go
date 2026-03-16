@@ -18,6 +18,7 @@ import (
 	d_node "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/node"
 	d_system "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/system"
 	d_users "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/users"
+	r_annotation "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/annotation"
 	r_group "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/group"
 	r_lab "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lab"
 	r_lifecycle "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lifecycle"
@@ -109,6 +110,7 @@ func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource
 		r_lifecycle.NewResource,
 		r_link.NewResource,
 		r_node.NewResource,
+		r_annotation.NewResource,
 		r_group.NewResource,
 		r_user.NewResource,
 	}
