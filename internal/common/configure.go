@@ -4,10 +4,7 @@ package common
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -221,24 +218,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 		opts = append(opts, cmlclient.WithInsecureTLS())
 	}
 	if len(r.data.CAcert.ValueString()) > 0 {
-		caCertPool := x509.NewCertPool()
-		ok := caCertPool.AppendCertsFromPEM([]byte(r.data.CAcert.ValueString()))
-		if !ok {
-			diags.AddError(
-				"Configuration issue",
-				"Provided certificate could not be parsed as PEM",
-			)
-		} else {
-			tr := http.DefaultTransport.(*http.Transport).Clone()
-			if tr.TLSClientConfig == nil {
-				tr.TLSClientConfig = &tls.Config{}
-			}
-			tr.TLSClientConfig.RootCAs = caCertPool
-			// Keep SkipVerify behavior consistent if both are set
-			tr.TLSClientConfig.InsecureSkipVerify = r.data.SkipVerify.ValueBool()
-			hc := &http.Client{Transport: tr}
-			opts = append(opts, cmlclient.WithHTTPClient(hc))
-		}
+		opts = append(opts, cmlclient.WithCACertPEM([]byte(r.data.CAcert.ValueString())))
 	}
 
 	client, err := cmlclient.New(r.data.Address.ValueString(), opts...)

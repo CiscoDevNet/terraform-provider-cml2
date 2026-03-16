@@ -65,6 +65,25 @@ provided via the registry.
 > performance.  Using the token avoids repeated client authentication via the
 > API which takes quite a bit of time.
 
+## Token Cache (username/password)
+
+When using username/password (instead of a pre-generated JWT), you can enable
+token caching so repeated Terraform runs do not re-authenticate as often.
+
+Provider configuration is evaluated before resources are created, so HCL cannot
+reliably create a temporary file resource and feed its path into the provider.
+Recommended workflow is a wrapper script:
+
+```bash
+TOKEN_FILE="$(mktemp -t cml2-token.XXXXXX)"
+trap 'rm -f "$TOKEN_FILE"' EXIT
+
+export TF_VAR_token_cache=true
+export TF_VAR_token_cache_file="$TOKEN_FILE"
+
+terraform apply
+```
+
 ### HCL
 
 For some basic examples look in the `examples` directory
