@@ -104,7 +104,6 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 			}
 		}
 		result = append(result, cmlschema.NewExtConn(ctx, connector, &resp.Diagnostics))
-
 	}
 
 	resp.Diagnostics.Append(

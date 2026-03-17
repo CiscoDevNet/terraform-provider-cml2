@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -12,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 var group1 *models.Group = &models.Group{

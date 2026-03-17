@@ -32,7 +32,6 @@ func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostic
 	attempts := 0
 
 	for !converged {
-
 		converged, err = client.Lab.HasConverged(ctx, models.UUID(id))
 		if err != nil {
 			diags.AddError(

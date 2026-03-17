@@ -1,8 +1,9 @@
 package lab
 
 import (
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 func keepNodeStagingNullWhenUnmanaged(managedNS types.Object, m *cmlschema.LabModel) {

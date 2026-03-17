@@ -15,9 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
+
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces

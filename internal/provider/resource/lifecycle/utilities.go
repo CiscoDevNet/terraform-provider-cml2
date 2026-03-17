@@ -19,7 +19,7 @@ import (
 )
 
 func getTimeouts(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostics) *labLifecycleTimeouts {
-	// timeouts is optional, if ommitted it will result in a nil pointer
+	// timeouts is optional, if omitted it will result in a nil pointer
 	var timeouts *labLifecycleTimeouts
 	diags.Append(config.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
 	if diags.HasError() || timeouts == nil {
@@ -141,7 +141,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 	// inject regular configuration (legacy)
 	for nodeID, config := range data.Configs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if err == errors.ErrElementNotFound {
+		if errors.Is(err, errors.ErrElementNotFound) {
 			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {
@@ -164,7 +164,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 	// inject named configurations (from 2.7.0 and newer)
 	for nodeID, config := range data.NamedConfigs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if err == errors.ErrElementNotFound {
+		if errors.Is(err, errors.ErrElementNotFound) {
 			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {

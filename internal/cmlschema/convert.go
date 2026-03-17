@@ -14,7 +14,6 @@ import (
 func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attribute {
 	dSchema := make(map[string]ds_schema.Attribute)
 	for name, fromAttr := range rSchema {
-
 		// required := fromAttr.IsRequired()
 		// computed := fromAttr.IsComputed()
 		// optional := fromAttr.IsOptional()

@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 func TestNewAnnotation_Text(t *testing.T) {

@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

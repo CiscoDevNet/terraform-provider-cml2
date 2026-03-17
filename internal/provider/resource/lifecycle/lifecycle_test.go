@@ -7,12 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
-	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -88,7 +89,7 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
 	// this was deprecated and replaced by depends_on with 0.1.0
-	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
+	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribute.`)
 	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
 
 	resource.Test(t, resource.TestCase{

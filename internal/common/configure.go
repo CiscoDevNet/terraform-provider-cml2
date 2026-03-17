@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	cmlclient "github.com/rschmied/gocmlclient/pkg/client"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 type ProviderConfig struct {

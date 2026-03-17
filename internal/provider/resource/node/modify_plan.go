@@ -3,13 +3,14 @@ package node
 import (
 	"context"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 // ModifyPlan is called when the provider has an opportunity to modify the

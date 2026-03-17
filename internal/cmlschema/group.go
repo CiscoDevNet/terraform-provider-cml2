@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
 var GroupLabAttrType = map[string]attr.Type{

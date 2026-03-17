@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func userGroupIDsFromSet(_ context.Context, _ *diag.Diagnostics, set types.Set) []models.UUID {

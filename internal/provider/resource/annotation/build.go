@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 func clampThickness(v float64) float64 {

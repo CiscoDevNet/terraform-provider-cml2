@@ -129,7 +129,6 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		imageList = append(imageList, cmlschema.NewImageDefinition(
 			ctx, &img, &resp.Diagnostics),
 		)
-
 	}
 
 	resp.Diagnostics.Append(
