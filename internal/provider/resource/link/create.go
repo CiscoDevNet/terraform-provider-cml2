@@ -59,7 +59,7 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		link.DstSlot = int(data.SlotB.ValueInt64())
 	}
 
-	newLink, err := r.cfg.Client().LinkCreate(ctx, &link)
+	newLink, err := r.cfg.Client().Link.Create(ctx, link)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -89,7 +89,7 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewLink(ctx, newLink, &resp.Diagnostics),
+			cmlschema.NewLink(ctx, &newLink, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,

@@ -23,9 +23,8 @@ permissions:
 
 # Default values to simplify job configurations below.
 env:
-  # Go language version to use for building. This value should also be updated
-  # in the release workflow if changed.
-  GO_VERSION: "1.24"
+  # Ensure local go.work does not affect CI.
+  GOWORK: off
 
 jobs:
   # Ensure project builds before running testing matrix
@@ -37,15 +36,52 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
+          cache: true
       - run: go mod download
       - run: go build -v .
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
+  tidy:
+    name: go mod tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
         with:
-          terraform_version: ${{ matrix.terraform }}
-          terraform_wrapper: false
+          go-version-file: go.mod
+          cache: true
+      - run: go mod tidy
+      - name: git diff
+        run: |
+          git diff --compact-summary --exit-code || \
+            (echo; echo "Unexpected difference after 'go mod tidy'. Run 'go mod tidy' and commit."; exit 1)
+
+      - name: Ensure gocmlclient is published
+        run: |
+          set -euo pipefail
+          if rg -n 'github.com/rschmied/gocmlclient/pkg/(client|models|errors)' go.mod >/dev/null; then
+            # If these packages are referenced, then a published gocmlclient version must provide them.
+            # With GOWORK=off, this must resolve via go.mod alone.
+            if ! go list -m -json github.com/rschmied/gocmlclient >/dev/null 2>&1; then
+              echo "ERROR: gocmlclient module not resolvable"; exit 1;
+            fi
+          fi
+
+      - name: Block local-only replaces
+        run: |
+          if grep -nE '^replace\s+github.com/rschmied/gocmlclient\s+=>\s+\.{0,2}/' go.mod >/dev/null; then
+            echo "ERROR: go.mod contains a local path replace for gocmlclient."
+            echo "Use go.work for local development instead."
+            exit 1
+          fi
+
+      - name: Ensure no go.work committed
+        run: |
+          if test -f go.work; then
+            echo "ERROR: go.work exists in the repository checkout.";
+            echo "go.work must not be committed; use go.work.example locally.";
+            exit 1;
+          fi
 
   generate:
     # go generate needs Terraform in the path, use latest version
@@ -54,7 +90,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
+          cache: true
       - uses: hashicorp/setup-terraform@v3
       - run: go generate ./...
       - name: git diff
@@ -91,7 +128,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
+          cache: true
       - run: go mod download
       - uses: hashicorp/setup-terraform@v3
         with:

@@ -45,17 +45,17 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 	if desiredNodeStaging != nil {
 		// Ensure client knows server version (SkipReadyCheck is used at init).
-		if err := r.cfg.Client().Ready(ctx); err != nil {
+		if err := r.cfg.Client().System.Ready(ctx); err != nil {
 			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML readiness/version, got error: %s", err))
 			return
 		}
-		ok, err := r.cfg.Client().VersionCheck(ctx, ">=2.10.0")
+		ok, err := r.cfg.Client().System.VersionCheck(ctx, ">=2.10.0")
 		if err != nil {
 			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML version, got error: %s", err))
 			return
 		}
 		if !ok {
-			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("node_staging requires CML >= 2.10.0 (detected %s)", r.cfg.Client().Version()))
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("node_staging requires CML >= 2.10.0 (detected %s)", r.cfg.Client().System.Version()))
 			return
 		}
 		// Prefer fail-fast create semantics when supported.
@@ -105,7 +105,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 			if err != nil {
 				resp.Diagnostics.AddError(
 					common.ErrorLabel,
-					fmt.Sprintf("Unable to enforce lab node_staging (CML %s), got error: %s", r.cfg.Client().Version(), err),
+					fmt.Sprintf("Unable to enforce lab node_staging (CML %s), got error: %s", r.cfg.Client().System.Version(), err),
 				)
 				return
 			}

@@ -79,7 +79,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// can't update password
 	user.Password = ""
 
-	updatedUser, err := r.cfg.Client().UserUpdate(ctx, user)
+	updatedUser, err := r.cfg.Client().User.Update(ctx, user.ID, models.UserUpdateRequest{UserBase: user.UserBase})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -93,7 +93,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		updatedUser, err = r.cfg.Client().UserGet(ctx, string(updatedUser.ID))
+		updatedUser, err = r.cfg.Client().User.GetByID(ctx, updatedUser.ID)
 		if err != nil {
 			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get user, got error: %s", err))
 			return
@@ -109,7 +109,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewUser(ctx, updatedUser, &resp.Diagnostics),
+			cmlschema.NewUser(ctx, &updatedUser, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.UserAttrType},
 			&data,
 		)...,

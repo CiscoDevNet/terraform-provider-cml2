@@ -27,7 +27,7 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), false)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -43,7 +43,7 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 		r.wipe(ctx, resp.Diagnostics, data.LabID.ValueString())
 	}
 
-	err = r.cfg.Client().LabDestroy(ctx, data.LabID.ValueString())
+	err = r.cfg.Client().Lab.Delete(ctx, models.UUID(data.LabID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

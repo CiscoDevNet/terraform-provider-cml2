@@ -48,7 +48,7 @@ func getStaging(ctx context.Context, config tfsdk.Config, diags *diag.Diagnostic
 
 func (r *LabLifecycleResource) stop(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab stop")
-	err := r.cfg.Client().LabStop(ctx, id)
+	err := r.cfg.Client().Lab.Stop(ctx, models.UUID(id))
 	if err != nil {
 		diags.AddError(
 			common.ErrorLabel,
@@ -61,7 +61,7 @@ func (r *LabLifecycleResource) stop(ctx context.Context, diags diag.Diagnostics,
 
 func (r *LabLifecycleResource) wipe(ctx context.Context, diags diag.Diagnostics, id string) {
 	tflog.Info(ctx, "lab wipe")
-	err := r.cfg.Client().LabWipe(ctx, id)
+	err := r.cfg.Client().Lab.Wipe(ctx, models.UUID(id))
 	if err != nil {
 		diags.AddError(
 			common.ErrorLabel,
@@ -74,7 +74,7 @@ func (r *LabLifecycleResource) wipe(ctx context.Context, diags diag.Diagnostics,
 
 func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Diagnostics, start startData) {
 	tflog.Info(ctx, "lab start")
-	err := r.cfg.Client().LabStart(ctx, string(start.lab.ID))
+	err := r.cfg.Client().Lab.Start(ctx, start.lab.ID)
 	if err != nil {
 		diags.AddError(
 			common.ErrorLabel,
@@ -153,7 +153,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 			continue
 		}
 		configString := config.(types.String).ValueString()
-		err = r.cfg.Client().NodeSetConfig(ctx, node, configString)
+		err = r.cfg.Client().Node.SetConfig(ctx, node, configString)
 		if err != nil {
 			diags.AddError("set node config failed",
 				fmt.Sprintf("setting the new node configuration failed: %s", err),
@@ -178,7 +178,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 
 		ba := config.(types.List)
 		configs := cmlschema.GetNamedConfigs(ctx, *diags, ba)
-		err = r.cfg.Client().NodeSetNamedConfigs(ctx, node, configs)
+		err = r.cfg.Client().Node.SetNamedConfigs(ctx, node, configs)
 		if err != nil {
 			diags.AddError("set node named config failed",
 				fmt.Sprintf("setting the new node configurations failed: %s", err),

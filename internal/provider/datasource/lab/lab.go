@@ -92,13 +92,13 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	}
 
 	var (
-		lab *models.Lab
+		lab models.Lab
 		err error
 	)
 	if data.ID.IsNull() {
-		lab, err = d.cfg.Client().LabGetByTitle(ctx, data.Title.ValueString(), false)
+		lab, err = d.cfg.Client().Lab.GetByTitle(ctx, data.Title.ValueString(), false)
 	} else {
-		lab, err = d.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
+		lab, err = d.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -112,7 +112,7 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewLab(ctx, lab, &resp.Diagnostics),
+			cmlschema.NewLab(ctx, &lab, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&data.Lab,
 		)...,

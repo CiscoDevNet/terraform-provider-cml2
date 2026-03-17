@@ -76,7 +76,7 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	groups, err := d.cfg.Client().Groups(ctx)
+	groups, err := d.cfg.Client().Group.Groups(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -91,8 +91,9 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		if !data.Name.IsNull() && group.Name != data.Name.ValueString() {
 			continue
 		}
+		groupCopy := group
 		groupList = append(groupList, cmlschema.NewGroup(
-			ctx, group, &resp.Diagnostics),
+			ctx, &groupCopy, &resp.Diagnostics),
 		)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -23,7 +24,7 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err = r.cfg.Client().UserDestroy(ctx, data.ID.ValueString())
+	err = r.cfg.Client().User.Delete(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

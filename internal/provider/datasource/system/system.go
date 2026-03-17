@@ -112,7 +112,7 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	attempts := 0
 
 	for {
-		err = d.cfg.Client().Ready(ctx)
+		err = d.cfg.Client().System.Ready(ctx)
 		if err == nil {
 			break
 		}
@@ -152,7 +152,7 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		resp.Diagnostics.AddWarning("system ready", fmt.Sprintf("err %s", err))
 	}
 	data.Ready = types.BoolValue(err == nil)
-	data.Version = types.StringValue(d.cfg.Client().Version())
+	data.Version = types.StringValue(d.cfg.Client().System.Version())
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

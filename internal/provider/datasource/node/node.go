@@ -74,7 +74,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true) // deep!
+	lab, err := d.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true) // deep!
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

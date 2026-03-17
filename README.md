@@ -40,7 +40,7 @@ The current implementation provides:
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.22
+- [Go](https://golang.org/doc/install) >= 1.25.x
 - [CML2](https://cisco.com/go/cml) >= 2.6.0
 
 ## Building The Provider
@@ -52,6 +52,13 @@ The current implementation provides:
 ```shell
 go install
 ```
+
+## Local Development Install (Use Your Local Build)
+
+For beta-testing or local iteration, you can install a locally built provider
+binary so Terraform uses it instead of downloading from the public registry.
+
+See `docs/development/local-provider.md`.
 
 ## Using the provider
 

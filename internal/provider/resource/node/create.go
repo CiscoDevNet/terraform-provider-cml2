@@ -149,7 +149,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// tflog.Info(ctx, "NODE", map[string]any{"v": fmt.Sprintf("%+v", node)})
 
-	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
+	newNode, err := r.cfg.Client().Node.Create(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -187,7 +187,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			cmlschema.NewNode(ctx, &newNode, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,

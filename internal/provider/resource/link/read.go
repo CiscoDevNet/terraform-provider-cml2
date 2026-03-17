@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -23,7 +24,7 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	link, err := r.cfg.Client().LinkGet(ctx, data.LabID.ValueString(), data.ID.ValueString())
+	link, err := r.cfg.Client().Link.GetByID(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -44,7 +45,7 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewLink(ctx, link, &resp.Diagnostics),
+			cmlschema.NewLink(ctx, &link, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,

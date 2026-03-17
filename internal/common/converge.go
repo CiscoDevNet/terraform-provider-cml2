@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/rschmied/gocmlclient/pkg/client"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostics, id, timeout string) {
@@ -32,7 +33,7 @@ func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostic
 
 	for !converged {
 
-		converged, err = client.LabHasConverged(ctx, id)
+		converged, err = client.Lab.HasConverged(ctx, models.UUID(id))
 		if err != nil {
 			diags.AddError(
 				ErrorLabel,

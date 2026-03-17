@@ -5,8 +5,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 // Run "go generate" to format example terraform files and generate the docs for
@@ -25,7 +25,7 @@ import (
 var version string = "dev"
 
 // goreleaser can also pass the specific commit if you want
-// commit  string = ""
+var commit string = "dev"
 
 func main() {
 	var debug bool

@@ -8,6 +8,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func (r *LinkResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -26,7 +27,7 @@ func (r *LinkResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err = r.cfg.Client().LinkDestroy(ctx, data.LabID.ValueString(), data.ID.ValueString())
+	err = r.cfg.Client().Link.Delete(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

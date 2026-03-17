@@ -46,7 +46,8 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// need to get the lab data here
-		start.lab, err = r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
+		lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
+		start.lab = &lab
 		if err != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
@@ -100,7 +101,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 
 	// since we have changed lab state, we need to re-read all the node
 	// state...
-	lab, err := r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -115,7 +116,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	if configData.State.IsNull() {
 		planData.State = types.StringValue(string(lab.State))
 	}
-	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
+	planData.Nodes = r.populateNodes(ctx, &lab, &resp.Diagnostics)
 	planData.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)

@@ -76,7 +76,7 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	users, err := d.cfg.Client().Users(ctx)
+	users, err := d.cfg.Client().User.Users(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -91,8 +91,9 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		if !data.Username.IsNull() && user.Username != data.Username.ValueString() {
 			continue
 		}
+		userCopy := user
 		userList = append(userList, cmlschema.NewUser(
-			ctx, user, &resp.Diagnostics),
+			ctx, &userCopy, &resp.Diagnostics),
 		)
 	}
 

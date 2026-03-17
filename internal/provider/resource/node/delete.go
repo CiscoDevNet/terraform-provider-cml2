@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -24,10 +25,10 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	labID := data.LabID.ValueString()
-	nodeID := data.ID.ValueString()
+	labID := models.UUID(data.LabID.ValueString())
+	nodeID := models.UUID(data.ID.ValueString())
 
-	err = r.cfg.Client().NodeStop(ctx, labID, nodeID)
+	err = r.cfg.Client().Node.Stop(ctx, labID, nodeID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -36,7 +37,7 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err = r.cfg.Client().NodeWipe(ctx, labID, nodeID)
+	err = r.cfg.Client().Node.Wipe(ctx, labID, nodeID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -45,7 +46,7 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	err = r.cfg.Client().NodeDestroy(ctx, labID, nodeID)
+	err = r.cfg.Client().Node.Delete(ctx, labID, nodeID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

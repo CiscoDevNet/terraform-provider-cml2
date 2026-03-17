@@ -1,0 +1,53 @@
+version: "2"
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - errorlint
+    - gocritic
+    - misspell
+    - nakedret
+    - revive
+    - unconvert
+    - whitespace
+  settings:
+    govet:
+      enable:
+        - nilness
+        - shadow
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+        - name: if-return
+        - name: increment-decrement
+        - name: range
+        - name: receiver-naming
+        - name: var-declaration
+        - name: var-naming
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/ciscodevnet/terraform-provider-cml2
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

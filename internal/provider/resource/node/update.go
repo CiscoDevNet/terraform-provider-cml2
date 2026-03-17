@@ -117,7 +117,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// TODO: groups are missing!
 
-	newNode, err := r.cfg.Client().NodeUpdate(ctx, node)
+	newNode, err := r.cfg.Client().Node.Update(ctx, *node)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -159,7 +159,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			cmlschema.NewNode(ctx, &newNode, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&planData,
 		)...,

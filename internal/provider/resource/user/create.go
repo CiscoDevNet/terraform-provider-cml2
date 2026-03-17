@@ -57,7 +57,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		user.ResourcePool = &ptr
 	}
 
-	newUser, err := r.cfg.Client().UserCreate(ctx, &user)
+	newUser, err := r.cfg.Client().User.Create(ctx, models.UserCreateRequest{UserBase: user.UserBase, Password: user.Password})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -70,7 +70,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	newUser, err = r.cfg.Client().UserGet(ctx, string(newUser.ID))
+	newUser, err = r.cfg.Client().User.GetByID(ctx, newUser.ID)
 	if err != nil {
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get user, got error: %s", err))
 		return
@@ -83,7 +83,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewUser(ctx, newUser, &resp.Diagnostics),
+			cmlschema.NewUser(ctx, &newUser, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.UserAttrType},
 			&data,
 		)...,

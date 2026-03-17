@@ -1,6 +1,8 @@
 module github.com/ciscodevnet/terraform-provider-cml2
 
-go 1.25.8
+go 1.25
+
+toolchain go1.25.8
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -10,7 +12,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.15.0
-	github.com/rschmied/gocmlclient v0.1.2
 	github.com/stretchr/testify v1.11.0
 )
 
@@ -87,5 +88,3 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/rschmied/gocmlclient => /home/rschmied/Projects/gocmlclient

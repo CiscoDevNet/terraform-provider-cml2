@@ -40,7 +40,8 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 
 	if data.LabID.IsUnknown() {
 		tflog.Info(ctx, "Create: import")
-		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.ValueString())
+		imported, err := r.cfg.Client().Lab.Import(ctx, data.Topology.ValueString())
+		start.lab = &imported
 		if err != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
@@ -49,7 +50,8 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 			return
 		}
 	} else {
-		start.lab, err = r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
+		lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
+		start.lab = &lab
 		if err != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
@@ -71,7 +73,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	// fetch lab again, with nodes and interfaces
-	lab, err := r.cfg.Client().LabGet(ctx, string(start.lab.ID), true)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, start.lab.ID, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -82,7 +84,7 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 
 	data.LabID = types.StringValue(string(lab.ID))
 	data.State = types.StringValue(string(lab.State))
-	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
+	data.Nodes = r.populateNodes(ctx, &lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
