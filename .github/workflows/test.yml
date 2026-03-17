@@ -163,3 +163,7 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
+
+      - name: Cleanup acceptance token cache
+        if: ${{ always() }}
+        run: rm -f /tmp/terraform-provider-cml2-acc-token.json

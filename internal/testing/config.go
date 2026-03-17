@@ -28,7 +28,7 @@ provider "cml2" {
 	password = var.password
 	token = var.token
 	token_cache = true
-	// token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
+	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = false
 }
@@ -61,7 +61,7 @@ provider "cml2" {
 	password = var.password
 	token = var.token
 	token_cache = true
-	// token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
+	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = true
 }
@@ -83,11 +83,17 @@ variable "password" {
 	type        = string
 	default     = ""
 }
+variable "token" {
+	description = "CML controller JWT"
+	type        = string
+	default     = ""
+}
 provider "cml2" {
 	# something non-existent
 	address = "https://127.0.0.1:5555"
 	username = var.username
 	password = var.password
+	token = var.token
 	skip_verify = true
 }
 `
