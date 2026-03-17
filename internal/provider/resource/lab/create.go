@@ -39,6 +39,29 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		createReq.Title = labModel.Title.ValueString()
 	}
 
+	desiredNodeStaging := expandNodeStaging(ctx, labModel.NodeStaging, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if desiredNodeStaging != nil {
+		// Ensure client knows server version (SkipReadyCheck is used at init).
+		if err := r.cfg.Client().Ready(ctx); err != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML readiness/version, got error: %s", err))
+			return
+		}
+		ok, err := r.cfg.Client().VersionCheck(ctx, ">=2.10.0")
+		if err != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML version, got error: %s", err))
+			return
+		}
+		if !ok {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("node_staging requires CML >= 2.10.0 (detected %s)", r.cfg.Client().Version()))
+			return
+		}
+		// Prefer fail-fast create semantics when supported.
+		createReq.NodeStaging = desiredNodeStaging
+	}
+
 	if !labModel.Groups.IsUnknown() && !labModel.Groups.IsNull() {
 		groups := make([]models.LabGroup, 0)
 		var g cmlschema.LabGroupModel
@@ -65,23 +88,33 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	// node_staging cannot be applied during create; follow-up PATCH when configured.
-	if ns := expandNodeStaging(ctx, labModel.NodeStaging, &resp.Diagnostics); ns != nil {
-		_, err = r.cfg.Client().Lab.Update(ctx, newLab.ID, models.LabUpdateRequest{NodeStaging: ns})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				common.ErrorLabel,
-				fmt.Sprintf("Unable to set lab node_staging (CML %s), got error: %s", r.cfg.Client().Version(), err),
-			)
-			return
-		}
-	}
-
 	// Refresh to get populated groups from API.
 	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
 	if err != nil {
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
 		return
+	}
+
+	// Defensive enforcement: if create did not apply node_staging, enforce via PATCH.
+	if desiredNodeStaging != nil {
+		if fullLab.NodeStaging == nil ||
+			fullLab.NodeStaging.Enabled != desiredNodeStaging.Enabled ||
+			fullLab.NodeStaging.StartRemaining != desiredNodeStaging.StartRemaining ||
+			fullLab.NodeStaging.AbortOnFailure != desiredNodeStaging.AbortOnFailure {
+			_, err = r.cfg.Client().Lab.Update(ctx, newLab.ID, models.LabUpdateRequest{NodeStaging: desiredNodeStaging})
+			if err != nil {
+				resp.Diagnostics.AddError(
+					common.ErrorLabel,
+					fmt.Sprintf("Unable to enforce lab node_staging (CML %s), got error: %s", r.cfg.Client().Version(), err),
+				)
+				return
+			}
+			fullLab, err = r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
+			if err != nil {
+				resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab after node_staging update, got error: %s", err))
+				return
+			}
+		}
 	}
 
 	resp.Diagnostics.Append(
