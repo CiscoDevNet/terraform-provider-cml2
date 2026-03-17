@@ -26,6 +26,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	planNodeStaging := labModel.NodeStaging
 
 	createReq := models.LabCreateRequest{}
 	if !labModel.Notes.IsNull() {
@@ -64,6 +65,18 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	// node_staging cannot be applied during create; follow-up PATCH when configured.
+	if ns := expandNodeStaging(ctx, labModel.NodeStaging, &resp.Diagnostics); ns != nil {
+		_, err = r.cfg.Client().Lab.Update(ctx, newLab.ID, models.LabUpdateRequest{NodeStaging: ns})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				common.ErrorLabel,
+				fmt.Sprintf("Unable to set lab node_staging (CML %s), got error: %s", r.cfg.Client().Version(), err),
+			)
+			return
+		}
+	}
+
 	// Refresh to get populated groups from API.
 	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
 	if err != nil {
@@ -74,6 +87,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(ctx, cmlschema.NewLab(ctx, &fullLab, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.LabAttrType}, &labModel)...,
 	)
+	keepNodeStagingNullWhenUnmanaged(planNodeStaging, &labModel)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &labModel)...)
 
 	tflog.Info(ctx, "Resource Lab CREATE done")

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -10,7 +11,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
-func userGroupIDsFromSet(ctx context.Context, diags *diag.Diagnostics, set types.Set) []models.UUID {
+func userGroupIDsFromSet(_ context.Context, _ *diag.Diagnostics, set types.Set) []models.UUID {
 	if set.IsUnknown() || set.IsNull() {
 		return nil
 	}
@@ -49,15 +50,6 @@ func removeUUID(ids []models.UUID, target models.UUID) []models.UUID {
 	return out
 }
 
-func containsUUID(ids []models.UUID, target models.UUID) bool {
-	for _, id := range ids {
-		if id == target {
-			return true
-		}
-	}
-	return false
-}
-
 func (r *UserResource) reconcileGroupMembership(ctx context.Context, diags *diag.Diagnostics, userID models.UUID, current, desired []models.UUID) {
 	cur := uuidSet(current)
 	des := uuidSet(desired)
@@ -93,7 +85,7 @@ func (r *UserResource) reconcileGroupMembership(ctx context.Context, diags *diag
 			return
 		}
 		members := g.Members
-		if !containsUUID(members, userID) {
+		if !slices.Contains(members, userID) {
 			members = append(members, userID)
 		}
 		update := models.Group{

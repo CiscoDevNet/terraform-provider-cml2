@@ -1,3 +1,4 @@
+// Package images implements the CML2 images datasource.
 package images
 
 import (

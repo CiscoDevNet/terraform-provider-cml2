@@ -50,7 +50,7 @@ func TestLabAttrs(t *testing.T) {
 	t.Log(diag.Errors())
 	groups, diag := labschema.TypeAtPath(context.TODO(), path.Root("groups"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 11, len(labschema.Attributes))
+	assert.Equal(t, 12, len(labschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 	assert.Equal(t,

@@ -88,7 +88,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
 		// Only set configuration from plan if we did not already normalize it for
 		// external connectors.
-		if !(node.NodeDefinition == "external_connector" && extConnStateCfg != "") {
+		if node.NodeDefinition != "external_connector" || extConnStateCfg == "" {
 			node.Configuration = data.Configuration.ValueString()
 		}
 	}

@@ -81,8 +81,8 @@ provider "cml2" {
 - `named_configs` (Boolean) Enables the use of named configs (CML version >2.7.0 required!)
 - `password` (String, Sensitive) CML2 password.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
+- `token` (String, Sensitive) CML2 API token (JWT).
 - `token_cache` (Boolean) Enables caching of an auth token in a local file when using username/password. Ignored when `token` is set.
 - `token_cache_file` (String) Path to the token cache file. Used only when `token_cache=true` and username/password auth is used.
-- `token` (String, Sensitive) CML2 API token (JWT).
 - `use_cache` (Boolean, Deprecated) Enables the client cache, **Deprecated**
 - `username` (String) CML2 username.

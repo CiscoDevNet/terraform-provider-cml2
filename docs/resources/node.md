@@ -31,6 +31,7 @@ A node resource represents a CML node. At create time, the lab ID, a node defini
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
 - `hide_links` (Boolean) If true, links are not shown in the topology. This is a visual cue and does not influence any simulation function.
 - `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.
+- `priority` (Number) Node scheduling priority. Lower values typically start earlier.
 - `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `tags` (Set of String) Set of tags of the node.
 - `x` (Number) X coordinate on the topology canvas.

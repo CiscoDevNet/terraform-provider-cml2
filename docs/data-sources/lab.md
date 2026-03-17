@@ -53,6 +53,7 @@ Read-Only:
 - `link_count` (Number) Number of links in the lab.
 - `modified` (String) Modification date/time string in ISO8601 format.
 - `node_count` (Number) Number of nodes in the lab.
+- `node_staging` (Attributes) Optional lab node staging configuration. If omitted, the provider will not manage node staging and will ignore remote values. (see [below for nested schema](#nestedatt--lab--node_staging))
 - `notes` (String) Lab notes.
 - `owner` (String) Owner of the lab, a UUID4.
 - `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.
@@ -64,5 +65,14 @@ Read-Only:
 Read-Only:
 
 - `id` (String) Group ID (UUID).
-- `name` (String) Descriptive group name.
 - `permission` (String) Permission, either `read_only` or `read_write`.
+
+
+<a id="nestedatt--lab--node_staging"></a>
+### Nested Schema for `lab.node_staging`
+
+Read-Only:
+
+- `abort_on_failure` (Boolean) If `true`, abort the staging sequence when a node fails to start.
+- `enabled` (Boolean) Enable or disable lab node staging.
+- `start_remaining` (Boolean) If `true` (default), start all nodes not covered by staging rules.

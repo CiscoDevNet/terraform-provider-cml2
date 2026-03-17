@@ -46,6 +46,9 @@ func TestAccLabResource(t *testing.T) {
 				ResourceName:      "cml2_lab.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"node_staging",
+				},
 			},
 			// Update and Read testing
 			{
@@ -120,6 +123,9 @@ resource "cml2_lab" "test" {
 	- topic two
 	This is where it's ending... PEBKAC
 	EOT
+	node_staging = {
+		enabled = false
+	}
 	groups = [
 		%[4]s
 	]

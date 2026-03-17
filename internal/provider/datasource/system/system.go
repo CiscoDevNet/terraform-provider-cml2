@@ -116,7 +116,7 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		if err == nil {
 			break
 		}
-		if !(errors.Is(err, cmlerrors.ErrSystemNotReady) || ignoreErrors) {
+		if !errors.Is(err, cmlerrors.ErrSystemNotReady) && !ignoreErrors {
 			resp.Diagnostics.AddError("CML client error", err.Error())
 			return
 		}

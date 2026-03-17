@@ -24,11 +24,16 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	managedNodeStaging := data.NodeStaging
 
 	updateReq := models.LabUpdateRequest{
 		Title:       data.Title.ValueString(),
 		Description: data.Description.ValueString(),
 		Notes:       data.Notes.ValueString(),
+	}
+
+	if ns := expandNodeStaging(ctx, data.NodeStaging, &resp.Diagnostics); ns != nil {
+		updateReq.NodeStaging = ns
 	}
 
 	if !data.Groups.IsUnknown() && !data.Groups.IsNull() {
@@ -65,7 +70,13 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	value := cmlschema.NewLab(ctx, &fullLab, &resp.Diagnostics)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
+	var newData cmlschema.LabModel
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, value, &newData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	keepNodeStagingNullWhenUnmanaged(managedNodeStaging, &newData)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &newData)...)
 
 	tflog.Info(ctx, "Resource Lab UPDATE done")
 }

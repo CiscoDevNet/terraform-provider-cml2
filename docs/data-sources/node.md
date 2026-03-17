@@ -56,6 +56,7 @@ Read-Only:
 - `lab_id` (String) Lab ID containing the node (UUID).
 - `label` (String) Node label.
 - `nodedefinition` (String) Node definition / type. This can only be set at create time.
+- `priority` (Number) Node scheduling priority. Lower values typically start earlier.
 - `ram` (Number) Amount of RAM, megabytes. Can be changed until the node is started once. Will require a replace in that case.
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--node--serial_devices))
 - `state` (String) Node state (`DEFINED_ON_CORE`, `STOPPED`, `STARTED`, `BOOTED`).

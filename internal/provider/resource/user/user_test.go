@@ -2,7 +2,9 @@ package user_test
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
@@ -25,14 +27,16 @@ func testAccPreCheck(t *testing.T) {
 	// are common to see in a pre-check function.
 }
 
+// RandomString generates a simple hex suffix for tests
+func RandomString(n int) string {
+	b := make([]byte, n/2)
+	rand.New(rand.NewSource(time.Now().UnixNano())).Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
 func TestAccUserResource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
-
-	suffix := resource.UniqueId()
-	if len(suffix) > 8 {
-		suffix = suffix[:8]
-	}
-
+	suffix := RandomString(8)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

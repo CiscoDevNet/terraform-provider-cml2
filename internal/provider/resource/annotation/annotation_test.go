@@ -103,7 +103,7 @@ func TestAccAnnotationResourceLine(t *testing.T) {
 	})
 }
 
-func testAccAnnotationText(cfgStr string, content string) string {
+func testAccAnnotationText(cfgStr, content string) string {
 	return fmt.Sprintf(`
 %[1]s
 

@@ -25,7 +25,7 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 		computed := true
 		optional := false
 
-		if !(required && computed && optional) {
+		if !required || !computed || !optional {
 			computed = true
 		}
 
@@ -110,6 +110,16 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 				CustomType:          fromAttrType.CustomType,
 				Sensitive:           fromAttrType.Sensitive,
 				ElementType:         fromAttrType.ElementType,
+				Optional:            optional,
+				Computed:            computed,
+				Required:            required,
+			}
+		case r_schema.SingleNestedAttribute:
+			dSchema[name] = ds_schema.SingleNestedAttribute{
+				Description:         fromAttrType.Description,
+				MarkdownDescription: fromAttrType.MarkdownDescription,
+				Sensitive:           fromAttrType.Sensitive,
+				Attributes:          Converter(fromAttrType.Attributes),
 				Optional:            optional,
 				Computed:            computed,
 				Required:            required,
