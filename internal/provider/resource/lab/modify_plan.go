@@ -11,6 +11,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
+// ModifyPlan adjusts computed fields in the planned state.
 func (r *LabResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var stateData, planData cmlschema.LabModel
 

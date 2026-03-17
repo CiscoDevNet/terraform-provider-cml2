@@ -14,6 +14,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Update updates a group.
 func (r *GroupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
 		data, state cmlschema.GroupModel

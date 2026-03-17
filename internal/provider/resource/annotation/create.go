@@ -14,6 +14,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new classic annotation in the target lab.
 func (r *AnnotationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data cmlschema.AnnotationModel
 

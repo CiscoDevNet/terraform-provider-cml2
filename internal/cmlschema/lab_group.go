@@ -14,16 +14,19 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
+// LabGroupAttrType is the attribute type map for LabGroupModel.
 var LabGroupAttrType = map[string]attr.Type{
 	"id":         types.StringType,
 	"permission": types.StringType,
 }
 
+// LabGroupModel is the Terraform representation of a lab group permission entry.
 type LabGroupModel struct {
 	ID         types.String `tfsdk:"id"`
 	Permission types.String `tfsdk:"permission"`
 }
 
+// NewLabGroup converts a lab group entry into a Terraform value.
 func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value {
 	newGroup := LabGroupModel{
 		ID:         types.StringValue(string(group.ID)),
@@ -41,6 +44,7 @@ func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagno
 	return value
 }
 
+// LabGroup returns the schema for a lab group permission nested object.
 func LabGroup() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{

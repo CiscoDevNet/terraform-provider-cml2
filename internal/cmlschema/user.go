@@ -15,6 +15,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// UserAttrType is the attribute type map for UserModel.
 var UserAttrType = map[string]attr.Type{
 	"id":            types.StringType,
 	"username":      types.StringType,
@@ -34,6 +35,7 @@ var UserAttrType = map[string]attr.Type{
 	},
 }
 
+// UserModel is the Terraform representation of a CML user.
 type UserModel struct {
 	ID           types.String `tfsdk:"id"`
 	Username     types.String `tfsdk:"username"`
@@ -49,6 +51,7 @@ type UserModel struct {
 	Labs         types.Set    `tfsdk:"labs"`
 }
 
+// NewUser converts a CML user into a Terraform value.
 func NewUser(ctx context.Context, user *models.User, diags *diag.Diagnostics) attr.Value {
 	newUser := UserModel{
 		ID:          types.StringValue(string(user.ID)),
@@ -81,6 +84,7 @@ func NewUser(ctx context.Context, user *models.User, diags *diag.Diagnostics) at
 	return value
 }
 
+// User returns the schema for a user resource.
 func User() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{

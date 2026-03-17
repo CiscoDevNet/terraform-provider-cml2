@@ -11,6 +11,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// Converter converts resource schema attributes into datasource schema attributes.
 func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attribute {
 	dSchema := make(map[string]ds_schema.Attribute)
 	for name, fromAttr := range rSchema {

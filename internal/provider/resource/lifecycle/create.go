@@ -14,6 +14,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates (imports) and optionally starts a lab based on the configured topology.
 func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data cmlschema.LabLifecycleModel
@@ -40,22 +41,22 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 
 	if data.LabID.IsUnknown() {
 		tflog.Info(ctx, "Create: import")
-		imported, err := r.cfg.Client().Lab.Import(ctx, data.Topology.ValueString())
+		imported, importErr := r.cfg.Client().Lab.Import(ctx, data.Topology.ValueString())
 		start.lab = &imported
-		if err != nil {
+		if importErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to import lab, got error: %s", err),
+				fmt.Sprintf("Unable to import lab, got error: %s", importErr),
 			)
 			return
 		}
 	} else {
-		lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
+		lab, getErr := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
 		start.lab = &lab
-		if err != nil {
+		if getErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to get lab, got error: %s", err),
+				fmt.Sprintf("Unable to get lab, got error: %s", getErr),
 			)
 			return
 		}

@@ -15,6 +15,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new node in a CML lab.
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data            cmlschema.NodeModel

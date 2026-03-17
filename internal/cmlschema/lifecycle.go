@@ -13,6 +13,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
+// LabLifecycleModel is the Terraform representation of the lifecycle resource state.
 type LabLifecycleModel struct {
 	ID           types.String `tfsdk:"id"`
 	LabID        types.String `tfsdk:"lab_id"`
@@ -28,6 +29,7 @@ type LabLifecycleModel struct {
 	Elements     types.List   `tfsdk:"elements"`
 }
 
+// Lifecycle returns the schema for the lifecycle resource.
 func Lifecycle() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{

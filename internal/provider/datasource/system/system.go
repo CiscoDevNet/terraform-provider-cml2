@@ -21,9 +21,10 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &SystemDataSource{}
 
+// SystemDataSourceModel describes the data source data model.
 type SystemDataSourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	Version      types.String `tfsdk:"version"`
@@ -32,6 +33,7 @@ type SystemDataSourceModel struct {
 	IgnoreErrors types.Bool   `tfsdk:"ignore_errors"`
 }
 
+// NewDataSource returns a new system data source.
 func NewDataSource() datasource.DataSource {
 	return &SystemDataSource{}
 }
@@ -41,14 +43,17 @@ type SystemDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *SystemDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_system"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *SystemDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *SystemDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{

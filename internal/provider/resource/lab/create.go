@@ -15,6 +15,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new CML lab.
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		labModel cmlschema.LabModel
@@ -46,13 +47,13 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 	if desiredNodeStaging != nil {
 		// Ensure client knows server version (SkipReadyCheck is used at init).
-		if err := r.cfg.Client().System.Ready(ctx); err != nil {
-			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML readiness/version, got error: %s", err))
+		if readyErr := r.cfg.Client().System.Ready(ctx); readyErr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML readiness/version, got error: %s", readyErr))
 			return
 		}
-		ok, err := r.cfg.Client().System.VersionCheck(ctx, ">=2.10.0")
-		if err != nil {
-			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML version, got error: %s", err))
+		ok, verr := r.cfg.Client().System.VersionCheck(ctx, ">=2.10.0")
+		if verr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML version, got error: %s", verr))
 			return
 		}
 		if !ok {

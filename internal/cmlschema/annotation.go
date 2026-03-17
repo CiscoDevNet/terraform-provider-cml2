@@ -13,6 +13,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// AnnotationModel is the Terraform representation of a CML annotation.
 type AnnotationModel struct {
 	ID        types.String `tfsdk:"id"`
 	LabID     types.String `tfsdk:"lab_id"`
@@ -23,6 +24,7 @@ type AnnotationModel struct {
 	Line      types.Object `tfsdk:"line"`
 }
 
+// AnnotationTextModel is the Terraform representation of a text annotation.
 type AnnotationTextModel struct {
 	TextContent types.String  `tfsdk:"text_content"`
 	X1          types.Float64 `tfsdk:"x1"`
@@ -33,6 +35,7 @@ type AnnotationTextModel struct {
 	ZIndex      types.Float64 `tfsdk:"z_index"`
 }
 
+// AnnotationRectangleModel is the Terraform representation of a rectangle annotation.
 type AnnotationRectangleModel struct {
 	X1          types.Float64 `tfsdk:"x1"`
 	Y1          types.Float64 `tfsdk:"y1"`
@@ -44,6 +47,7 @@ type AnnotationRectangleModel struct {
 	ZIndex      types.Float64 `tfsdk:"z_index"`
 }
 
+// AnnotationEllipseModel is the Terraform representation of an ellipse annotation.
 type AnnotationEllipseModel struct {
 	X1          types.Float64 `tfsdk:"x1"`
 	Y1          types.Float64 `tfsdk:"y1"`
@@ -55,6 +59,7 @@ type AnnotationEllipseModel struct {
 	ZIndex      types.Float64 `tfsdk:"z_index"`
 }
 
+// AnnotationLineModel is the Terraform representation of a line annotation.
 type AnnotationLineModel struct {
 	X1        types.Float64 `tfsdk:"x1"`
 	Y1        types.Float64 `tfsdk:"y1"`
@@ -67,6 +72,7 @@ type AnnotationLineModel struct {
 	LineEnd   types.String  `tfsdk:"line_end"`
 }
 
+// AnnotationTextAttrType is the attribute type map for AnnotationTextModel.
 var AnnotationTextAttrType = map[string]attr.Type{
 	"text_content": types.StringType,
 	"x1":           types.Float64Type,
@@ -77,6 +83,7 @@ var AnnotationTextAttrType = map[string]attr.Type{
 	"z_index":      types.Float64Type,
 }
 
+// AnnotationRectangleAttrType is the attribute type map for AnnotationRectangleModel.
 var AnnotationRectangleAttrType = map[string]attr.Type{
 	"x1":           types.Float64Type,
 	"y1":           types.Float64Type,
@@ -88,6 +95,7 @@ var AnnotationRectangleAttrType = map[string]attr.Type{
 	"z_index":      types.Float64Type,
 }
 
+// AnnotationEllipseAttrType is the attribute type map for AnnotationEllipseModel.
 var AnnotationEllipseAttrType = map[string]attr.Type{
 	"x1":           types.Float64Type,
 	"y1":           types.Float64Type,
@@ -99,6 +107,7 @@ var AnnotationEllipseAttrType = map[string]attr.Type{
 	"z_index":      types.Float64Type,
 }
 
+// AnnotationLineAttrType is the attribute type map for AnnotationLineModel.
 var AnnotationLineAttrType = map[string]attr.Type{
 	"x1":         types.Float64Type,
 	"y1":         types.Float64Type,
@@ -111,6 +120,8 @@ var AnnotationLineAttrType = map[string]attr.Type{
 	"line_end":   types.StringType,
 }
 
+// AnnotationAttrType is the attribute type map for AnnotationModel.
+// AnnotationAttrType is the attribute type map for AnnotationModel.
 var AnnotationAttrType = map[string]attr.Type{
 	"id":        types.StringType,
 	"lab_id":    types.StringType,
@@ -121,6 +132,7 @@ var AnnotationAttrType = map[string]attr.Type{
 	"line":      types.ObjectType{AttrTypes: AnnotationLineAttrType},
 }
 
+// Annotation returns the schema for the annotation resource.
 func Annotation() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -218,6 +230,7 @@ func Annotation() map[string]schema.Attribute {
 	}
 }
 
+// NewAnnotation converts a CML annotation into a Terraform value.
 func NewAnnotation(ctx context.Context, labID models.UUID, a models.Annotation, diags *diag.Diagnostics) attr.Value {
 	model := AnnotationModel{
 		ID:        types.StringNull(),
@@ -282,6 +295,14 @@ func NewAnnotation(ctx context.Context, labID models.UUID, a models.Annotation, 
 		}
 	case models.AnnotationTypeLine:
 		if a.Line != nil {
+			lineStart := ""
+			if a.Line.LineStart != nil {
+				lineStart = string(*a.Line.LineStart)
+			}
+			lineEnd := ""
+			if a.Line.LineEnd != nil {
+				lineEnd = string(*a.Line.LineEnd)
+			}
 			ln := AnnotationLineModel{
 				X1:        types.Float64Value(a.Line.X1),
 				Y1:        types.Float64Value(a.Line.Y1),
@@ -290,8 +311,8 @@ func NewAnnotation(ctx context.Context, labID models.UUID, a models.Annotation, 
 				Color:     types.StringValue(a.Line.Color),
 				Thickness: types.Float64Value(a.Line.Thickness),
 				ZIndex:    types.Float64Value(a.Line.ZIndex),
-				LineStart: types.StringValue(string(a.Line.LineStart)),
-				LineEnd:   types.StringValue(string(a.Line.LineEnd)),
+				LineStart: types.StringValue(lineStart),
+				LineEnd:   types.StringValue(lineEnd),
 			}
 			model.ID = types.StringValue(string(a.Line.ID))
 			var v attr.Value

@@ -2,6 +2,7 @@ package lifecycle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/rschmied/gocmlclient/pkg/errors"
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -141,7 +142,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 	// inject regular configuration (legacy)
 	for nodeID, config := range data.Configs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if errors.Is(err, errors.ErrElementNotFound) {
+		if errors.Is(err, cmlerrors.ErrElementNotFound) {
 			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {
@@ -164,7 +165,7 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 	// inject named configurations (from 2.7.0 and newer)
 	for nodeID, config := range data.NamedConfigs.Elements() {
 		node, err := lab.NodeByLabel(ctx, nodeID)
-		if errors.Is(err, errors.ErrElementNotFound) {
+		if errors.Is(err, cmlerrors.ErrElementNotFound) {
 			node = lab.Nodes[models.UUID(nodeID)]
 		}
 		if node == nil {

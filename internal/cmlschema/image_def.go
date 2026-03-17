@@ -28,6 +28,7 @@ type ImageDefinitionModel struct {
 	SchemaVersion types.String `tfsdk:"schema_version"`
 }
 
+// ImageDefAttrType is the attribute type map for ImageDefinitionModel.
 var ImageDefAttrType = map[string]attr.Type{
 	"id":             types.StringType,
 	"nodedefinition": types.StringType,
@@ -92,6 +93,7 @@ func ImageDef() map[string]schema.Attribute {
 	}
 }
 
+// NewImageDefinition converts a CML image definition into a Terraform value.
 func NewImageDefinition(ctx context.Context, image *models.ImageDefinition, diags *diag.Diagnostics) attr.Value {
 	newImage := ImageDefinitionModel{
 		ID:            types.StringValue(string(image.ID)),

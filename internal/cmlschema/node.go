@@ -18,6 +18,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// NodeModel is the Terraform representation of a CML node.
 type NodeModel struct {
 	ID              types.String `tfsdk:"id"`
 	LabID           types.String `tfsdk:"lab_id"`
@@ -48,6 +49,7 @@ type serialDeviceModel struct {
 	DeviceNumber types.Int64  `tfsdk:"device_number"`
 }
 
+// NamedConfigModel represents a named configuration entry for a node.
 type NamedConfigModel struct {
 	Name    types.String `tfsdk:"name"`
 	Content Config       `tfsdk:"content"`
@@ -118,6 +120,7 @@ type NamedConfigModel struct {
 // 	"boot_progress": "Booted"
 // }
 
+// NodeAttrType is the attribute type map for NodeModel.
 var NodeAttrType = map[string]attr.Type{
 	"id":              types.StringType,
 	"lab_id":          types.StringType,
@@ -149,6 +152,7 @@ var NodeAttrType = map[string]attr.Type{
 	"compute_id":     types.StringType,
 }
 
+// NamedConfigAttrType is the Terraform object type for NamedConfigModel.
 var NamedConfigAttrType = types.ObjectType{
 	AttrTypes: map[string]attr.Type{
 		"name":    types.StringType,
@@ -156,6 +160,7 @@ var NamedConfigAttrType = types.ObjectType{
 	},
 }
 
+// SerialDevicesAttrType is the Terraform object type for a node serial device.
 var SerialDevicesAttrType = types.ObjectType{
 	AttrTypes: map[string]attr.Type{
 		"console_key":   types.StringType,
@@ -163,6 +168,7 @@ var SerialDevicesAttrType = types.ObjectType{
 	},
 }
 
+// Node returns the schema for a node nested object.
 func Node() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -397,6 +403,7 @@ func newTags(_ context.Context, node *models.Node, diags *diag.Diagnostics) type
 	return tags
 }
 
+// NewNamedConfigs converts node named configurations into a Terraform list.
 func NewNamedConfigs(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {
 		// For some node definitions (e.g. unmanaged_switch) the API provides a
@@ -451,10 +458,12 @@ func newInterfaces(ctx context.Context, node *models.Node, diags *diag.Diagnosti
 	return ifaces
 }
 
+// HasConfig reports whether the node model has configuration content.
 func (nm NodeModel) HasConfig() bool {
 	return !nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) > 0
 }
 
+// NewNode converts a CML node into a Terraform value.
 func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) attr.Value {
 	var cfgPtr *string
 	switch v := node.Configuration.(type) {
@@ -546,6 +555,7 @@ func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) at
 	return value
 }
 
+// GetNamedConfigs converts a Terraform list value into a slice of node configs.
 func GetNamedConfigs(ctx context.Context, diag diag.Diagnostics, cl basetypes.ListValue) []models.NodeConfig {
 	var configurations []models.NodeConfig
 	var nc NamedConfigModel

@@ -12,6 +12,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Delete deletes an existing node from a CML lab.
 func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var (
 		data cmlschema.NodeModel

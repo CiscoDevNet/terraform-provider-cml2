@@ -12,6 +12,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Delete stops/wipes and deletes the managed lab.
 func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data cmlschema.LabLifecycleModel
 

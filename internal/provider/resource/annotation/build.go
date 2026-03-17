@@ -173,8 +173,8 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if ln.LineStart.IsNull() || ln.LineEnd.IsNull() {
 			return models.AnnotationCreate{}, fmt.Errorf("line_start and line_end must be set when type=\"line\" (allowed: arrow, square, circle)")
 		}
-		start := models.LineEnd(ln.LineStart.ValueString())
-		end := models.LineEnd(ln.LineEnd.ValueString())
+		start := models.LineStyle(ln.LineStart.ValueString())
+		end := models.LineStyle(ln.LineEnd.ValueString())
 		borderColor := "#000000"
 		return models.AnnotationCreate{
 			Type: models.AnnotationTypeLine,
@@ -189,8 +189,8 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 				X2:          ln.X2.ValueFloat64(),
 				Y2:          ln.Y2.ValueFloat64(),
 				ZIndex:      z,
-				LineStart:   start,
-				LineEnd:     end,
+				LineStart:   &start,
+				LineEnd:     &end,
 			},
 		}, nil
 	default:

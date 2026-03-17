@@ -12,6 +12,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Delete deletes a link.
 func (r *LinkResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// this is a no-op at this point as links are removed automatically
 	// when nodes and their interfaces are deleted

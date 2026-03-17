@@ -30,7 +30,7 @@ linters:
         - name: range
         - name: receiver-naming
         - name: var-declaration
-        - name: var-naming
+        # var-naming is too noisy for this repo (e.g. flags package name "common").
   exclusions:
     generated: lax
     paths:

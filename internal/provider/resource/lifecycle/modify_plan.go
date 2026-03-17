@@ -13,6 +13,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// ModifyPlan normalizes and validates the planned lifecycle changes.
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var configData, planData, stateData cmlschema.LabLifecycleModel
 

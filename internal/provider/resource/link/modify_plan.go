@@ -10,6 +10,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
+// ModifyPlan enforces replacement semantics for immutable link attributes.
 func (r *LinkResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var planData, stateData cmlschema.LinkModel
 

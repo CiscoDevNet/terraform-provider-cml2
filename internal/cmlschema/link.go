@@ -14,6 +14,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// LinkModel is the Terraform representation of a CML link.
 type LinkModel struct {
 	ID         types.String `tfsdk:"id"`
 	InterfaceA types.String `tfsdk:"interface_a"`
@@ -49,6 +50,7 @@ type LinkModel struct {
 // 	"state": "DEFINED_ON_CORE"
 // }
 
+// LinkAttrType is the attribute type map for LinkModel.
 var LinkAttrType = map[string]attr.Type{
 	"id":               types.StringType,
 	"interface_a":      types.StringType,
@@ -63,6 +65,7 @@ var LinkAttrType = map[string]attr.Type{
 	"slot_b":           types.Int64Type,
 }
 
+// Link returns the schema for a link nested object.
 func Link() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -146,6 +149,7 @@ func Link() map[string]schema.Attribute {
 	}
 }
 
+// NewLink converts a CML link into a Terraform value.
 func NewLink(ctx context.Context, link *models.Link, diags *diag.Diagnostics) attr.Value {
 	newLink := LinkModel{
 		ID:         types.StringValue(string(link.ID)),

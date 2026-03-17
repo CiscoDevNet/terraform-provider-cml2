@@ -17,18 +17,20 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var (
 	_ datasource.DataSource                   = &LabDataSource{}
 	_ datasource.DataSourceWithValidateConfig = &LabDataSource{}
 )
 
+// LabDataSourceModel describes the data source data model.
 type LabDataSourceModel struct {
 	ID    types.String `tfsdk:"id"`
 	Title types.String `tfsdk:"title"`
 	Lab   types.Object `tfsdk:"lab"`
 }
 
+// NewDataSource returns a new lab data source.
 func NewDataSource() datasource.DataSource {
 	return &LabDataSource{}
 }
@@ -38,14 +40,17 @@ type LabDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *LabDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lab"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *LabDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -65,6 +70,7 @@ func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest
 	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller."
 }
 
+// ValidateConfig validates lab data source configuration.
 func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
 	var data LabDataSourceModel
 

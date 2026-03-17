@@ -45,15 +45,16 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		node.Configurations = nil
 	}
 
-	if !r.cfg.UseNamedConfigs() && len(node.Configurations) > 0 {
+	switch {
+	case !r.cfg.UseNamedConfigs() && len(node.Configurations) > 0:
 		if node.Configuration == nil {
 			node.Configuration = node.Configurations[0].Content
 		}
 		node.Configurations = nil
-	} else if !data.Configurations.IsNull() {
+	case !data.Configurations.IsNull():
 		node.Configuration = nil
 		// keep node.Configurations as-is
-	} else if !data.Configuration.IsNull() && len(node.Configurations) > 0 {
+	case !data.Configuration.IsNull() && len(node.Configurations) > 0:
 		node.Configuration = node.Configurations[0].Content
 		node.Configurations = nil
 	}

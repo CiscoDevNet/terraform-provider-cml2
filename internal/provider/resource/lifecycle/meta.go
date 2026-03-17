@@ -22,6 +22,7 @@ var (
 	_ resource.ResourceWithModifyPlan     = &LabLifecycleResource{}
 )
 
+// LabLifecycleResource implements the synthetic lifecycle resource.
 type LabLifecycleResource struct {
 	cfg *common.ProviderConfig
 }
@@ -44,6 +45,7 @@ type startData struct {
 	timeouts *labLifecycleTimeouts
 }
 
+// Schema returns the schema for the lifecycle resource.
 func (r *LabLifecycleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// This description is used by the documentation generator and the language
 	// server.
@@ -51,14 +53,17 @@ func (r *LabLifecycleResource) Schema(ctx context.Context, req resource.SchemaRe
 	resp.Schema.Attributes = cmlschema.Lifecycle()
 }
 
+// Configure stores provider configuration for the resource.
 func (r *LabLifecycleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
+// Metadata sets the resource type name.
 func (r *LabLifecycleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lifecycle"
 }
 
+// ValidateConfig validates lifecycle resource configuration.
 func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data cmlschema.LabLifecycleModel
 
@@ -117,6 +122,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 	)
 }
 
+// NewResource returns a new lifecycle resource.
 func NewResource() resource.Resource {
 	return &LabLifecycleResource{}
 }

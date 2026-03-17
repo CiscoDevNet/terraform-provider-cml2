@@ -20,6 +20,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
+// ProviderConfig stores initialized API client and provider-level settings.
 type ProviderConfig struct {
 	client *cmlclient.Client
 	data   *cmlschema.ProviderModel
@@ -31,22 +32,27 @@ type ProviderConfig struct {
 	nodeDefsLoaded bool
 }
 
+// Client returns the configured CML client.
 func (r *ProviderConfig) Client() *cmlclient.Client {
 	return r.client
 }
 
+// UseNamedConfigs reports whether named configs are enabled.
 func (r *ProviderConfig) UseNamedConfigs() bool {
 	return r.data.NamedConfigs.ValueBool()
 }
 
+// Lock serializes operations that must not run concurrently.
 func (r *ProviderConfig) Lock() {
 	r.mu.Lock()
 }
 
+// Unlock releases the provider-level lock.
 func (r *ProviderConfig) Unlock() {
 	r.mu.Unlock()
 }
 
+// NewProviderConfig creates a ProviderConfig from provider schema data.
 func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	return &ProviderConfig{
 		client:         nil,
@@ -79,6 +85,7 @@ func (r *ProviderConfig) NodeDefinitions(ctx context.Context) (models.NodeDefini
 	return r.nodeDefs, nil
 }
 
+// Initialize lazily creates the API client.
 func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics) *ProviderConfig {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -235,6 +242,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 	return r
 }
 
+// DatasourceConfigure returns provider config for a datasource.
 func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) *ProviderConfig {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -251,6 +259,7 @@ func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, r
 	return config.Initialize(ctx, &resp.Diagnostics)
 }
 
+// ResourceConfigure returns provider config for a resource.
 func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) *ProviderConfig {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {

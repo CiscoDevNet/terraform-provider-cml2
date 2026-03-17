@@ -6,6 +6,7 @@ import "github.com/rschmied/gocmlclient/pkg/models"
 // Examples: "alpine", "iosv", "ioll2-xe", "external_connector".
 type NodeDefinition = string
 
+// IsBuiltInNodeDefinition reports whether nodeDef is a built-in definition ID.
 func IsBuiltInNodeDefinition(nodeDef NodeDefinition) bool {
 	switch nodeDef {
 	case "external_connector", "unmanaged_switch":

@@ -11,27 +11,31 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var (
 	_ resource.Resource                = &LinkResource{}
 	_ resource.ResourceWithImportState = &LinkResource{}
 	_ resource.ResourceWithModifyPlan  = &LinkResource{}
 )
 
+// LinkResource implements the cml2_link resource.
 type LinkResource struct {
 	cfg *common.ProviderConfig
 	// client *cmlclient.Client
 	// mu     *sync.Mutex
 }
 
+// NewResource returns a new link resource.
 func NewResource() resource.Resource {
 	return &LinkResource{}
 }
 
+// Configure stores provider configuration for the resource.
 func (r *LinkResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the resource.
 func (r *LinkResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// This description is used by the documentation generator and the language
 	// server.
@@ -40,10 +44,12 @@ func (r *LinkResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 	resp.Diagnostics = nil
 }
 
+// Metadata sets the resource type name.
 func (r *LinkResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_link"
 }
 
+// ImportState imports a link resource.
 func (r LinkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

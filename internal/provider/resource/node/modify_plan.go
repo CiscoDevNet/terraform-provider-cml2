@@ -32,6 +32,7 @@ import (
 //
 // Any errors will prevent further resource-level plan modifications.
 
+// ModifyPlan adjusts the planned node state, enforcing replacement when needed.
 func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	// var stateData, planData cmlschema.NodeModel
 	var configData, planData, stateData cmlschema.NodeModel

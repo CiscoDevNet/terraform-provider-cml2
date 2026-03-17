@@ -1,7 +1,8 @@
 // Package testing provides base configuration for (integration) testing
 package testing
 
-var Cfg string = `
+// Cfg is a base provider config snippet for tests.
+var Cfg = `
 variable "address" {
 	description = "CML controller address"
 	type        = string
@@ -33,7 +34,8 @@ provider "cml2" {
 }
 `
 
-var CfgNamedConfigs string = `
+// CfgNamedConfigs is a base provider config snippet with named configs enabled.
+var CfgNamedConfigs = `
 variable "address" {
 	description = "CML controller address"
 	type        = string
@@ -65,7 +67,8 @@ provider "cml2" {
 }
 `
 
-var CfgBroken string = `
+// CfgBroken is an intentionally broken provider config snippet for tests.
+var CfgBroken = `
 variable "address" {
 	description = "CML controller address"
 	type        = string

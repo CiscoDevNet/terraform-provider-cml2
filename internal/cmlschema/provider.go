@@ -20,6 +20,7 @@ type ProviderModel struct {
 	DynamicConfig  types.Bool   `tfsdk:"dynamic_config"`
 }
 
+// Provider returns the schema for provider configuration.
 func Provider() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"address": schema.StringAttribute{

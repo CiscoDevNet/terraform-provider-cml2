@@ -16,6 +16,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new CML user.
 func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data cmlschema.UserModel
@@ -45,9 +46,9 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	if !data.ResourcePool.IsUnknown() && !data.ResourcePool.IsNull() {
 		rpRaw := data.ResourcePool.ValueString()
-		rpUUID, err := uuid.Parse(rpRaw)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", err))
+		rpUUID, parseErr := uuid.Parse(rpRaw)
+		if parseErr != nil {
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
 			return
 		}
 		if rpUUID.Version() != 4 {

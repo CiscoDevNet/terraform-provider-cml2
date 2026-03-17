@@ -11,8 +11,10 @@ import (
 
 var _ validator.String = Duration{}
 
+// Duration validates Go-style duration strings (e.g. "60m", "2h").
 type Duration struct{}
 
+// Description returns a plain text description of the validator.
 func (v Duration) Description(ctx context.Context) string {
 	return "a duration given as a parsable string as in 60m or 2h"
 }

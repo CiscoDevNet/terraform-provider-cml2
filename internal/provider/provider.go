@@ -38,11 +38,13 @@ type CML2Provider struct {
 	name    string
 }
 
+// Metadata sets the provider type name and version.
 func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = p.name
 	resp.Version = p.version
 }
 
+// Configure initializes the provider from its configuration.
 func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data cmlschema.ProviderModel
 
@@ -94,6 +96,7 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 	resp.ResourceData = config
 }
 
+// Schema defines the provider configuration schema.
 func (p *CML2Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema.MarkdownDescription = `The CML2 Terraform provider helps to
 deploy and run entire "virtual networks as code" into the Cisco Modeling Labs network
@@ -104,6 +107,7 @@ configuration injection, IP address retrieval from network devices, and more.`
 	resp.Schema.Attributes = cmlschema.Provider()
 }
 
+// Resources defines the provider resources.
 func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		r_lab.NewResource,
@@ -116,6 +120,7 @@ func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
+// DataSources defines the provider data sources.
 func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		d_lab.NewDataSource,
@@ -128,6 +133,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 	}
 }
 
+// New creates a new provider factory.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &CML2Provider{

@@ -12,6 +12,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// Converge waits until a lab reports convergence or the timeout is reached.
 func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostics, id, timeout string) {
 	converged := false
 	snoozeFor := 5 // seconds

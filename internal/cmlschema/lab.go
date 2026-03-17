@@ -52,12 +52,14 @@ var LabAttrType = map[string]attr.Type{
 	},
 }
 
+// LabNodeStagingModel is the Terraform representation of lab node staging settings.
 type LabNodeStagingModel struct {
 	Enabled        types.Bool `tfsdk:"enabled"`
 	StartRemaining types.Bool `tfsdk:"start_remaining"`
 	AbortOnFailure types.Bool `tfsdk:"abort_on_failure"`
 }
 
+// LabNodeStagingAttrType is the attribute type map for LabNodeStagingModel.
 var LabNodeStagingAttrType = map[string]attr.Type{
 	"enabled":          types.BoolType,
 	"start_remaining":  types.BoolType,

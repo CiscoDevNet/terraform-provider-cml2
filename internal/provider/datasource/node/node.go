@@ -18,9 +18,10 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &NodeDataSource{}
 
+// NewDataSource returns a new node data source.
 func NewDataSource() datasource.DataSource {
 	return &NodeDataSource{}
 }
@@ -37,14 +38,17 @@ type NodeDataSourceModel struct {
 	Node  types.Object `tfsdk:"node"`
 }
 
+// Metadata sets the data source type name.
 func (d *NodeDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_node"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *NodeDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{

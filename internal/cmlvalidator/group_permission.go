@@ -10,8 +10,10 @@ import (
 
 var _ validator.String = GroupPermission{}
 
+// GroupPermission validates group permission strings.
 type GroupPermission struct{}
 
+// Description returns a plain text description of the validator.
 func (v GroupPermission) Description(ctx context.Context) string {
 	return "valid states are \"read_write\" and \"read_only\""
 }

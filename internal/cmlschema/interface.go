@@ -15,6 +15,7 @@ import (
 	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// InterfaceModel is the Terraform representation of a CML interface.
 type InterfaceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Label       types.String `tfsdk:"label"`
@@ -25,6 +26,7 @@ type InterfaceModel struct {
 	IP6         types.List   `tfsdk:"ip6"`
 }
 
+// InterfaceAttrType is the attribute type map for InterfaceModel.
 var InterfaceAttrType = map[string]attr.Type{
 	"id":           types.StringType,
 	"label":        types.StringType,
@@ -35,6 +37,7 @@ var InterfaceAttrType = map[string]attr.Type{
 	"ip6":          types.ListType{ElemType: types.StringType},
 }
 
+// Interface returns the schema for an interface nested object.
 func Interface() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -91,6 +94,7 @@ func Interface() map[string]schema.Attribute {
 	}
 }
 
+// NewInterface converts a CML interface into a Terraform value.
 func NewInterface(ctx context.Context, iface *models.Interface, diags *diag.Diagnostics) attr.Value {
 	ip4List := types.ListNull(types.StringType)
 	ip6List := types.ListNull(types.StringType)

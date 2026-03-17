@@ -18,15 +18,17 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &GroupDataSource{}
 
+// GroupDataSourceModel describes the data source data model.
 type GroupDataSourceModel struct {
 	ID     types.String `tfsdk:"id"`
 	Name   types.String `tfsdk:"name"`
 	Groups types.List   `tfsdk:"groups"`
 }
 
+// NewDataSource returns a new groups data source.
 func NewDataSource() datasource.DataSource {
 	return &GroupDataSource{}
 }
@@ -36,14 +38,17 @@ type GroupDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *GroupDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_groups"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *GroupDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *GroupDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{

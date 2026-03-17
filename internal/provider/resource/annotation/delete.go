@@ -12,6 +12,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Delete deletes a classic annotation from the target lab.
 func (r *AnnotationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data cmlschema.AnnotationModel
 

@@ -13,8 +13,10 @@ import (
 
 var _ validator.String = LabState{}
 
+// LabState validates lab state strings.
 type LabState struct{}
 
+// Description returns a plain text description of the validator.
 func (v LabState) Description(ctx context.Context) string {
 	return "valid states are DEFINED_ON_CORE, STOPPED and STARTED"
 }

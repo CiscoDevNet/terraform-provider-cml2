@@ -14,6 +14,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Update updates an existing classic annotation.
 func (r *AnnotationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan cmlschema.AnnotationModel
 

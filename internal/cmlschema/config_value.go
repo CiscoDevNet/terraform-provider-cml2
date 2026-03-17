@@ -15,6 +15,8 @@ var (
 	_ basetypes.StringValuableWithSemanticEquals = (*Config)(nil)
 )
 
+// Config is a custom string type used for node/lab configuration fields.
+// It implements semantic equality to ignore line-ending differences (CRLF vs LF).
 type Config struct {
 	basetypes.StringValue
 	// ... potentially other fields ...

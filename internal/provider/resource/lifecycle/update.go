@@ -13,6 +13,7 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Update applies lifecycle state changes (start/stop/wipe) and refreshes state.
 func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
 		configData, planData, stateData cmlschema.LabLifecycleModel
@@ -46,12 +47,12 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// need to get the lab data here
-		lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
+		lab, getErr := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
 		start.lab = &lab
-		if err != nil {
+		if getErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
+				fmt.Sprintf("Unable to fetch lab, got error: %s", getErr),
 			)
 			return
 		}

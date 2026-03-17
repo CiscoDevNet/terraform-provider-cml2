@@ -74,7 +74,7 @@ func TestNewAnnotation_Line(t *testing.T) {
 
 	labID := models.UUID("lab-1")
 	id := models.UUID("a-4")
-	a := models.Annotation{Type: models.AnnotationTypeLine, Line: &models.LineAnnotationResponse{ID: id, LineAnnotation: models.LineAnnotation{Type: models.AnnotationTypeLine, X1: 1, Y1: 2, X2: 3, Y2: 4, Color: "#fff", BorderColor: "#000", Thickness: 1, ZIndex: 0, LineStart: "", LineEnd: ""}}}
+	a := models.Annotation{Type: models.AnnotationTypeLine, Line: &models.LineAnnotationResponse{ID: id, LineAnnotation: models.LineAnnotation{Type: models.AnnotationTypeLine, X1: 1, Y1: 2, X2: 3, Y2: 4, Color: "#fff", BorderColor: "#000", Thickness: 1, ZIndex: 0}}}
 
 	v := cmlschema.NewAnnotation(ctx, labID, a, d)
 	assert.False(t, d.HasError())

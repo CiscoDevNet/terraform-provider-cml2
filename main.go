@@ -23,13 +23,14 @@ import (
 
 // these will be set by the goreleaser configuration
 // to appropriate values for the compiled binary
-var version string = "dev"
+var version = "dev"
 
 // goreleaser can also pass the specific commit if you want
-var commit string = "dev"
+var commit = "dev"
 
 func main() {
 	var debug bool
+	_ = commit
 
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()

@@ -18,11 +18,13 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
+// GroupLabAttrType is the attribute type map for GroupLabModel.
 var GroupLabAttrType = map[string]attr.Type{
 	"id":         types.StringType,
 	"permission": types.StringType,
 }
 
+// GroupAttrType is the attribute type map for GroupModel.
 var GroupAttrType = map[string]attr.Type{
 	"id":          types.StringType,
 	"description": types.StringType,
@@ -37,11 +39,13 @@ var GroupAttrType = map[string]attr.Type{
 	},
 }
 
+// GroupLabModel is the Terraform representation of a lab permission entry in a group.
 type GroupLabModel struct {
 	ID         types.String `tfsdk:"id"`
 	Permission types.String `tfsdk:"permission"`
 }
 
+// GroupModel is the Terraform representation of a CML group.
 type GroupModel struct {
 	ID          types.String `tfsdk:"id"`
 	Description types.String `tfsdk:"description"`
@@ -60,6 +64,7 @@ func tfGroupPermissionFromAssociation(perms models.Permissions) string {
 	return "read_only"
 }
 
+// AssociationPermissionsFromTFGroupPermission maps Terraform permission strings to CML permissions.
 func AssociationPermissionsFromTFGroupPermission(p string) models.Permissions {
 	switch strings.TrimSpace(strings.ToLower(p)) {
 	case "read_write":
@@ -95,6 +100,7 @@ func newLabs(ctx context.Context, group *models.Group, diags *diag.Diagnostics) 
 	return set
 }
 
+// NewGroup converts a CML group into a Terraform value.
 func NewGroup(ctx context.Context, group *models.Group, diags *diag.Diagnostics) attr.Value {
 	newGroup := GroupModel{
 		ID:          types.StringValue(string(group.ID)),
@@ -116,6 +122,7 @@ func NewGroup(ctx context.Context, group *models.Group, diags *diag.Diagnostics)
 	return value
 }
 
+// Group returns the schema for the group resource.
 func Group() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
