@@ -5,16 +5,17 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new CML lab.
 func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		labModel cmlschema.LabModel
@@ -27,33 +28,60 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	planNodeStaging := labModel.NodeStaging
 
-	lab := cmlclient.Lab{}
+	createReq := models.LabCreateRequest{}
 	if !labModel.Notes.IsNull() {
-		lab.Notes = labModel.Notes.ValueString()
+		createReq.Notes = labModel.Notes.ValueString()
 	}
 	if !labModel.Description.IsNull() {
-		lab.Description = labModel.Description.ValueString()
+		createReq.Description = labModel.Description.ValueString()
 	}
 	if !labModel.Title.IsNull() {
-		lab.Title = labModel.Title.ValueString()
+		createReq.Title = labModel.Title.ValueString()
 	}
 
-	groupList := make([]*cmlclient.LabGroup, 0)
-	if !labModel.Groups.IsUnknown() {
-		var model cmlschema.LabGroupModel
-		for _, elem := range labModel.Groups.Elements() {
-			tfsdk.ValueAs(ctx, elem, &model)
-			el := cmlclient.LabGroup{
-				ID:         model.ID.ValueString(),
-				Permission: model.Permission.ValueString(),
-			}
-			groupList = append(groupList, &el)
+	desiredNodeStaging := expandNodeStaging(ctx, labModel.NodeStaging, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if desiredNodeStaging != nil {
+		// Ensure client knows server version (SkipReadyCheck is used at init).
+		if readyErr := r.cfg.Client().System.Ready(ctx); readyErr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML readiness/version, got error: %s", readyErr))
+			return
 		}
+		ok, verr := r.cfg.Client().System.VersionCheck(ctx, ">=2.10.0")
+		if verr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to check CML version, got error: %s", verr))
+			return
+		}
+		if !ok {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("node_staging requires CML >= 2.10.0 (detected %s)", r.cfg.Client().System.Version()))
+			return
+		}
+		// Prefer fail-fast create semantics when supported.
+		createReq.NodeStaging = desiredNodeStaging
 	}
-	lab.Groups = groupList
 
-	newLab, err := r.cfg.Client().LabCreate(ctx, lab)
+	if !labModel.Groups.IsUnknown() && !labModel.Groups.IsNull() {
+		groups := make([]models.LabGroup, 0)
+		var g cmlschema.LabGroupModel
+		for _, elem := range labModel.Groups.Elements() {
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &g)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			perm := models.OldPermissionReadOnly
+			if g.Permission.ValueString() == string(models.OldPermissionReadWrite) {
+				perm = models.OldPermissionReadWrite
+			}
+			groups = append(groups, models.LabGroup{ID: models.UUID(g.ID.ValueString()), Permission: perm})
+		}
+		createReq.Groups = groups
+	}
+
+	newLab, err := r.cfg.Client().Lab.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -62,14 +90,39 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	// Refresh to get populated groups from API.
+	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
+		return
+	}
+
+	// Defensive enforcement: if create did not apply node_staging, enforce via PATCH.
+	if desiredNodeStaging != nil {
+		if fullLab.NodeStaging == nil ||
+			fullLab.NodeStaging.Enabled != desiredNodeStaging.Enabled ||
+			fullLab.NodeStaging.StartRemaining != desiredNodeStaging.StartRemaining ||
+			fullLab.NodeStaging.AbortOnFailure != desiredNodeStaging.AbortOnFailure {
+			_, err = r.cfg.Client().Lab.Update(ctx, newLab.ID, models.LabUpdateRequest{NodeStaging: desiredNodeStaging})
+			if err != nil {
+				resp.Diagnostics.AddError(
+					common.ErrorLabel,
+					fmt.Sprintf("Unable to enforce lab node_staging (CML %s), got error: %s", r.cfg.Client().System.Version(), err),
+				)
+				return
+			}
+			fullLab, err = r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
+			if err != nil {
+				resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab after node_staging update, got error: %s", err))
+				return
+			}
+		}
+	}
+
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewLab(ctx, newLab, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
-			&labModel,
-		)...,
+		tfsdk.ValueFrom(ctx, cmlschema.NewLab(ctx, &fullLab, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.LabAttrType}, &labModel)...,
 	)
+	keepNodeStagingNullWhenUnmanaged(planNodeStaging, &labModel)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &labModel)...)
 
 	tflog.Info(ctx, "Resource Lab CREATE done")

@@ -69,6 +69,7 @@ resource "cml2_link" "l1" {
 
 - `description` (String) Lab description.
 - `groups` (Attributes Set) Groups assigned to the lab. (see [below for nested schema](#nestedatt--groups))
+- `node_staging` (Attributes) Optional lab node staging configuration. If omitted, the provider will not manage node staging and will ignore remote values. (see [below for nested schema](#nestedatt--node_staging))
 - `notes` (String) Lab notes.
 - `title` (String) Title of the lab.
 
@@ -90,6 +91,15 @@ Optional:
 - `id` (String) Group ID (UUID).
 - `permission` (String) Permission, either `read_only` or `read_write`.
 
-Read-Only:
 
-- `name` (String) Descriptive group name.
+<a id="nestedatt--node_staging"></a>
+### Nested Schema for `node_staging`
+
+Required:
+
+- `enabled` (Boolean) Enable or disable lab node staging.
+
+Optional:
+
+- `abort_on_failure` (Boolean) If `true`, abort the staging sequence when a node fails to start.
+- `start_remaining` (Boolean) If `true` (default), start all nodes not covered by staging rules.

@@ -9,12 +9,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a link.
 func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data cmlschema.LinkModel
@@ -44,22 +45,22 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	link := cmlclient.Link{
-		LabID:   data.LabID.ValueString(),
-		SrcNode: data.NodeA.ValueString(),
-		DstNode: data.NodeB.ValueString(),
+	link := models.Link{
+		LabID:   models.UUID(data.LabID.ValueString()),
+		SrcNode: models.UUID(data.NodeA.ValueString()),
+		DstNode: models.UUID(data.NodeB.ValueString()),
 		SrcSlot: -1,
 		DstSlot: -1,
 	}
 
-	if !data.SlotA.IsUnknown() {
+	if !data.SlotA.IsUnknown() && !data.SlotA.IsNull() {
 		link.SrcSlot = int(data.SlotA.ValueInt64())
 	}
-	if !data.SlotB.IsUnknown() {
+	if !data.SlotB.IsUnknown() && !data.SlotB.IsNull() {
 		link.DstSlot = int(data.SlotB.ValueInt64())
 	}
 
-	newLink, err := r.cfg.Client().LinkCreate(ctx, &link)
+	newLink, err := r.cfg.Client().Link.Create(ctx, link)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -67,6 +68,18 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 		)
 		return
 	}
+
+	// If slots were explicitly configured, preserve them for state. The API does
+	// not reliably echo slot numbers in the link object.
+	if !data.SlotA.IsUnknown() && !data.SlotA.IsNull() {
+		newLink.SrcSlot = link.SrcSlot
+	}
+	if !data.SlotB.IsUnknown() && !data.SlotB.IsNull() {
+		newLink.DstSlot = link.DstSlot
+	}
+
+	// Some node definitions don't have stable/meaningful interface slots for
+	// links. Keep the API-reported values and avoid forcing replacement.
 
 	tflog.Info(ctx, fmt.Sprintf("src slot %d", newLink.SrcSlot))
 	tflog.Info(ctx, fmt.Sprintf("dst slot %d", newLink.DstSlot))
@@ -77,7 +90,7 @@ func (r *LinkResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewLink(ctx, newLink, &resp.Diagnostics),
+			cmlschema.NewLink(ctx, &newLink, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LinkAttrType},
 			&data,
 		)...,

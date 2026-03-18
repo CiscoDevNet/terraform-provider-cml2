@@ -18,15 +18,17 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &UsersDataSource{}
 
+// UsersDataSourceModel describes the data source data model.
 type UsersDataSourceModel struct {
 	ID       types.String `tfsdk:"id"`
 	Username types.String `tfsdk:"username"`
 	Users    types.List   `tfsdk:"users"`
 }
 
+// NewDataSource returns a new users data source.
 func NewDataSource() datasource.DataSource {
 	return &UsersDataSource{}
 }
@@ -36,14 +38,17 @@ type UsersDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *UsersDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_users"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *UsersDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *UsersDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -63,7 +68,6 @@ func (d *UsersDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 		},
 	}
 	resp.Schema.MarkdownDescription = "A data source that retrieves a list of users from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -77,7 +81,7 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	users, err := d.cfg.Client().Users(ctx)
+	users, err := d.cfg.Client().User.Users(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -92,8 +96,9 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		if !data.Username.IsNull() && user.Username != data.Username.ValueString() {
 			continue
 		}
+		userCopy := user
 		userList = append(userList, cmlschema.NewUser(
-			ctx, user, &resp.Diagnostics),
+			ctx, &userCopy, &resp.Diagnostics),
 		)
 	}
 

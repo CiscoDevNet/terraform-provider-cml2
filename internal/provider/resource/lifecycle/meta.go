@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -22,6 +22,7 @@ var (
 	_ resource.ResourceWithModifyPlan     = &LabLifecycleResource{}
 )
 
+// LabLifecycleResource implements the synthetic lifecycle resource.
 type LabLifecycleResource struct {
 	cfg *common.ProviderConfig
 }
@@ -39,27 +40,30 @@ type labLifecycleTimeouts struct {
 
 type startData struct {
 	wait     bool
-	lab      *cmlclient.Lab
+	lab      *models.Lab
 	staging  *labLifecycleStaging
 	timeouts *labLifecycleTimeouts
 }
 
+// Schema returns the schema for the lifecycle resource.
 func (r *LabLifecycleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// This description is used by the documentation generator and the language
 	// server.
 	resp.Schema.Description = "A lifecycle resource represents a complete CML lab lifecyle, including configuration injection and staged node launches.  Resulting state also includes IP addresses of nodes which have external connectivity. This is a synthetic resource which \"glues\" other actual resources like labs, nodes and links together."
 	resp.Schema.Attributes = cmlschema.Lifecycle()
-	resp.Diagnostics = nil
 }
 
+// Configure stores provider configuration for the resource.
 func (r *LabLifecycleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
+// Metadata sets the resource type name.
 func (r *LabLifecycleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lifecycle"
 }
 
+// ValidateConfig validates lifecycle resource configuration.
 func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data cmlschema.LabLifecycleModel
 
@@ -118,6 +122,7 @@ func (r *LabLifecycleResource) ValidateConfig(ctx context.Context, req resource.
 	)
 }
 
+// NewResource returns a new lifecycle resource.
 func NewResource() resource.Resource {
 	return &LabLifecycleResource{}
 }

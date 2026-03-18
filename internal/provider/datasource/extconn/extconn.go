@@ -22,6 +22,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces
 var _ datasource.DataSource = &ConnectorDataSource{}
 
+// ConnectorDataSourceModel describes the data source data model.
 type ConnectorDataSourceModel struct {
 	ID         types.String `tfsdk:"id"`
 	Label      types.String `tfsdk:"label"`
@@ -29,6 +30,7 @@ type ConnectorDataSourceModel struct {
 	Connectors types.List   `tfsdk:"connectors"`
 }
 
+// NewDataSource returns a new connector data source.
 func NewDataSource() datasource.DataSource {
 	return &ConnectorDataSource{}
 }
@@ -38,14 +40,17 @@ type ConnectorDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *ConnectorDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_connector"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *ConnectorDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *ConnectorDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -70,7 +75,6 @@ func (d *ConnectorDataSource) Schema(ctx context.Context, req datasource.SchemaR
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves external connectors information from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -84,7 +88,7 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	connectors, err := d.cfg.Client().ExtConnectors(ctx)
+	connectors, err := d.cfg.Client().ExtConn.List(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -104,10 +108,7 @@ func (d *ConnectorDataSource) Read(ctx context.Context, req datasource.ReadReque
 				continue
 			}
 		}
-		result = append(result, cmlschema.NewExtConn(
-			ctx, connector, &resp.Diagnostics),
-		)
-
+		result = append(result, cmlschema.NewExtConn(ctx, connector, &resp.Diagnostics))
 	}
 
 	resp.Diagnostics.Append(

@@ -40,7 +40,7 @@ The current implementation provides:
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.22
+- [Go](https://golang.org/doc/install) >= 1.25.x
 - [CML2](https://cisco.com/go/cml) >= 2.6.0
 
 ## Building The Provider
@@ -53,6 +53,13 @@ The current implementation provides:
 go install
 ```
 
+## Local Development Install (Use Your Local Build)
+
+For beta-testing or local iteration, you can install a locally built provider
+binary so Terraform uses it instead of downloading from the public registry.
+
+See `docs/development/local-provider.md`.
+
 ## Using the provider
 
 Please refer to the `examples` directory and look at the built-in documentation
@@ -64,6 +71,25 @@ provided via the registry.
 > JWT") instead of the user-name and password as that will provide better
 > performance.  Using the token avoids repeated client authentication via the
 > API which takes quite a bit of time.
+
+## Token Cache (username/password)
+
+When using username/password (instead of a pre-generated JWT), you can enable
+token caching so repeated Terraform runs do not re-authenticate as often.
+
+Provider configuration is evaluated before resources are created, so HCL cannot
+reliably create a temporary file resource and feed its path into the provider.
+Recommended workflow is a wrapper script:
+
+```bash
+TOKEN_FILE="$(mktemp -t cml2-token.XXXXXX)"
+trap 'rm -f "$TOKEN_FILE"' EXIT
+
+export TF_VAR_token_cache=true
+export TF_VAR_token_cache_file="$TOKEN_FILE"
+
+terraform apply
+```
 
 ### HCL
 

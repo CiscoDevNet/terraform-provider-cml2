@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Update updates an existing CML user.
 func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
 		data, state cmlschema.UserModel
@@ -27,9 +31,11 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	user := &cmlclient.User{
-		ID:       data.ID.ValueString(),
-		Username: data.Username.ValueString(),
+	user := &models.User{
+		ID: models.UUID(data.ID.ValueString()),
+		UserBase: models.UserBase{
+			Username: data.Username.ValueString(),
+		},
 		// passwords can't be changed by just setting the new password
 		Password: "",
 	}
@@ -51,29 +57,49 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	if !data.ResourcePool.IsUnknown() {
-		user.ResourcePool = data.ResourcePool.ValueStringPointer()
-	}
-
-	groups := make([]string, 0)
-	if !data.Groups.IsUnknown() {
-		var group types.String
-		for _, elem := range data.Groups.Elements() {
-			tfsdk.ValueAs(ctx, elem, &group)
-			groups = append(groups, group.ValueString())
+		if data.ResourcePool.IsNull() {
+			user.ResourcePool = nil
+		} else {
+			rpRaw := data.ResourcePool.ValueString()
+			rpUUID, parseErr := uuid.Parse(rpRaw)
+			if parseErr != nil {
+				resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
+				return
+			}
+			if rpUUID.Version() != 4 {
+				resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", "resource_pool must be a UUIDv4.")
+				return
+			}
+			ptr := models.UUID(rpUUID.String())
+			user.ResourcePool = &ptr
 		}
 	}
-	user.Groups = groups
+
+	plannedGroups := userGroupIDsFromSet(ctx, &resp.Diagnostics, data.Groups)
+	user.Groups = nil
 
 	// can't update password
 	user.Password = ""
 
-	updatedUser, err := r.cfg.Client().UserUpdate(ctx, user)
+	updatedUser, err := r.cfg.Client().User.Update(ctx, user.ID, models.UserUpdateRequest{UserBase: user.UserBase})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to update user, got error: %s", err),
 		)
 		return
+	}
+
+	if !data.Groups.IsUnknown() {
+		r.reconcileGroupMembership(ctx, &resp.Diagnostics, updatedUser.ID, stateGroupIDsFromSet(ctx, &resp.Diagnostics, state.Groups), plannedGroups)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		updatedUser, err = r.cfg.Client().User.GetByID(ctx, updatedUser.ID)
+		if err != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get user, got error: %s", err))
+			return
+		}
 	}
 
 	// if state.Password.ValueString() != data.Password.ValueString() {
@@ -85,7 +111,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewUser(ctx, updatedUser, &resp.Diagnostics),
+			cmlschema.NewUser(ctx, &updatedUser, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.UserAttrType},
 			&data,
 		)...,

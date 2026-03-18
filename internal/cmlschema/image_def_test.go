@@ -4,27 +4,27 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
-var image *cmlclient.ImageDefinition = &cmlclient.ImageDefinition{
+var image *models.ImageDefinition = &models.ImageDefinition{
 	ID:            "22e72ed9-238f-4f8f-966f-4a5dc6b8de1a",
 	SchemaVersion: "0.0.1",
 	NodeDefID:     "testnodedef",
 	Description:   "testdescription",
 	Label:         "Test Node Label",
-	DiskImage1:    "bla.qcpw2",
-	DiskImage2:    "",
-	DiskImage3:    "",
+	DiskImage:     func() *string { v := "bla.qcpw2"; return &v }(),
+	DiskImage2:    nil,
+	DiskImage3:    nil,
 	ReadOnly:      true,
-	DiskSubfolder: "bla",
 	RAM:           nil,
 	CPUs:          nil,
 	CPUlimit:      nil,

@@ -7,17 +7,20 @@ import (
 
 // ProviderModel describes the provider configuration data model.
 type ProviderModel struct {
-	Address       types.String `tfsdk:"address"`
-	Username      types.String `tfsdk:"username"`
-	Password      types.String `tfsdk:"password"`
-	Token         types.String `tfsdk:"token"`
-	CAcert        types.String `tfsdk:"cacert"`
-	SkipVerify    types.Bool   `tfsdk:"skip_verify"`
-	UseCache      types.Bool   `tfsdk:"use_cache"`
-	NamedConfigs  types.Bool   `tfsdk:"named_configs"`
-	DynamicConfig types.Bool   `tfsdk:"dynamic_config"`
+	Address        types.String `tfsdk:"address"`
+	Username       types.String `tfsdk:"username"`
+	Password       types.String `tfsdk:"password"`
+	Token          types.String `tfsdk:"token"`
+	TokenCache     types.Bool   `tfsdk:"token_cache"`
+	TokenCacheFile types.String `tfsdk:"token_cache_file"`
+	CAcert         types.String `tfsdk:"cacert"`
+	SkipVerify     types.Bool   `tfsdk:"skip_verify"`
+	UseCache       types.Bool   `tfsdk:"use_cache"`
+	NamedConfigs   types.Bool   `tfsdk:"named_configs"`
+	DynamicConfig  types.Bool   `tfsdk:"dynamic_config"`
 }
 
+// Provider returns the schema for provider configuration.
 func Provider() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"address": schema.StringAttribute{
@@ -37,6 +40,14 @@ func Provider() map[string]schema.Attribute {
 			Description: "CML2 API token (JWT).",
 			Optional:    true,
 			Sensitive:   true,
+		},
+		"token_cache": schema.BoolAttribute{
+			Description: "Enables caching of an auth token in a local file when using username/password. Ignored when `token` is set.",
+			Optional:    true,
+		},
+		"token_cache_file": schema.StringAttribute{
+			Description: "Path to the token cache file. Used only when `token_cache=true` and username/password auth is used.",
+			Optional:    true,
 		},
 		"cacert": schema.StringAttribute{
 			Description: "A CA CERT, PEM encoded. When provided, the controller cert will be checked against it.  Otherwise, the system trust anchors will be used.",

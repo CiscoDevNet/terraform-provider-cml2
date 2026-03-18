@@ -22,6 +22,7 @@ sense and what doesn't.
 - image schema unit test
 - fix documentation of data sources ("optional schema props")
 - improved documentation and examples
+- added classic annotation resource (`cml2_annotation`) including full shape support and acceptance tests
 
 ## Not doing
 

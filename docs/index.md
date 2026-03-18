@@ -41,6 +41,11 @@ provider "cml2" {
   # if not specified, the system root CAs are used
   # cacert = file("ca.pem")
 
+  # optional: cache auth token on disk when using username/password
+  # (ignored if token is set)
+  # token_cache      = true
+  # token_cache_file = "/tmp/terraform-provider-cml2-token.json"
+
   # should the server certificate be verified?
   # (defaults to false, it will be verified)
   # skip_verify = true
@@ -77,5 +82,7 @@ provider "cml2" {
 - `password` (String, Sensitive) CML2 password.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
+- `token_cache` (Boolean) Enables caching of an auth token in a local file when using username/password. Ignored when `token` is set.
+- `token_cache_file` (String) Path to the token cache file. Used only when `token_cache=true` and username/password auth is used.
 - `use_cache` (Boolean, Deprecated) Enables the client cache, **Deprecated**
 - `username` (String) CML2 username.

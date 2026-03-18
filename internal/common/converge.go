@@ -8,12 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/client"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
-func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnostics, id, timeout string) {
+// Converge waits until a lab reports convergence or the timeout is reached.
+func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostics, id, timeout string) {
 	converged := false
-	waited := 0
 	snoozeFor := 5 // seconds
 	var err error
 
@@ -21,13 +22,18 @@ func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnos
 
 	tov, err := time.ParseDuration(timeout)
 	if err != nil {
-		panic("can't parse timeout -- should be validated")
+		diags.AddError(ErrorLabel, fmt.Sprintf("can't parse timeout %q: %s", timeout, err))
+		return
 	}
 	endTime := time.Now().Add(tov)
 
-	for !converged {
+	ticker := time.NewTicker(time.Second * time.Duration(snoozeFor))
+	defer ticker.Stop()
 
-		converged, err = client.HasLabConverged(ctx, id)
+	attempts := 0
+
+	for !converged {
+		converged, err = client.Lab.HasConverged(ctx, models.UUID(id))
 		if err != nil {
 			diags.AddError(
 				ErrorLabel,
@@ -40,7 +46,7 @@ func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnos
 		}
 
 		select {
-		case <-time.After(time.Second * time.Duration(snoozeFor)):
+		case <-ticker.C:
 		case <-ctx.Done():
 			return
 		}
@@ -48,10 +54,10 @@ func Converge(ctx context.Context, client *cmlclient.Client, diags *diag.Diagnos
 			diags.AddError(ErrorLabel, fmt.Sprintf("ran into timeout (max %s)", timeout))
 			return
 		}
-		waited++
+		attempts++
 		tflog.Info(
 			ctx, "converging",
-			map[string]any{"seconds": waited * snoozeFor},
+			map[string]any{"seconds": attempts * snoozeFor},
 		)
 	}
 }

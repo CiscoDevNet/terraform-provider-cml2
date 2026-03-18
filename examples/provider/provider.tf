@@ -17,6 +17,11 @@ provider "cml2" {
   # if not specified, the system root CAs are used
   # cacert = file("ca.pem")
 
+  # optional: cache auth token on disk when using username/password
+  # (ignored if token is set)
+  # token_cache      = true
+  # token_cache_file = "/tmp/terraform-provider-cml2-token.json"
+
   # should the server certificate be verified?
   # (defaults to false, it will be verified)
   # skip_verify = true

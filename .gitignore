@@ -45,3 +45,10 @@ vendor
 
 tftest
 .tool-versions
+
+# Local-only workspace overrides (use go.work.example)
+go.work
+go.work.sum
+
+# Local helper binaries
+cml-version

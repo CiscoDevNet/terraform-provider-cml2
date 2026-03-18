@@ -4,17 +4,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
-var link *cmlclient.Link = &cmlclient.Link{
+var link *models.Link = &models.Link{
 	ID:      "0faf7c22-f466-41fd-9feb-d902220d55c8",
 	State:   "DEFINED_ON_CORE",
 	LabID:   "cd5fa81a-82aa-47da-98c5-7e9ac6c75a67",

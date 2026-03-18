@@ -8,12 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates (imports) and optionally starts a lab based on the configured topology.
 func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data cmlschema.LabLifecycleModel
@@ -40,20 +41,22 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 
 	if data.LabID.IsUnknown() {
 		tflog.Info(ctx, "Create: import")
-		start.lab, err = r.cfg.Client().LabImport(ctx, data.Topology.ValueString())
-		if err != nil {
+		imported, importErr := r.cfg.Client().Lab.Import(ctx, data.Topology.ValueString())
+		start.lab = &imported
+		if importErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to import lab, got error: %s", err),
+				fmt.Sprintf("Unable to import lab, got error: %s", importErr),
 			)
 			return
 		}
 	} else {
-		start.lab, err = r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
-		if err != nil {
+		lab, getErr := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
+		start.lab = &lab
+		if getErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to get lab, got error: %s", err),
+				fmt.Sprintf("Unable to get lab, got error: %s", getErr),
 			)
 			return
 		}
@@ -66,12 +69,12 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 	// but only if there were no errors from config injection
 	if !resp.Diagnostics.HasError() &&
 		(data.State.IsUnknown() ||
-			data.State.ValueString() == cmlclient.LabStateStarted) {
+			data.State.ValueString() == string(models.LabStateStarted)) {
 		r.startNodes(ctx, &resp.Diagnostics, start)
 	}
 
 	// fetch lab again, with nodes and interfaces
-	lab, err := r.cfg.Client().LabGet(ctx, start.lab.ID, true)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, start.lab.ID, true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -80,9 +83,9 @@ func (r *LabLifecycleResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	data.LabID = types.StringValue(lab.ID)
-	data.State = types.StringValue(lab.State)
-	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
+	data.LabID = types.StringValue(string(lab.ID))
+	data.State = types.StringValue(string(lab.State))
+	data.Nodes = r.populateNodes(ctx, &lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

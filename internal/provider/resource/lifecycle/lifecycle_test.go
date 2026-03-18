@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
-	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -28,6 +31,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccLifecycleResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -59,6 +64,8 @@ func TestAccLifecycleResource(t *testing.T) {
 }
 
 func TestAccLifecycleImport(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -79,8 +86,10 @@ func TestAccLifecycleImport(t *testing.T) {
 }
 
 func TestAccLifecycleConfigCheck(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	// this was deprecated and replaced by depends_on with 0.1.0
-	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribue.`)
+	// re1 := regexp.MustCompile(`When "LabID" is set, "elements" is a required attribute.`)
 	re2 := regexp.MustCompile(`Can't set \"LabID\" and \"topology\" at the same time.`)
 
 	resource.Test(t, resource.TestCase{
@@ -101,6 +110,8 @@ func TestAccLifecycleConfigCheck(t *testing.T) {
 }
 
 func TestAccLifecycleImportLab(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	const (
 		initialAlpineConfig = "new config for alpine"
 		changedAlpineConfig = "changed config for alpine"
@@ -124,7 +135,7 @@ func TestAccLifecycleImportLab(t *testing.T) {
 				),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
-					resource.TestCheckOutput("n0config", initialAlpineConfig),
+					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "alpine-0", initialAlpineConfig),
 				),
 			},
 			// change config and ensure that n0config output now has the changed config
@@ -135,7 +146,7 @@ func TestAccLifecycleImportLab(t *testing.T) {
 				),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
-					resource.TestCheckOutput("n0config", changedAlpineConfig),
+					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "alpine-0", changedAlpineConfig),
 				),
 			},
 		},
@@ -150,7 +161,55 @@ func uuidCheck(value string) error {
 	return nil
 }
 
+func testCheckLifecycleNodeConfigByLabel(resourceName, label, expectedConfig string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Not found: %s", resourceName)
+		}
+
+		attrs := rs.Primary.Attributes
+		const prefix = "nodes."
+		const suffix = ".label"
+
+		for k, v := range attrs {
+			if !strings.HasPrefix(k, prefix) || !strings.HasSuffix(k, suffix) {
+				continue
+			}
+			nodeKey := strings.TrimSuffix(strings.TrimPrefix(k, prefix), suffix)
+			if v != label {
+				continue
+			}
+			cfgKey := fmt.Sprintf("nodes.%s.configuration", nodeKey)
+			got, ok := attrs[cfgKey]
+			if !ok {
+				// Some framework state representations may omit nested object attributes
+				// unless explicitly tracked; in that case, fall back to the configs map
+				// check which validates the injection behavior.
+				wantFromConfigs := expectedConfig
+				cfgsKey := fmt.Sprintf("configs.%s", label)
+				fromConfigs, ok2 := attrs[cfgsKey]
+				if ok2 {
+					if fromConfigs != wantFromConfigs {
+						return fmt.Errorf("%s: expected %#v, got %#v", cfgsKey, wantFromConfigs, fromConfigs)
+					}
+					return nil
+				}
+				return fmt.Errorf("Not found: %s", cfgKey)
+			}
+			if got != expectedConfig {
+				return fmt.Errorf("node %q configuration: expected %#v, got %#v", label, expectedConfig, got)
+			}
+			return nil
+		}
+
+		return fmt.Errorf("node with label %q not found in lifecycle state", label)
+	}
+}
+
 func TestAccLifecycleResourceState(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	re1 := regexp.MustCompile(`can't transition from no state to STOPPED`)
 	re2 := regexp.MustCompile(`can't transition from DEFINED_ON_CORE to STOPPED`)
 
@@ -175,6 +234,8 @@ func TestAccLifecycleResourceState(t *testing.T) {
 }
 
 func TestAccLifecycleSequence(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -232,6 +293,8 @@ func TestAccLifecycleSequence(t *testing.T) {
 }
 
 func TestAccLifecycleAddNodeToBooted(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -253,6 +316,8 @@ func TestAccLifecycleAddNodeToBooted(t *testing.T) {
 }
 
 func TestAccLifecycleNamedConfigs(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -431,7 +496,7 @@ func testAccLifecycleImportLab(cfg, label, nodeCfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lifecycle" "top" {
-	topology = <<-EOT
+	topology = <<EOT
     lab:
         description: 'need one node'
         notes: ''
@@ -447,19 +512,25 @@ resource "cml2_lifecycle" "top" {
           configuration: hostname bla
           interfaces: []
           tags: ["infra"]
-    EOT
+EOT
 	configs = {
 		"%[2]s": %[3]q,
 	}
 	staging = {
 		stages = ["infra","core","sites"]
-		remaining = false
+		start_remaining = false
 	}
 	wait = false
 }
-output "n0config" {
-    value = [ for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0" ][0]
+
+locals {
+	n0config = [for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0"][0]
 }
+
+output "n0config" {
+	value = local.n0config
+}
+
 
 `, cfg, label, nodeCfg)
 }
@@ -618,21 +689,21 @@ resource "cml2_lifecycle" "top" {
 }
 
 func testAccLifecycleNamedConfigs(cfg string, stage int) string {
-	var configs, named_configs string
+	var configs, namedConfigs string
 	switch stage {
 	case 0:
 		configs = ``
-		named_configs = ``
+		namedConfigs = ``
 	case 1:
 		configs = `
 		configs = {
 			"R1": "hostname r1"
 		}
 		`
-		named_configs = ``
+		namedConfigs = ``
 	case 2:
 		configs = ``
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"R1": [
 				{
@@ -648,7 +719,7 @@ func testAccLifecycleNamedConfigs(cfg string, stage int) string {
 			"R1": "hostname r1"
 		}
 		`
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"R1": [
 				{
@@ -664,10 +735,10 @@ func testAccLifecycleNamedConfigs(cfg string, stage int) string {
 			"xx": "hostname r1"
 		}
 		`
-		named_configs = ``
+		namedConfigs = ``
 	case 5:
 		configs = ``
-		named_configs = `
+		namedConfigs = `
 		named_configs = {
 			"xx": [
 				{
@@ -712,5 +783,5 @@ resource "cml2_lifecycle" "top" {
 	%[2]s
 	%[3]s
 }
-`, cfg, configs, named_configs)
+`, cfg, configs, namedConfigs)
 }

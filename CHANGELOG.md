@@ -2,6 +2,14 @@
 
 Lists the changes in the provider.
 
+## Version 0.9.0
+
+- bump gocmlclient to 0.2.2
+- provider: use static token auth when `token` is set (prevents auth refresh fallback)
+- resource `cml2_annotation`: full classic annotation shape support (text/rectangle/ellipse/line)
+- annotation line markers (`line_start`/`line_end`) support explicit `null` to clear line endings (plain line)
+- updated docs and acceptance tests for annotations
+
 ## Version 0.8.5
 
 - use gocmlclient 0.1.2 (0.1.1 was broken when doing user/pass auth instead of

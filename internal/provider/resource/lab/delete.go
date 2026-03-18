@@ -7,12 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Delete deletes an existing CML lab.
 func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var (
 		data cmlschema.LabModel
@@ -34,7 +35,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	if err != nil {
 		resp.Diagnostics.AddWarning(
 			common.ErrorLabel,
@@ -44,7 +45,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 
 	if lab.Running() {
-		err = r.cfg.Client().LabStop(ctx, data.ID.ValueString())
+		err = r.cfg.Client().Lab.Stop(ctx, models.UUID(data.ID.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddWarning(
 				common.ErrorLabel,
@@ -52,7 +53,7 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 			)
 			return
 		}
-		err = r.cfg.Client().LabWipe(ctx, data.ID.ValueString())
+		err = r.cfg.Client().Lab.Wipe(ctx, models.UUID(data.ID.ValueString()))
 		if err != nil {
 			resp.Diagnostics.AddWarning(
 				common.ErrorLabel,
@@ -62,12 +63,12 @@ func (r *LabResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 		}
 	}
 
-	if lab.State != cmlclient.LabStateDefined {
+	if lab.State != models.LabStateDefined {
 		resp.Diagnostics.AddError(common.ErrorLabel, "lab is not in DEFINED_ON_CORE state")
 		return
 	}
 
-	err = r.cfg.Client().LabDestroy(ctx, data.ID.ValueString())
+	err = r.cfg.Client().Lab.Delete(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,

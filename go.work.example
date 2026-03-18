@@ -1,0 +1,17 @@
+// Example Go workspace for local development.
+//
+// NOTE: this is a local-only workspace template.
+// Do not commit go.work; copy this file to go.work.
+//
+// Usage:
+//   cp go.work.example go.work
+//   go work sync
+
+go 1.25.0
+
+toolchain go1.25.8
+
+use (
+	.
+	../gocmlclient
+)

@@ -4,17 +4,18 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
-var conn1 *cmlclient.ExtConn = &cmlclient.ExtConn{
+var conn1 *models.ExtConn = &models.ExtConn{
 	Label:      "NAT",
 	DeviceName: "virbr0",
 	Protected:  false,
@@ -25,7 +26,7 @@ var conn1 *cmlclient.ExtConn = &cmlclient.ExtConn{
 	ID: "58568fbb-e1f8-4b83-a1f8-148c656eed39",
 }
 
-var conn2 *cmlclient.ExtConn = &cmlclient.ExtConn{
+var conn2 *models.ExtConn = &models.ExtConn{
 	Label:      "System Bridge",
 	DeviceName: "bridge0",
 	Protected:  true,
@@ -40,7 +41,7 @@ func TestConnector(t *testing.T) {
 	diag := &diag.Diagnostics{}
 	ctx := context.Background()
 
-	for _, connector := range []*cmlclient.ExtConn{conn1, conn2} {
+	for _, connector := range []*models.ExtConn{conn1, conn2} {
 		value := cmlschema.NewExtConn(ctx, connector, diag)
 		t.Logf("value: %+v", value)
 		t.Logf("errors: %+v", diag.Errors())

@@ -1,3 +1,9 @@
 package common
 
-const ErrorLabel = "CML2 Provider Error"
+// ErrorString returns err.Error() or an empty string for nil.
+func ErrorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}

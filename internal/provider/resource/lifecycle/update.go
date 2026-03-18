@@ -7,13 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Update applies lifecycle state changes (start/stop/wipe) and refreshes state.
 func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
 		configData, planData, stateData cmlschema.LabLifecycleModel
@@ -47,21 +47,22 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		}
 
 		// need to get the lab data here
-		start.lab, err = r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
-		if err != nil {
+		lab, getErr := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
+		start.lab = &lab
+		if getErr != nil {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
-				fmt.Sprintf("Unable to fetch lab, got error: %s", err),
+				fmt.Sprintf("Unable to fetch lab, got error: %s", getErr),
 			)
 			return
 		}
 
 		// this is very blunt ...
-		if stateData.State.ValueString() == cmlclient.LabStateStarted {
-			if planData.State.ValueString() == cmlclient.LabStateStopped {
+		if stateData.State.ValueString() == string(models.LabStateStarted) {
+			if planData.State.ValueString() == string(models.LabStateStopped) {
 				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
-			if planData.State.ValueString() == cmlclient.LabStateDefined {
+			if planData.State.ValueString() == string(models.LabStateDefined) {
 				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 				timeout := start.timeouts.Update.ValueString()
 				common.Converge(
@@ -72,17 +73,17 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 			}
 		}
 
-		if stateData.State.ValueString() == cmlclient.LabStateStopped {
-			if planData.State.ValueString() == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == string(models.LabStateStopped) {
+			if planData.State.ValueString() == string(models.LabStateStarted) {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
-			if planData.State.ValueString() == cmlclient.LabStateDefined {
+			if planData.State.ValueString() == string(models.LabStateDefined) {
 				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			}
 		}
 
-		if stateData.State.ValueString() == cmlclient.LabStateDefined {
-			if planData.State.ValueString() == cmlclient.LabStateStarted {
+		if stateData.State.ValueString() == string(models.LabStateDefined) {
+			if planData.State.ValueString() == string(models.LabStateStarted) {
 				r.startNodes(ctx, &resp.Diagnostics, start)
 			}
 		}
@@ -101,7 +102,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 
 	// since we have changed lab state, we need to re-read all the node
 	// state...
-	lab, err := r.cfg.Client().LabGet(ctx, planData.LabID.ValueString(), true)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -110,8 +111,13 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
-	planData.State = types.StringValue(lab.State)
-	planData.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
+	// If the user explicitly configured a desired state, keep it in state after
+	// apply to avoid "inconsistent result" errors when the simulator returns a
+	// transitional/lagging state (e.g. wait=false).
+	if configData.State.IsNull() {
+		planData.State = types.StringValue(string(lab.State))
+	}
+	planData.Nodes = r.populateNodes(ctx, &lab, &resp.Diagnostics)
 	planData.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, planData)...)

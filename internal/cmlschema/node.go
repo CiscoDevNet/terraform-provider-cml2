@@ -15,13 +15,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// NodeModel is the Terraform representation of a CML node.
 type NodeModel struct {
 	ID              types.String `tfsdk:"id"`
 	LabID           types.String `tfsdk:"lab_id"`
 	Label           types.String `tfsdk:"label"`
+	Priority        types.Int64  `tfsdk:"priority"`
 	State           types.String `tfsdk:"state"`
 	NodeDefinition  types.String `tfsdk:"nodedefinition"`
 	ImageDefinition types.String `tfsdk:"imagedefinition"`
@@ -47,6 +49,7 @@ type serialDeviceModel struct {
 	DeviceNumber types.Int64  `tfsdk:"device_number"`
 }
 
+// NamedConfigModel represents a named configuration entry for a node.
 type NamedConfigModel struct {
 	Name    types.String `tfsdk:"name"`
 	Content Config       `tfsdk:"content"`
@@ -117,10 +120,12 @@ type NamedConfigModel struct {
 // 	"boot_progress": "Booted"
 // }
 
+// NodeAttrType is the attribute type map for NodeModel.
 var NodeAttrType = map[string]attr.Type{
 	"id":              types.StringType,
 	"lab_id":          types.StringType,
 	"label":           types.StringType,
+	"priority":        types.Int64Type,
 	"state":           types.StringType,
 	"nodedefinition":  types.StringType,
 	"imagedefinition": types.StringType,
@@ -147,6 +152,7 @@ var NodeAttrType = map[string]attr.Type{
 	"compute_id":     types.StringType,
 }
 
+// NamedConfigAttrType is the Terraform object type for NamedConfigModel.
 var NamedConfigAttrType = types.ObjectType{
 	AttrTypes: map[string]attr.Type{
 		"name":    types.StringType,
@@ -154,6 +160,7 @@ var NamedConfigAttrType = types.ObjectType{
 	},
 }
 
+// SerialDevicesAttrType is the Terraform object type for a node serial device.
 var SerialDevicesAttrType = types.ObjectType{
 	AttrTypes: map[string]attr.Type{
 		"console_key":   types.StringType,
@@ -161,6 +168,7 @@ var SerialDevicesAttrType = types.ObjectType{
 	},
 }
 
+// Node returns the schema for a node nested object.
 func Node() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -179,6 +187,14 @@ func Node() map[string]schema.Attribute {
 			Required:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"priority": schema.Int64Attribute{
+			Description: "Node scheduling priority. Lower values typically start earlier.",
+			Computed:    true,
+			Optional:    true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.UseStateForUnknown(),
 			},
 		},
 		"state": schema.StringAttribute{
@@ -344,7 +360,7 @@ func Node() map[string]schema.Attribute {
 	}
 }
 
-func newNamedConfig(ctx context.Context, nc cmlclient.NodeConfig, diags *diag.Diagnostics) attr.Value {
+func newNamedConfig(ctx context.Context, nc models.NodeConfig, diags *diag.Diagnostics) attr.Value {
 	namedConfig := NamedConfigModel{
 		Name:    types.StringValue(nc.Name),
 		Content: NewConfigValue(nc.Content),
@@ -360,9 +376,9 @@ func newNamedConfig(ctx context.Context, nc cmlclient.NodeConfig, diags *diag.Di
 	return value
 }
 
-func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag.Diagnostics) attr.Value {
+func newSerialDevice(ctx context.Context, sd models.SerialDevice, diags *diag.Diagnostics) attr.Value {
 	newSerialDevice := serialDeviceModel{
-		ConsoleKey:   types.StringValue(sd.ConsoleKey),
+		ConsoleKey:   types.StringValue(string(sd.ConsoleKey)),
 		DeviceNumber: types.Int64Value(int64(sd.DeviceNumber)),
 	}
 
@@ -376,7 +392,7 @@ func newSerialDevice(ctx context.Context, sd cmlclient.SerialDevice, diags *diag
 	return value
 }
 
-func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.Set {
+func newTags(_ context.Context, node *models.Node, diags *diag.Diagnostics) types.Set {
 	// Node tags can't be null, there's always a set of tags, even if it's empty
 	valueSet := make([]attr.Value, 0)
 	for _, tag := range node.Tags {
@@ -387,8 +403,15 @@ func newTags(_ context.Context, node *cmlclient.Node, diags *diag.Diagnostics) t
 	return tags
 }
 
-func NewNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+// NewNamedConfigs converts node named configurations into a Terraform list.
+func NewNamedConfigs(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {
+		// For some node definitions (e.g. unmanaged_switch) the API provides a
+		// default named config even if the client did not request named configs.
+		// Returning null for empty keeps state stable.
+		return types.ListNull(NamedConfigAttrType)
+	}
+	if len(node.Configurations) == 1 && node.Configurations[0].Name == "default" {
 		return types.ListNull(NamedConfigAttrType)
 	}
 	valueList := make([]attr.Value, 0)
@@ -403,7 +426,7 @@ func NewNamedConfigs(ctx context.Context, node *cmlclient.Node, diags *diag.Diag
 	return namedConfigs
 }
 
-func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+func newSerialDevices(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.SerialDevices) == 0 {
 		return types.ListNull(SerialDevicesAttrType)
 	}
@@ -419,7 +442,7 @@ func newSerialDevices(ctx context.Context, node *cmlclient.Node, diags *diag.Dia
 	return serialDevices
 }
 
-func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) types.List {
+func newInterfaces(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Interfaces) == 0 {
 		return types.ListNull(types.ObjectType{AttrTypes: InterfaceAttrType})
 	}
@@ -435,24 +458,37 @@ func newInterfaces(ctx context.Context, node *cmlclient.Node, diags *diag.Diagno
 	return ifaces
 }
 
+// HasConfig reports whether the node model has configuration content.
 func (nm NodeModel) HasConfig() bool {
 	return !nm.Configuration.IsUnknown() || len(nm.Configurations.Elements()) > 0
 }
 
-func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics) attr.Value {
+// NewNode converts a CML node into a Terraform value.
+func NewNode(ctx context.Context, node *models.Node, diags *diag.Diagnostics) attr.Value {
+	var cfgPtr *string
+	switch v := node.Configuration.(type) {
+	case nil:
+		cfgPtr = nil
+	case string:
+		cfgPtr = &v
+	case *string:
+		cfgPtr = v
+	}
+
 	newNode := NodeModel{
-		ID:             types.StringValue(node.ID),
-		LabID:          types.StringValue(node.LabID),
+		ID:             types.StringValue(string(node.ID)),
+		LabID:          types.StringValue(string(node.LabID)),
 		Label:          types.StringValue(node.Label),
-		State:          types.StringValue(node.State),
+		Priority:       types.Int64Null(),
+		State:          types.StringValue(string(node.State)),
 		NodeDefinition: types.StringValue(node.NodeDefinition),
-		Configuration:  NewConfigPointerValue(node.Configuration),
+		Configuration:  NewConfigPointerValue(cfgPtr),
 		Configurations: NewNamedConfigs(ctx, node, diags),
 		Interfaces:     newInterfaces(ctx, node, diags),
 		Tags:           newTags(ctx, node, diags),
 		X:              types.Int64Value(int64(node.X)),
 		Y:              types.Int64Value(int64(node.Y)),
-		HideLinks:      types.BoolValue(bool(node.HideLinks)),
+		HideLinks:      types.BoolValue(node.HideLinks != nil && *node.HideLinks),
 		SerialDevices:  newSerialDevices(ctx, node, diags),
 
 		// these values are null if unset
@@ -466,29 +502,45 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 		DataVolume:      types.Int64Null(),
 	}
 
-	if len(node.VNCkey) > 0 {
-		newNode.VNCkey = types.StringValue(node.VNCkey)
+	if node.Priority != nil {
+		newNode.Priority = types.Int64Value(int64(*node.Priority))
 	}
-	if node.CPUlimit > 0 {
-		newNode.CPUlimit = types.Int64Value(int64((node.CPUlimit)))
+
+	// Default config template: some node definitions return a default config even
+	// if the user did not set one. Keep the server value; it must be known after
+	// apply to avoid Terraform errors.
+
+	if node.CPUlimit != nil {
+		newNode.CPUlimit = types.Int64Value(int64(*node.CPUlimit))
 	}
-	if node.RAM > 0 {
-		newNode.RAM = types.Int64Value(int64(node.RAM))
+	if node.RAM != nil {
+		newNode.RAM = types.Int64Value(int64(*node.RAM))
 	}
 	if node.CPUs > 0 {
 		newNode.CPUs = types.Int64Value(int64(node.CPUs))
 	}
-	if node.BootDiskSize > 0 {
-		newNode.BootDiskSize = types.Int64Value(int64(node.BootDiskSize))
+	if node.Operational != nil {
+		if node.Operational.BootDiskSize != nil {
+			newNode.BootDiskSize = types.Int64Value(int64(*node.Operational.BootDiskSize))
+		}
+		if node.Operational.DataVolume != nil {
+			newNode.DataVolume = types.Int64Value(int64(*node.Operational.DataVolume))
+		}
+		if node.Operational.ComputeID != nil {
+			newNode.ComputeID = types.StringValue(string(*node.Operational.ComputeID))
+		}
+		if node.Operational.VNCkey != nil {
+			newNode.VNCkey = types.StringValue(string(*node.Operational.VNCkey))
+		}
 	}
-	if node.DataVolume > 0 {
-		newNode.DataVolume = types.Int64Value(int64(node.DataVolume))
+	if node.BootDiskSize != nil {
+		newNode.BootDiskSize = types.Int64Value(int64(*node.BootDiskSize))
 	}
-	if len(node.ComputeID) > 0 {
-		newNode.ComputeID = types.StringValue(node.ComputeID)
+	if node.DataVolume != nil {
+		newNode.DataVolume = types.Int64Value(int64(*node.DataVolume))
 	}
-	if len(node.ImageDefinition) > 0 {
-		newNode.ImageDefinition = types.StringValue(node.ImageDefinition)
+	if node.ImageDefinition != nil {
+		newNode.ImageDefinition = types.StringValue(*node.ImageDefinition)
 	}
 
 	var value attr.Value
@@ -503,15 +555,16 @@ func NewNode(ctx context.Context, node *cmlclient.Node, diags *diag.Diagnostics)
 	return value
 }
 
-func GetNamedConfigs(ctx context.Context, diag diag.Diagnostics, cl basetypes.ListValue) []cmlclient.NodeConfig {
-	var configurations []cmlclient.NodeConfig
+// GetNamedConfigs converts a Terraform list value into a slice of node configs.
+func GetNamedConfigs(ctx context.Context, diag diag.Diagnostics, cl basetypes.ListValue) []models.NodeConfig {
+	var configurations []models.NodeConfig
 	var nc NamedConfigModel
 	for _, el := range cl.Elements() {
 		diag.Append(tfsdk.ValueAs(ctx, el, &nc)...)
 		if diag.HasError() {
 			return nil
 		}
-		cfg := cmlclient.NodeConfig{
+		cfg := models.NodeConfig{
 			Name:    nc.Name.ValueString(),
 			Content: nc.Content.ValueString(),
 		}

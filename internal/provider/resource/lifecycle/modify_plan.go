@@ -7,13 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// ModifyPlan normalizes and validates the planned lifecycle changes.
 func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	var configData, planData, stateData cmlschema.LabLifecycleModel
 
@@ -45,15 +45,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	// check if we can transition to specified state
-	if planData.State.ValueString() == cmlclient.LabStateStopped {
-		if !noState && stateData.State.ValueString() == cmlclient.LabStateDefined {
+	if planData.State.ValueString() == string(models.LabStateStopped) {
+		if !noState && stateData.State.ValueString() == string(models.LabStateDefined) {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
 				"can't transition from DEFINED_ON_CORE to STOPPED",
 			)
 			return
 		}
-		if noState && planData.State.ValueString() == cmlclient.LabStateStopped {
+		if noState && planData.State.ValueString() == string(models.LabStateStopped) {
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
 				"can't transition from no state to STOPPED",
@@ -85,8 +85,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		plannedState := planData.State.ValueString()
 
 		for id, node := range nodes {
+			// Coordinates can change outside of Terraform (manual drag/drop in UI or
+			// auto-layout). During a lifecycle state transition, avoid pinning x/y to
+			// prior known values or Terraform may report an "inconsistent result after
+			// apply" when the controller returns updated coordinates.
+			node.X = types.Int64Unknown()
+			node.Y = types.Int64Unknown()
 
-			if plannedState == cmlclient.LabStateDefined {
+			if plannedState == string(models.LabStateDefined) {
 				node.SerialDevices = types.ListNull(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringNull()
 				node.ComputeID = types.StringNull()
@@ -94,11 +100,47 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.CPUs = types.Int64Null()
 				node.RAM = types.Int64Null()
 				node.BootDiskSize = types.Int64Null()
-				node.State = types.StringValue(cmlclient.NodeStateDefined)
-				node.CPUlimit = types.Int64Null()
+				node.State = types.StringValue(string(models.NodeStateDefined))
+				// The controller commonly returns cpu_limit=100 even when a node is in
+				// DEFINED_ON_CORE. Keep the planned value aligned with what we will
+				// observe after apply to avoid "inconsistent result after apply".
+				if !common.IsBuiltInNodeDefinition(node.NodeDefinition.ValueString()) {
+					// Determine node type from node definition metadata.
+					var libvirtDriver, linuxDriver string
+					var isLibvirt bool
+					var ndFound bool
+					var fetchErr error
+					if defs, err := r.cfg.NodeDefinitions(ctx); err == nil {
+						if nd, ok := defs[models.UUID(node.NodeDefinition.ValueString())]; ok {
+							ndFound = true
+							libvirtDriver = common.NodeDefLibvirtDomainDriver(nd)
+							linuxDriver = common.NodeDefLinuxDriver(nd)
+							isLibvirt = common.NodeDefIsLibvirtBacked(nd)
+						}
+					} else {
+						fetchErr = err
+					}
+					tflog.Info(ctx, "lifecycle node type probe (cpu_limit heuristic)", map[string]any{
+						"lab_state":             plannedState,
+						"node_id":               id,
+						"nodedefinition":        node.NodeDefinition.ValueString(),
+						"nodedefinition_found":  ndFound,
+						"nodedefinition_error":  common.ErrorString(fetchErr),
+						"libvirt_domain_driver": libvirtDriver,
+						"driver":                linuxDriver,
+						"is_libvirt":            isLibvirt,
+					})
+					if isLibvirt {
+						node.CPUlimit = types.Int64Value(100)
+					} else {
+						node.CPUlimit = types.Int64Null()
+					}
+				} else {
+					node.CPUlimit = types.Int64Null()
+				}
 				node.ImageDefinition = types.StringNull()
 			}
-			if plannedState == cmlclient.LabStateStarted {
+			if plannedState == string(models.LabStateStarted) {
 				node.SerialDevices = types.ListUnknown(cmlschema.SerialDevicesAttrType)
 				node.VNCkey = types.StringUnknown()
 				node.ComputeID = types.StringUnknown()
@@ -107,12 +149,42 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.RAM = types.Int64Unknown()
 				node.BootDiskSize = types.Int64Unknown()
 				node.State = types.StringUnknown()
-				node.CPUlimit = types.Int64Unknown()
+				// The controller returns cpu_limit=100 for most started nodes even if the
+				// field was null in the prior state. If we keep it unknown here, the
+				// nested schema's UseStateForUnknown modifier will pin it to null and
+				// Terraform will error with "inconsistent result after apply".
+				if !common.IsBuiltInNodeDefinition(node.NodeDefinition.ValueString()) {
+					// Determine node type from node definition metadata.
+					var libvirtDriver, linuxDriver string
+					var isLibvirt bool
+					if defs, err := r.cfg.NodeDefinitions(ctx); err == nil {
+						if nd, ok := defs[models.UUID(node.NodeDefinition.ValueString())]; ok {
+							libvirtDriver = common.NodeDefLibvirtDomainDriver(nd)
+							linuxDriver = common.NodeDefLinuxDriver(nd)
+							isLibvirt = common.NodeDefIsLibvirtBacked(nd)
+						}
+					}
+					tflog.Debug(ctx, "lifecycle node cpu_limit heuristic", map[string]any{
+						"lab_state":             plannedState,
+						"node_id":               id,
+						"nodedefinition":        node.NodeDefinition.ValueString(),
+						"libvirt_domain_driver": libvirtDriver,
+						"driver":                linuxDriver,
+						"is_libvirt":            isLibvirt,
+					})
+					if isLibvirt {
+						node.CPUlimit = types.Int64Value(100)
+					} else {
+						node.CPUlimit = types.Int64Null()
+					}
+				} else {
+					node.CPUlimit = types.Int64Null()
+				}
 				node.ImageDefinition = types.StringUnknown()
 			}
-			if plannedState == cmlclient.LabStateStopped {
-				if node.State.ValueString() != cmlclient.NodeStateDefined {
-					node.State = types.StringValue(cmlclient.NodeStateStopped)
+			if plannedState == string(models.LabStateStopped) {
+				if node.State.ValueString() != string(models.NodeStateDefined) {
+					node.State = types.StringValue(string(models.NodeStateStopped))
 				}
 			}
 
@@ -134,7 +206,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			}
 
 			for idx := range ifaces {
-				if plannedState == cmlclient.LabStateStarted {
+				if plannedState == string(models.LabStateStarted) {
 					ifaces[idx].IP4 = types.ListUnknown(types.StringType)
 					ifaces[idx].IP6 = types.ListUnknown(types.StringType)
 					// MACaddresses won't change at state change if one was assigned
@@ -143,17 +215,17 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 					}
 					ifaces[idx].State = types.StringUnknown()
 				}
-				if plannedState == cmlclient.LabStateDefined || plannedState == cmlclient.LabStateStopped {
+				if plannedState == string(models.LabStateDefined) || plannedState == string(models.LabStateStopped) {
 					ifaces[idx].IP4 = types.ListNull(types.StringType)
 					ifaces[idx].IP6 = types.ListNull(types.StringType)
 				}
-				if plannedState == cmlclient.LabStateDefined {
+				if plannedState == string(models.LabStateDefined) {
 					ifaces[idx].MACaddress = types.StringNull()
-					ifaces[idx].State = types.StringValue(cmlclient.IfaceStateDefined)
+					ifaces[idx].State = types.StringValue(string(models.IfaceStateDefined))
 				}
-				if plannedState == cmlclient.LabStateStopped {
-					if ifaces[idx].State.ValueString() != cmlclient.IfaceStateDefined {
-						ifaces[idx].State = types.StringValue(cmlclient.IfaceStateStopped)
+				if plannedState == string(models.LabStateStopped) {
+					if ifaces[idx].State.ValueString() != string(models.IfaceStateDefined) {
+						ifaces[idx].State = types.StringValue(string(models.IfaceStateStopped))
 					}
 				}
 			}
@@ -185,7 +257,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 
 		// booted state of lab is unknown if the plan is to start
-		if planData.State.ValueString() == cmlclient.LabStateStarted {
+		if planData.State.ValueString() == string(models.LabStateStarted) {
 			planData.Booted = types.BoolUnknown()
 		} else {
 			planData.Booted = types.BoolValue(false)

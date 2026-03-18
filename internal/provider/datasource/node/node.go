@@ -12,13 +12,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/rschmied/gocmlclient/pkg/models"
+
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &NodeDataSource{}
 
+// NewDataSource returns a new node data source.
 func NewDataSource() datasource.DataSource {
 	return &NodeDataSource{}
 }
@@ -35,14 +38,17 @@ type NodeDataSourceModel struct {
 	Node  types.Object `tfsdk:"node"`
 }
 
+// Metadata sets the data source type name.
 func (d *NodeDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_node"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *NodeDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -60,7 +66,6 @@ func (d *NodeDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 		},
 	}
 	resp.Schema.MarkdownDescription = "A node data source.  Both, the node `id` and the `lab_id` must be provided to retrieve the `node` data from the controller."
-	resp.Diagnostics = nil
 }
 
 func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -74,7 +79,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	lab, err := d.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true) // deep!
+	lab, err := d.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true) // deep!
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -83,7 +88,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	node, found := lab.Nodes[data.ID.ValueString()]
+	node, found := lab.Nodes[models.UUID(data.ID.ValueString())]
 	if !found {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -92,7 +97,7 @@ func (d *NodeDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	data.ID = types.StringValue(node.ID)
+	data.ID = types.StringValue(string(node.ID))
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,

@@ -18,6 +18,7 @@ import (
 	d_node "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/node"
 	d_system "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/system"
 	d_users "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/datasource/users"
+	r_annotation "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/annotation"
 	r_group "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/group"
 	r_lab "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lab"
 	r_lifecycle "github.com/ciscodevnet/terraform-provider-cml2/internal/provider/resource/lifecycle"
@@ -37,11 +38,13 @@ type CML2Provider struct {
 	name    string
 }
 
+// Metadata sets the provider type name and version.
 func (p *CML2Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = p.name
 	resp.Version = p.version
 }
 
+// Configure initializes the provider from its configuration.
 func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data cmlschema.ProviderModel
 
@@ -87,12 +90,13 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	config := common.NewProviderConfig(&data)
 	if !dynamicConfig {
-		config.Initialize(ctx, resp.Diagnostics)
+		config.Initialize(ctx, &resp.Diagnostics)
 	}
 	resp.DataSourceData = config
 	resp.ResourceData = config
 }
 
+// Schema defines the provider configuration schema.
 func (p *CML2Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema.MarkdownDescription = `The CML2 Terraform provider helps to
 deploy and run entire "virtual networks as code" into the Cisco Modeling Labs network
@@ -101,20 +105,22 @@ routers, switches and endpoints and their connectivity) as well as import existi
 topologies. It also includes fine-grained lifecycle control (staged start up),
 configuration injection, IP address retrieval from network devices, and more.`
 	resp.Schema.Attributes = cmlschema.Provider()
-	resp.Diagnostics = nil
 }
 
+// Resources defines the provider resources.
 func (p *CML2Provider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		r_lab.NewResource,
 		r_lifecycle.NewResource,
 		r_link.NewResource,
 		r_node.NewResource,
+		r_annotation.NewResource,
 		r_group.NewResource,
 		r_user.NewResource,
 	}
 }
 
+// DataSources defines the provider data sources.
 func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		d_lab.NewDataSource,
@@ -127,6 +133,7 @@ func (p *CML2Provider) DataSources(ctx context.Context) []func() datasource.Data
 	}
 }
 
+// New creates a new provider factory.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &CML2Provider{

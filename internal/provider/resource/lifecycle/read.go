@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
@@ -22,7 +23,7 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	lab, err := r.cfg.Client().LabGet(ctx, data.LabID.ValueString(), true)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -33,9 +34,9 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	tflog.Info(ctx, fmt.Sprintf("Read: lab state: %s", lab.State))
 
-	data.LabID = types.StringValue(lab.ID)
-	data.State = types.StringValue(lab.State)
-	data.Nodes = r.populateNodes(ctx, lab, &resp.Diagnostics)
+	data.LabID = types.StringValue(string(lab.ID))
+	data.State = types.StringValue(string(lab.State))
+	data.Nodes = r.populateNodes(ctx, &lab, &resp.Diagnostics)
 	data.Booted = types.BoolValue(lab.Booted())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)

@@ -8,12 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	r_schema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// Converter converts resource schema attributes into datasource schema attributes.
 func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attribute {
 	dSchema := make(map[string]ds_schema.Attribute)
 	for name, fromAttr := range rSchema {
-
 		// required := fromAttr.IsRequired()
 		// computed := fromAttr.IsComputed()
 		// optional := fromAttr.IsOptional()
@@ -24,7 +25,7 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 		computed := true
 		optional := false
 
-		if !(required && computed && optional) {
+		if !required || !computed || !optional {
 			computed = true
 		}
 
@@ -113,6 +114,16 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 				Computed:            computed,
 				Required:            required,
 			}
+		case r_schema.SingleNestedAttribute:
+			dSchema[name] = ds_schema.SingleNestedAttribute{
+				Description:         fromAttrType.Description,
+				MarkdownDescription: fromAttrType.MarkdownDescription,
+				Sensitive:           fromAttrType.Sensitive,
+				Attributes:          Converter(fromAttrType.Attributes),
+				Optional:            optional,
+				Computed:            computed,
+				Required:            required,
+			}
 		default:
 			msg := fmt.Sprintf("unknown attribute type: %v", fromAttr.GetType().String())
 			panic(msg)
@@ -125,4 +136,12 @@ func newStringSet(ctx context.Context, elements []string, diags *diag.Diagnostic
 	newSet, diag := types.SetValueFrom(ctx, types.StringType, elements)
 	diags.Append(diag...)
 	return newSet
+}
+
+func newUUIDSet(ctx context.Context, elements []models.UUID, diags *diag.Diagnostics) types.Set {
+	strings := make([]string, 0, len(elements))
+	for _, el := range elements {
+		strings = append(strings, string(el))
+	}
+	return newStringSet(ctx, strings, diags)
 }

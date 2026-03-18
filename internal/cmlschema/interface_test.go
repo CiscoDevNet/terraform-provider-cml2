@@ -4,28 +4,33 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
-var iface *cmlclient.Interface = &cmlclient.Interface{
-	ID:          "7c7285f5-c8c0-415a-a84d-59874347884a",
-	Label:       "to router 5",
-	Type:        "physical",
-	Slot:        0,
-	State:       "STARTED",
-	MACaddress:  "fe:54:00:a7:b6:ae",
-	IsConnected: true,
-	DeviceName:  "eth0",
-	IP4:         []string{"1.2.3.4/24"},
-	IP6:         []string{"fe80::1/64"},
-}
+var iface *models.Interface = func() *models.Interface {
+	mac := "fe:54:00:a7:b6:ae"
+	dev := "eth0"
+	slot := 0
+	return &models.Interface{
+		ID:          "7c7285f5-c8c0-415a-a84d-59874347884a",
+		Label:       "to router 5",
+		Type:        models.IfaceTypePhysical,
+		Slot:        &slot,
+		State:       models.IfaceStateStarted,
+		IsConnected: true,
+		Operational: &models.Operational{DeviceName: &dev, MACaddress: &mac},
+		IP4:         []string{"1.2.3.4/24"},
+		IP6:         []string{"fe80::1/64"},
+	}
+}()
 
 func TestInterface(t *testing.T) {
 	diag := &diag.Diagnostics{}

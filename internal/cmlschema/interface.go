@@ -12,9 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// InterfaceModel is the Terraform representation of a CML interface.
 type InterfaceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Label       types.String `tfsdk:"label"`
@@ -25,6 +26,7 @@ type InterfaceModel struct {
 	IP6         types.List   `tfsdk:"ip6"`
 }
 
+// InterfaceAttrType is the attribute type map for InterfaceModel.
 var InterfaceAttrType = map[string]attr.Type{
 	"id":           types.StringType,
 	"label":        types.StringType,
@@ -35,6 +37,7 @@ var InterfaceAttrType = map[string]attr.Type{
 	"ip6":          types.ListType{ElemType: types.StringType},
 }
 
+// Interface returns the schema for an interface nested object.
 func Interface() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -91,7 +94,8 @@ func Interface() map[string]schema.Attribute {
 	}
 }
 
-func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.Diagnostics) attr.Value {
+// NewInterface converts a CML interface into a Terraform value.
+func NewInterface(ctx context.Context, iface *models.Interface, diags *diag.Diagnostics) attr.Value {
 	ip4List := types.ListNull(types.StringType)
 	ip6List := types.ListNull(types.StringType)
 	var macAddress types.String
@@ -111,15 +115,19 @@ func NewInterface(ctx context.Context, iface *cmlclient.Interface, diags *diag.D
 		ip6List, _ = types.ListValue(types.StringType, list)
 	}
 	if iface.Exists() {
-		macAddress = types.StringValue(iface.MACaddress)
+		if iface.Operational != nil && iface.Operational.MACaddress != nil {
+			macAddress = types.StringValue(*iface.Operational.MACaddress)
+		} else {
+			macAddress = types.StringNull()
+		}
 	} else {
 		macAddress = types.StringNull()
 	}
 
 	newIface := InterfaceModel{
-		ID:          types.StringValue(iface.ID),
+		ID:          types.StringValue(string(iface.ID)),
 		Label:       types.StringValue(iface.Label),
-		State:       types.StringValue(iface.State),
+		State:       types.StringValue(string(iface.State)),
 		IsConnected: types.BoolValue(iface.IsConnected),
 		MACaddress:  macAddress,
 		IP4:         ip4List,

@@ -1,7 +1,8 @@
 // Package testing provides base configuration for (integration) testing
 package testing
 
-var Cfg string = `
+// Cfg is a base provider config snippet for tests.
+var Cfg = `
 variable "address" {
 	description = "CML controller address"
 	type        = string
@@ -26,12 +27,15 @@ provider "cml2" {
 	username = var.username
 	password = var.password
 	token = var.token
+	token_cache = true
+	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = false
 }
 `
 
-var CfgNamedConfigs string = `
+// CfgNamedConfigs is a base provider config snippet with named configs enabled.
+var CfgNamedConfigs = `
 variable "address" {
 	description = "CML controller address"
 	type        = string
@@ -49,18 +53,22 @@ variable "password" {
 variable "token" {
 	description = "CML controller JWT"
 	type        = string
+	default     = ""
 }
 provider "cml2" {
 	address = var.address
 	username = var.username
 	password = var.password
 	token = var.token
+	token_cache = true
+	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
 	named_configs = true
 }
 `
 
-var CfgBroken string = `
+// CfgBroken is an intentionally broken provider config snippet for tests.
+var CfgBroken = `
 variable "address" {
 	description = "CML controller address"
 	type        = string
@@ -72,6 +80,11 @@ variable "username" {
 }
 variable "password" {
 	description = "CML controller password"
+	type        = string
+	default     = ""
+}
+variable "token" {
+	description = "CML controller JWT"
 	type        = string
 	default     = ""
 }
@@ -80,6 +93,7 @@ provider "cml2" {
 	address = "https://127.0.0.1:5555"
 	username = var.username
 	password = var.password
+	token = var.token
 	skip_verify = true
 }
 `

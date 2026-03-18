@@ -3,33 +3,34 @@ package cmlschema
 import (
 	"context"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
+// LabGroupAttrType is the attribute type map for LabGroupModel.
 var LabGroupAttrType = map[string]attr.Type{
 	"id":         types.StringType,
-	"name":       types.StringType,
 	"permission": types.StringType,
 }
 
+// LabGroupModel is the Terraform representation of a lab group permission entry.
 type LabGroupModel struct {
 	ID         types.String `tfsdk:"id"`
-	Name       types.String `tfsdk:"name"`
 	Permission types.String `tfsdk:"permission"`
 }
 
-func NewLabGroup(ctx context.Context, group *cmlclient.LabGroup, diags *diag.Diagnostics) attr.Value {
+// NewLabGroup converts a lab group entry into a Terraform value.
+func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value {
 	newGroup := LabGroupModel{
-		ID:         types.StringValue(group.ID),
-		Name:       types.StringValue(group.Name),
-		Permission: types.StringValue(group.Permission),
+		ID:         types.StringValue(string(group.ID)),
+		Permission: types.StringValue(string(group.Permission)),
 	}
 	var value attr.Value
 	diags.Append(
@@ -43,18 +44,12 @@ func NewLabGroup(ctx context.Context, group *cmlclient.LabGroup, diags *diag.Dia
 	return value
 }
 
+// LabGroup returns the schema for a lab group permission nested object.
 func LabGroup() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
 			Description: "Group ID (UUID).",
 			Optional:    true,
-			Computed:    true,
-			// PlanModifiers: []planmodifier.String{
-			// 	stringplanmodifier.UseStateForUnknown(),
-			// },
-		},
-		"name": schema.StringAttribute{
-			Description: "Descriptive group name.",
 			Computed:    true,
 			// PlanModifiers: []planmodifier.String{
 			// 	stringplanmodifier.UseStateForUnknown(),

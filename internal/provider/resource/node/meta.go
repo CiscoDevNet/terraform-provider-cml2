@@ -18,18 +18,22 @@ var (
 	_ resource.ResourceWithModifyPlan  = &NodeResource{}
 )
 
+// NodeResource implements the cml2_node resource.
 type NodeResource struct {
 	cfg *common.ProviderConfig
 }
 
+// NewResource returns a new node resource.
 func NewResource() resource.Resource {
 	return &NodeResource{}
 }
 
+// Configure stores provider configuration for the resource.
 func (r *NodeResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the resource.
 func (r *NodeResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// This description is used by the documentation generator and the language
 	// server.
@@ -45,10 +49,12 @@ func (r *NodeResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 	resp.Diagnostics = nil
 }
 
+// Metadata sets the resource type name.
 func (r *NodeResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_node"
 }
 
+// ImportState imports a node resource.
 func (r NodeResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -12,6 +12,7 @@ import (
 
 var _ basetypes.StringTypable = (*ConfigType)(nil)
 
+// ConfigType is the Terraform type for Config.
 type ConfigType struct {
 	basetypes.StringType
 }

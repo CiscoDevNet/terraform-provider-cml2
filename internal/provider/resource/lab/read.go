@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
 )
 
 func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -21,13 +23,12 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	managedNodeStaging := data.NodeStaging
+	// Heuristic: during import, state typically only has ID and most computed attrs are unknown.
+	// In that case we must not suppress node_staging, otherwise ImportStateVerify will fail.
+	isImportRead := data.Created.IsUnknown() && data.Modified.IsUnknown()
 
-	var (
-		lab *cmlclient.Lab
-		err error
-	)
-
-	lab, err = r.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
+	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -37,8 +38,16 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	// Save data into Terraform state
-	value := cmlschema.NewLab(ctx, lab, &resp.Diagnostics)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
+	value := cmlschema.NewLab(ctx, &lab, &resp.Diagnostics)
+	var newData cmlschema.LabModel
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, value, &newData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !isImportRead {
+		keepNodeStagingNullWhenUnmanaged(managedNodeStaging, &newData)
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &newData)...)
 
 	tflog.Info(ctx, "Resource Lab READ done")
 }

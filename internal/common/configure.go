@@ -6,48 +6,87 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	cmlclient "github.com/rschmied/gocmlclient/pkg/client"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
+// ProviderConfig stores initialized API client and provider-level settings.
 type ProviderConfig struct {
 	client *cmlclient.Client
 	data   *cmlschema.ProviderModel
 	mu     *sync.Mutex
+
+	// nodeDefs caches node definitions for plan-time heuristics.
+	// It is loaded lazily on first use.
+	nodeDefs       models.NodeDefinitionMap
+	nodeDefsLoaded bool
 }
 
+// Client returns the configured CML client.
 func (r *ProviderConfig) Client() *cmlclient.Client {
 	return r.client
 }
 
+// UseNamedConfigs reports whether named configs are enabled.
 func (r *ProviderConfig) UseNamedConfigs() bool {
 	return r.data.NamedConfigs.ValueBool()
 }
 
+// Lock serializes operations that must not run concurrently.
 func (r *ProviderConfig) Lock() {
 	r.mu.Lock()
 }
 
+// Unlock releases the provider-level lock.
 func (r *ProviderConfig) Unlock() {
 	r.mu.Unlock()
 }
 
+// NewProviderConfig creates a ProviderConfig from provider schema data.
 func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	return &ProviderConfig{
-		client: nil,
-		mu:     new(sync.Mutex),
-		data:   data,
+		client:         nil,
+		mu:             new(sync.Mutex),
+		data:           data,
+		nodeDefs:       nil,
+		nodeDefsLoaded: false,
 	}
 }
 
-func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) *ProviderConfig {
+// NodeDefinitions returns the controller's node definition map.
+// The result is cached for the lifetime of the provider instance.
+func (r *ProviderConfig) NodeDefinitions(ctx context.Context) (models.NodeDefinitionMap, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.nodeDefsLoaded {
+		return r.nodeDefs, nil
+	}
+	if r.client == nil {
+		return nil, fmt.Errorf("client not initialized")
+	}
+
+	defs, err := r.client.NodeDefinition.NodeDefinitions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	r.nodeDefs = defs
+	r.nodeDefsLoaded = true
+	return r.nodeDefs, nil
+}
+
+// Initialize lazily creates the API client.
+func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics) *ProviderConfig {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -58,7 +97,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	// check if provided auth configuration makes sense
 	if r.data.Token.IsNull() &&
 		(r.data.Username.IsNull() || r.data.Password.IsNull()) {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"null check: either username and password or a token must be provided",
 		)
@@ -66,21 +105,21 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 
 	if len(r.data.Token.ValueString()) == 0 &&
 		(len(r.data.Username.ValueString()) == 0 || len(r.data.Password.ValueString()) == 0) {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"value check: either username and password or a token must be provided",
 		)
 	}
 
 	if len(r.data.Token.ValueString()) > 0 && len(r.data.Username.ValueString()) > 0 {
-		diag.AddWarning(
+		diags.AddWarning(
 			"Conflicting configuration",
 			"both token and username / password were provided")
 	}
 
 	// an address must be specified
 	if len(r.data.Address.ValueString()) == 0 {
-		diag.AddError(
+		diags.AddError(
 			"Required configuration missing",
 			"A server address must be configured to use the CML2 provider",
 		)
@@ -89,7 +128,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	// address must be https
 	parsedURL, err := url.Parse(r.data.Address.ValueString())
 	if err != nil {
-		diag.AddError(
+		diags.AddError(
 			"Can't parse server address / URL",
 			err.Error(),
 		)
@@ -97,7 +136,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 
 	// Check if the scheme is HTTPS and we have something like a hostname
 	if parsedURL.Scheme != "https" || len(parsedURL.Host) == 0 {
-		diag.AddError(
+		diags.AddError(
 			"Invalid server address / URL, ensure it uses HTTPS",
 			"A valid CML server URL using HTTPS must be provided.",
 		)
@@ -111,7 +150,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if r.data.NamedConfigs.IsNull() {
 		r.data.NamedConfigs = types.BoolValue(false)
 	} else if r.data.NamedConfigs.ValueBool() {
-		diag.AddWarning(
+		diags.AddWarning(
 			"Feature",
 			"\"named_configs\" is enabled",
 		)
@@ -120,43 +159,90 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diag diag.Diagnostics) 
 	if r.data.UseCache.IsNull() {
 		r.data.UseCache = types.BoolValue(false)
 	} else if r.data.UseCache.ValueBool() {
-		diag.AddError(
+		diags.AddError(
 			"Experimental feature deprecated",
 			"\"use_cache\" has been deprecated",
 		)
 	}
 
-	// create a new CML2 client
-	client := cmlclient.New(
-		r.data.Address.ValueString(),
-		r.data.SkipVerify.ValueBool(),
-	)
+	// build client options
+	opts := make([]cmlclient.Option, 0)
+
+	// Policy: do not readiness-check at init (see spec/02-readiness-behavior.md)
+	opts = append(opts, cmlclient.SkipReadyCheck())
+
+	// Policy: named configs default OFF unless explicitly enabled
+	if !r.data.NamedConfigs.ValueBool() {
+		opts = append(opts, cmlclient.WithoutNamedConfigs())
+	}
+
+	// Policy: always request node configurations explicitly to avoid server-default
+	// drift (CML 2.9 returns string when unset; CML 2.10 returns named-config list).
+	// This is independent from the user-facing named_configs setting.
+	opts = append(opts, cmlclient.WithNodeExcludeConfigurations(false))
+
+	// Auth
+	if len(r.data.Token.ValueString()) > 0 {
+		opts = append(opts, cmlclient.WithStaticToken(r.data.Token.ValueString()))
+	}
 	if len(r.data.Username.ValueString()) > 0 {
-		client.SetUsernamePassword(
+		opts = append(opts, cmlclient.WithUsernamePassword(
 			r.data.Username.ValueString(),
 			r.data.Password.ValueString(),
-		)
+		))
 	}
-	if len(r.data.Token.ValueString()) > 0 {
-		client.SetToken(r.data.Token.ValueString())
+
+	// Optional token caching (username/password only). This is intentionally
+	// ignored when a token is explicitly configured.
+	if r.data.TokenCache.IsNull() {
+		r.data.TokenCache = types.BoolValue(false)
 	}
-	if r.data.NamedConfigs.ValueBool() {
-		tflog.Warn(ctx, "Want to use named configurations")
-		client.UseNamedConfigs()
+	if r.data.TokenCacheFile.IsNull() {
+		r.data.TokenCacheFile = types.StringNull()
+	}
+	if r.data.TokenCache.ValueBool() && len(r.data.Token.ValueString()) == 0 && len(r.data.Username.ValueString()) > 0 {
+		cacheFile := r.data.TokenCacheFile.ValueString()
+		if len(cacheFile) == 0 {
+			hostKey := parsedURL.Host
+			hostKey = strings.Map(func(r rune) rune {
+				switch {
+				case r >= 'a' && r <= 'z':
+					return r
+				case r >= 'A' && r <= 'Z':
+					return r
+				case r >= '0' && r <= '9':
+					return r
+				default:
+					return '_'
+				}
+			}, hostKey)
+			cacheFile = fmt.Sprintf("/tmp/terraform-provider-cml2-token-%s.json", hostKey)
+		}
+		opts = append(opts, cmlclient.WithTokenStorageFile(cacheFile))
+	}
+
+	// HTTP/TLS
+	if r.data.SkipVerify.ValueBool() {
+		opts = append(opts, cmlclient.WithInsecureTLS())
 	}
 	if len(r.data.CAcert.ValueString()) > 0 {
-		err := client.SetCACert([]byte(r.data.CAcert.ValueString()))
-		if err != nil {
-			diag.AddError(
-				"Configuration issue",
-				fmt.Sprintf("Provided certificate could not be used: %s", err),
-			)
-		}
+		opts = append(opts, cmlclient.WithCACertPEM([]byte(r.data.CAcert.ValueString())))
 	}
+
+	client, err := cmlclient.New(r.data.Address.ValueString(), opts...)
+	if err != nil {
+		diags.AddError(
+			"CML client initialization failed",
+			err.Error(),
+		)
+		return r
+	}
+
 	r.client = client
 	return r
 }
 
+// DatasourceConfigure returns provider config for a datasource.
 func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) *ProviderConfig {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -170,9 +256,10 @@ func DatasourceConfigure(ctx context.Context, req datasource.ConfigureRequest, r
 		)
 		return nil
 	}
-	return config.Initialize(ctx, resp.Diagnostics)
+	return config.Initialize(ctx, &resp.Diagnostics)
 }
 
+// ResourceConfigure returns provider config for a resource.
 func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) *ProviderConfig {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -187,5 +274,5 @@ func ResourceConfigure(ctx context.Context, req resource.ConfigureRequest, resp 
 		)
 		return nil
 	}
-	return config.Initialize(ctx, resp.Diagnostics)
+	return config.Initialize(ctx, &resp.Diagnostics)
 }

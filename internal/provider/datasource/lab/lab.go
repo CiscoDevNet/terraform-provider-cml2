@@ -11,23 +11,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/rschmied/gocmlclient/pkg/models"
+
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var (
 	_ datasource.DataSource                   = &LabDataSource{}
 	_ datasource.DataSourceWithValidateConfig = &LabDataSource{}
 )
 
+// LabDataSourceModel describes the data source data model.
 type LabDataSourceModel struct {
 	ID    types.String `tfsdk:"id"`
 	Title types.String `tfsdk:"title"`
 	Lab   types.Object `tfsdk:"lab"`
 }
 
+// NewDataSource returns a new lab data source.
 func NewDataSource() datasource.DataSource {
 	return &LabDataSource{}
 }
@@ -37,14 +40,17 @@ type LabDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *LabDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lab"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *LabDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -62,9 +68,9 @@ func (d *LabDataSource) Schema(ctx context.Context, req datasource.SchemaRequest
 		},
 	}
 	resp.Schema.MarkdownDescription = "A lab data source. Either the lab `id` or the lab `title` must be provided to retrieve the `lab` data from the controller."
-	resp.Diagnostics = nil
 }
 
+// ValidateConfig validates lab data source configuration.
 func (d *LabDataSource) ValidateConfig(ctx context.Context, req datasource.ValidateConfigRequest, resp *datasource.ValidateConfigResponse) {
 	var data LabDataSourceModel
 
@@ -93,13 +99,13 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 	}
 
 	var (
-		lab *cmlclient.Lab
+		lab models.Lab
 		err error
 	)
 	if data.ID.IsNull() {
-		lab, err = d.cfg.Client().LabGetByTitle(ctx, data.Title.ValueString(), false)
+		lab, err = d.cfg.Client().Lab.GetByTitle(ctx, data.Title.ValueString(), false)
 	} else {
-		lab, err = d.cfg.Client().LabGet(ctx, data.ID.ValueString(), false)
+		lab, err = d.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	}
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -109,11 +115,11 @@ func (d *LabDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 		return
 	}
 
-	data.ID = types.StringValue(lab.ID)
+	data.ID = types.StringValue(string(lab.ID))
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewLab(ctx, lab, &resp.Diagnostics),
+			cmlschema.NewLab(ctx, &lab, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.LabAttrType},
 			&data.Lab,
 		)...,

@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // ExtConnModel is the TF representation of a CML2 External Connector (no
@@ -88,7 +88,7 @@ func ExtConn() map[string]schema.Attribute {
 }
 
 // NewExtConn creates a TF value from a CML2 extconn object from the gocmlclient
-func NewExtConn(ctx context.Context, extconn *cmlclient.ExtConn, diags *diag.Diagnostics) attr.Value {
+func NewExtConn(ctx context.Context, extconn *models.ExtConn, diags *diag.Diagnostics) attr.Value {
 	valueSet := make([]attr.Value, 0)
 	for _, tag := range extconn.Tags {
 		valueSet = append(valueSet, types.StringValue(tag))
@@ -100,7 +100,7 @@ func NewExtConn(ctx context.Context, extconn *cmlclient.ExtConn, diags *diag.Dia
 	diags.Append(diag...)
 
 	newConnector := ExtConnModel{
-		ID:         types.StringValue(extconn.ID),
+		ID:         types.StringValue(string(extconn.ID)),
 		DeviceName: types.StringValue(extconn.DeviceName),
 		Label:      types.StringValue(extconn.Label),
 		Protected:  types.BoolValue(extconn.Protected),

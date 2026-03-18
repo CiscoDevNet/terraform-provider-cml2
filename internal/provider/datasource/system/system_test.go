@@ -5,11 +5,12 @@ import (
 	"regexp"
 	"testing"
 
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
-	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
@@ -23,7 +24,12 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestSystemDataSource(t *testing.T) {
-	re1 := regexp.MustCompile(`ran into timeout`)
+	cfg.SkipUnlessAcc(t)
+
+	// When using cfg.CfgBroken we point at a non-existent endpoint. Depending on
+	// client behavior, this may either time out (older behavior) or fail fast with
+	// a connection error.
+	re1 := regexp.MustCompile(`(?s)(ran into timeout|CML client error|connection refused)`)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

@@ -1,3 +1,4 @@
+// Package images implements the CML2 images datasource.
 package images
 
 import (
@@ -17,15 +18,17 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &ImagesDataSource{}
 
+// ImagesDataSourceModel describes the data source data model.
 type ImagesDataSourceModel struct {
 	ID        types.String `tfsdk:"id"`
 	NodeDef   types.String `tfsdk:"nodedefinition"`
 	ImageList types.List   `tfsdk:"image_list"`
 }
 
+// NewDataSource returns a new images data source.
 func NewDataSource() datasource.DataSource {
 	return &ImagesDataSource{}
 }
@@ -70,14 +73,17 @@ type ImagesDataSource struct {
 //     "schema_version": "0.0.1"
 //   },
 
+// Metadata sets the data source type name.
 func (d *ImagesDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_images"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *ImagesDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -98,7 +104,6 @@ func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves image definitions from the controller. The optional `nodedefinition` ID can be provided to filter the list of image definitions for the specified node definition. If no node definition ID is provided, the complete image definition list known to the controller is returned."
-	resp.Diagnostics = nil
 }
 
 func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -112,7 +117,7 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	images, err := d.cfg.Client().ImageDefinitions(ctx)
+	images, err := d.cfg.Client().ImageDefinition.ImageDefinitions(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -129,7 +134,6 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		imageList = append(imageList, cmlschema.NewImageDefinition(
 			ctx, &img, &resp.Diagnostics),
 		)
-
 	}
 
 	resp.Diagnostics.Append(

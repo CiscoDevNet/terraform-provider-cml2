@@ -9,16 +9,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+// Create creates a new node in a CML lab.
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
-		data cmlschema.NodeModel
-		err  error
+		data            cmlschema.NodeModel
+		err             error
+		extConnStateCfg string
 	)
 
 	tflog.Info(ctx, "Resource Node CREATE")
@@ -48,15 +50,32 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	node := cmlclient.Node{}
+	node := models.Node{}
 
-	node.LabID = data.LabID.ValueString()
+	node.LabID = models.UUID(data.LabID.ValueString())
 
 	if !data.Label.IsUnknown() {
 		node.Label = data.Label.ValueString()
 	}
 	if !data.NodeDefinition.IsUnknown() {
 		node.NodeDefinition = data.NodeDefinition.ValueString()
+	}
+
+	// External connector back-compat: accept device name (e.g. "virbr0") and
+	// map to connector label (e.g. "NAT"). Keep the original config value in the
+	// plan, but send the normalized label to the API.
+	if node.NodeDefinition == "external_connector" && !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
+		inCfg := data.Configuration.ValueString()
+		normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, inCfg)
+		if nerr != nil {
+			resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
+			return
+		}
+		if changed {
+			resp.Diagnostics.AddWarning("External connector configuration normalized", warn)
+			node.Configuration = normalized
+			extConnStateCfg = inCfg
+		}
 	}
 
 	// We always need to create a tag list as the API always returns a list of
@@ -67,12 +86,17 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	node.Tags = tags
 
-	if !(data.Configuration.IsUnknown()) {
-		value := data.Configuration.ValueString()
-		node.Configuration = &value
+	if !data.Configuration.IsUnknown() && !data.Configuration.IsNull() {
+		// Only set configuration from plan if we did not already normalize it for
+		// external connectors.
+		if node.NodeDefinition != "external_connector" || extConnStateCfg == "" {
+			node.Configuration = data.Configuration.ValueString()
+		}
 	}
 
-	node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
+	if !data.Configurations.IsUnknown() && !data.Configurations.IsNull() {
+		node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
+	}
 
 	if !data.X.IsUnknown() {
 		node.X = int(data.X.ValueInt64())
@@ -81,25 +105,37 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		node.Y = int(data.Y.ValueInt64())
 	}
 	if !data.HideLinks.IsUnknown() {
-		node.HideLinks = bool(data.HideLinks.ValueBool())
+		v := data.HideLinks.ValueBool()
+		node.HideLinks = &v
 	}
-	if !data.RAM.IsUnknown() {
-		node.RAM = int(data.RAM.ValueInt64())
+	if !data.Priority.IsUnknown() && !data.Priority.IsNull() {
+		v := int(data.Priority.ValueInt64())
+		node.Priority = &v
 	}
-	if !data.CPUs.IsUnknown() {
+	if !data.RAM.IsUnknown() && !data.RAM.IsNull() {
+		v := int(data.RAM.ValueInt64())
+		node.RAM = &v
+	}
+	if !data.CPUs.IsUnknown() && !data.CPUs.IsNull() {
 		node.CPUs = int(data.CPUs.ValueInt64())
 	}
-	if !data.CPUlimit.IsUnknown() {
-		node.CPUlimit = int(data.CPUlimit.ValueInt64())
+	if !data.CPUlimit.IsUnknown() && !data.CPUlimit.IsNull() {
+		v := int(data.CPUlimit.ValueInt64())
+		node.CPUlimit = &v
 	}
-	if !data.BootDiskSize.IsUnknown() {
-		node.BootDiskSize = int(data.BootDiskSize.ValueInt64())
+	if !data.BootDiskSize.IsUnknown() && !data.BootDiskSize.IsNull() {
+		v := int(data.BootDiskSize.ValueInt64())
+		node.BootDiskSize = &v
 	}
-	if !data.DataVolume.IsUnknown() {
-		node.DataVolume = int(data.DataVolume.ValueInt64())
+	if !data.DataVolume.IsUnknown() && !data.DataVolume.IsNull() {
+		v := int(data.DataVolume.ValueInt64())
+		node.DataVolume = &v
 	}
-	if !data.ImageDefinition.IsUnknown() {
-		node.ImageDefinition = data.ImageDefinition.ValueString()
+	if !data.ImageDefinition.IsUnknown() && !data.ImageDefinition.IsNull() {
+		v := data.ImageDefinition.ValueString()
+		if v != "" {
+			node.ImageDefinition = &v
+		}
 	}
 
 	// can't set a configuration for an unmanaged switch
@@ -114,7 +150,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// tflog.Info(ctx, "NODE", map[string]any{"v": fmt.Sprintf("%+v", node)})
 
-	newNode, err := r.cfg.Client().NodeCreate(ctx, &node)
+	newNode, err := r.cfg.Client().Node.Create(ctx, node)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -123,29 +159,36 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	// WAS UNKNOWN??
-	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
-	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
-		newNode.Configuration = &newNode.Configurations[0].Content
+	// When named configs are disabled provider-side, normalize any server-returned
+	// named configs back into the single configuration field to avoid state drift.
+	if !r.cfg.UseNamedConfigs() && len(newNode.Configurations) > 0 {
+		if newNode.Configuration == nil {
+			newNode.Configuration = newNode.Configurations[0].Content
+		}
 		newNode.Configurations = nil
 	}
 
-	// work around the fact that creating an external connector will "resolve"
-	// the device name (if given, worked in previous versions" with the
-	// label... e.g. virbr0 -> NAT, bridge0 -> System Bridge. We return an
-	// error in this case, otherwise we'd run into inconsistent state!
-	if node.NodeDefinition == "external_connector" && !node.SameConfig(*newNode) {
-		resp.Diagnostics.AddError(
-			"External connector configuration",
-			fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
-		)
-		return
+	// If we accepted a deprecated device name (e.g. "virbr0"), keep the device
+	// name in state to match the user's config value and avoid Terraform drift.
+	if node.NodeDefinition == "external_connector" && extConnStateCfg != "" {
+		newNode.Configuration = extConnStateCfg
+		newNode.Configurations = nil
 	}
+
+	// WAS UNKNOWN??
+	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
+	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
+		newNode.Configuration = newNode.Configurations[0].Content
+		newNode.Configurations = nil
+	}
+
+	// External connector: device-name inputs (e.g. virbr0) are normalized to
+	// labels (e.g. NAT) during planning for back-compat. Do not hard-fail here.
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			cmlschema.NewNode(ctx, &newNode, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&data,
 		)...,

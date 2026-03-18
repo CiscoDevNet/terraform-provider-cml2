@@ -15,14 +15,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
+
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
-	cmlclient "github.com/rschmied/gocmlclient"
 )
 
-// Ensure provider defined types fully satisfy framework interfaces
+// Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &SystemDataSource{}
 
+// SystemDataSourceModel describes the data source data model.
 type SystemDataSourceModel struct {
 	ID           types.String `tfsdk:"id"`
 	Version      types.String `tfsdk:"version"`
@@ -31,6 +33,7 @@ type SystemDataSourceModel struct {
 	IgnoreErrors types.Bool   `tfsdk:"ignore_errors"`
 }
 
+// NewDataSource returns a new system data source.
 func NewDataSource() datasource.DataSource {
 	return &SystemDataSource{}
 }
@@ -40,14 +43,17 @@ type SystemDataSource struct {
 	cfg *common.ProviderConfig
 }
 
+// Metadata sets the data source type name.
 func (d *SystemDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_system"
 }
 
+// Configure stores provider configuration for the data source.
 func (d *SystemDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	d.cfg = common.DatasourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the data source.
 func (d *SystemDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema.Attributes = map[string]schema.Attribute{
 		"id": schema.StringAttribute{
@@ -76,7 +82,6 @@ func (d *SystemDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	}
 
 	resp.Schema.MarkdownDescription = "A data source that retrieves system state information from the controller. If a `timeout` is set then this will only return when the system responds."
-	resp.Diagnostics = nil
 }
 
 func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -104,19 +109,20 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 
 	tov, err := time.ParseDuration(timeout)
 	if err != nil {
-		panic("can't parse timeout -- should be validated")
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("invalid timeout %q: %s", timeout, err))
+		return
 	}
 
 	snoozeFor := 5 * time.Second
 	endTime := time.Now().Add(tov)
-	waited := time.Duration(0)
+	attempts := 0
 
 	for {
-		err = d.cfg.Client().Ready(ctx)
+		err = d.cfg.Client().System.Ready(ctx)
 		if err == nil {
 			break
 		}
-		if !(errors.Is(err, cmlclient.ErrSystemNotReady) || ignoreErrors) {
+		if !errors.Is(err, cmlerrors.ErrSystemNotReady) && !ignoreErrors {
 			resp.Diagnostics.AddError("CML client error", err.Error())
 			return
 		}
@@ -138,10 +144,10 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			)
 			return
 		}
-		waited++
+		attempts++
 		tflog.Info(
 			ctx, "wait for system ready",
-			map[string]any{"seconds": waited * snoozeFor},
+			map[string]any{"seconds": time.Duration(attempts) * snoozeFor},
 		)
 	}
 
@@ -152,7 +158,7 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		resp.Diagnostics.AddWarning("system ready", fmt.Sprintf("err %s", err))
 	}
 	data.Ready = types.BoolValue(err == nil)
-	data.Version = types.StringValue(d.cfg.Client().Version())
+	data.Version = types.StringValue(d.cfg.Client().System.Version())
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

@@ -18,30 +18,35 @@ var (
 	_ resource.ResourceWithModifyPlan  = &LabResource{}
 )
 
+// LabResource implements the cml2_lab resource.
 type LabResource struct {
 	cfg *common.ProviderConfig
 }
 
+// NewResource returns a new lab resource.
 func NewResource() resource.Resource {
 	return &LabResource{}
 }
 
+// Configure stores provider configuration for the resource.
 func (r *LabResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	r.cfg = common.ResourceConfigure(ctx, req, resp)
 }
 
+// Schema defines the schema for the resource.
 func (r *LabResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// This description is used by the documentation generator and the language
 	// server.
 	resp.Schema.Description = "A lab resource represents a CML lab. At create time, a lab title, lab description and lab notes can be provided."
 	resp.Schema.Attributes = cmlschema.Lab()
-	resp.Diagnostics = nil
 }
 
+// Metadata sets the resource type name.
 func (r *LabResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_lab"
 }
 
+// ImportState imports a lab resource.
 func (r LabResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

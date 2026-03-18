@@ -2,8 +2,8 @@ package cmlschema
 
 import (
 	"context"
+	"strings"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -13,14 +13,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlvalidator"
 )
 
+// GroupLabAttrType is the attribute type map for GroupLabModel.
 var GroupLabAttrType = map[string]attr.Type{
 	"id":         types.StringType,
 	"permission": types.StringType,
 }
 
+// GroupAttrType is the attribute type map for GroupModel.
 var GroupAttrType = map[string]attr.Type{
 	"id":          types.StringType,
 	"description": types.StringType,
@@ -35,11 +39,13 @@ var GroupAttrType = map[string]attr.Type{
 	},
 }
 
+// GroupLabModel is the Terraform representation of a lab permission entry in a group.
 type GroupLabModel struct {
 	ID         types.String `tfsdk:"id"`
 	Permission types.String `tfsdk:"permission"`
 }
 
+// GroupModel is the Terraform representation of a CML group.
 type GroupModel struct {
 	ID          types.String `tfsdk:"id"`
 	Description types.String `tfsdk:"description"`
@@ -48,36 +54,59 @@ type GroupModel struct {
 	Labs        types.Set    `tfsdk:"labs"`
 }
 
-func newLabs(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) types.Set {
-	if len(group.Labs) == 0 {
-		return types.SetNull(types.ObjectType{AttrTypes: GroupLabAttrType})
-	}
-	valueSet := make([]attr.Value, 0)
-	for _, lab := range group.Labs {
-		var value attr.Value
-		newLab := GroupLabModel{
-			ID:         types.StringValue(lab.ID),
-			Permission: types.StringValue(lab.Permission),
+func tfGroupPermissionFromAssociation(perms models.Permissions) string {
+	for _, p := range perms {
+		s := string(p)
+		if s == string(models.PermissionAdmin) || s == string(models.PermissionEdit) || s == string(models.PermissionExec) {
+			return "read_write"
 		}
-		diags.Append(tfsdk.ValueFrom(
-			ctx,
-			newLab,
-			types.ObjectType{AttrTypes: GroupLabAttrType},
-			&value,
-		)...)
-		valueSet = append(valueSet, value)
 	}
-	newSet, dia := types.SetValue(types.ObjectType{AttrTypes: GroupLabAttrType}, valueSet)
-	diags.Append(dia...)
-	return newSet
+	return "read_only"
 }
 
-func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnostics) attr.Value {
+// AssociationPermissionsFromTFGroupPermission maps Terraform permission strings to CML permissions.
+func AssociationPermissionsFromTFGroupPermission(p string) models.Permissions {
+	switch strings.TrimSpace(strings.ToLower(p)) {
+	case "read_write":
+		return models.Permissions{models.PermissionView, models.PermissionEdit, models.PermissionExec}
+	case "read_only":
+		fallthrough
+	default:
+		return models.Permissions{models.PermissionView}
+	}
+}
+
+func newLabs(ctx context.Context, group *models.Group, diags *diag.Diagnostics) types.Set {
+	if group == nil {
+		return types.SetNull(types.ObjectType{AttrTypes: GroupLabAttrType})
+	}
+	if len(group.Associations) == 0 {
+		return types.SetValueMust(types.ObjectType{AttrTypes: GroupLabAttrType}, []attr.Value{})
+	}
+
+	vals := make([]attr.Value, 0, len(group.Associations))
+	for _, assoc := range group.Associations {
+		m := GroupLabModel{
+			ID:         types.StringValue(string(assoc.ID)),
+			Permission: types.StringValue(tfGroupPermissionFromAssociation(assoc.Permissions)),
+		}
+		var v attr.Value
+		diags.Append(tfsdk.ValueFrom(ctx, m, types.ObjectType{AttrTypes: GroupLabAttrType}, &v)...)
+		vals = append(vals, v)
+	}
+
+	set, d := types.SetValue(types.ObjectType{AttrTypes: GroupLabAttrType}, vals)
+	diags.Append(d...)
+	return set
+}
+
+// NewGroup converts a CML group into a Terraform value.
+func NewGroup(ctx context.Context, group *models.Group, diags *diag.Diagnostics) attr.Value {
 	newGroup := GroupModel{
-		ID:          types.StringValue(group.ID),
+		ID:          types.StringValue(string(group.ID)),
 		Description: types.StringValue(group.Description),
 		Name:        types.StringValue(group.Name),
-		Members:     newStringSet(ctx, group.Members, diags),
+		Members:     newUUIDSet(ctx, group.Members, diags),
 		Labs:        newLabs(ctx, group, diags),
 	}
 
@@ -93,6 +122,7 @@ func NewGroup(ctx context.Context, group *cmlclient.Group, diags *diag.Diagnosti
 	return value
 }
 
+// Group returns the schema for the group resource.
 func Group() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{

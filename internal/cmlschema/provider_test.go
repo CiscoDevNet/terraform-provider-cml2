@@ -4,11 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	tfschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 )
 
 func TestProviderAttrs(t *testing.T) {
@@ -18,7 +19,7 @@ func TestProviderAttrs(t *testing.T) {
 
 	got, diag := schema.TypeAtPath(context.TODO(), path.Root("address"))
 	assert.Equal(t, types.StringType, got)
-	assert.Equal(t, 9, len(schema.Attributes))
+	assert.Equal(t, 11, len(schema.Attributes))
 	assert.False(t, diag.HasError())
 	t.Log(diag.Errors())
 }

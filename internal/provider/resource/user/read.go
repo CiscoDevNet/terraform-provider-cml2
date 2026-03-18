@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
 func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -21,7 +23,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	user, err := r.cfg.Client().UserGet(ctx, data.ID.ValueString())
+	user, err := r.cfg.Client().User.GetByID(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -32,7 +34,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	// need to preserve "write once" values
 	user.Password = data.Password.ValueString()
-	value := cmlschema.NewUser(ctx, user, &resp.Diagnostics)
+	value := cmlschema.NewUser(ctx, &user, &resp.Diagnostics)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)

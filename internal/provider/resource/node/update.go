@@ -4,16 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
-	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
+
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
+	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
-func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+// Update updates an existing node in a CML lab.
+func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
 		stateData, planData cmlschema.NodeModel
 		err                 error
@@ -31,10 +33,10 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	node := &cmlclient.Node{
-		ID:             planData.ID.ValueString(),
-		LabID:          planData.LabID.ValueString(),
-		State:          planData.State.ValueString(),
+	node := &models.Node{
+		ID:             models.UUID(planData.ID.ValueString()),
+		LabID:          models.UUID(planData.LabID.ValueString()),
+		State:          models.NodeState(planData.State.ValueString()),
 		NodeDefinition: planData.NodeDefinition.ValueString(),
 	}
 
@@ -45,51 +47,79 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		node.Y = int(planData.Y.ValueInt64())
 	}
 	if !planData.HideLinks.IsNull() {
-		node.HideLinks = bool(planData.HideLinks.ValueBool())
+		v := planData.HideLinks.ValueBool()
+		node.HideLinks = &v
+	}
+	if !planData.Priority.IsUnknown() && !planData.Priority.IsNull() {
+		v := int(planData.Priority.ValueInt64())
+		node.Priority = &v
 	}
 	if !planData.Label.IsNull() {
 		node.Label = planData.Label.ValueString()
 	}
-	if !planData.Tags.IsNull() {
+	if !planData.Tags.IsNull() && !planData.Tags.IsUnknown() {
 		var tag types.String
 		tags := []string{}
 		for _, elem := range planData.Tags.Elements() {
-			tfsdk.ValueAs(ctx, elem, &tag)
+			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &tag)...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 			tags = append(tags, tag.ValueString())
 		}
 		node.Tags = tags
 	}
 
 	// these can only be changed when the node is DEFINED_ON_CORE
-	if stateData.State.ValueString() == cmlclient.NodeStateDefined {
-		if !planData.Configuration.IsUnknown() {
-			value := planData.Configuration.ValueString()
-			node.Configuration = &value
+	if stateData.State.ValueString() == string(models.NodeStateDefined) {
+		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
+			cfgVal := planData.Configuration.ValueString()
+			if node.NodeDefinition == "external_connector" {
+				normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, cfgVal)
+				if nerr != nil {
+					resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
+					return
+				}
+				if changed {
+					resp.Diagnostics.AddWarning("External connector configuration normalized", warn)
+					cfgVal = normalized
+				}
+			}
+			node.Configuration = cfgVal
 		}
-		node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
-		if !planData.RAM.IsUnknown() {
-			node.RAM = int(planData.RAM.ValueInt64())
+		if !planData.Configurations.IsUnknown() && !planData.Configurations.IsNull() {
+			node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
 		}
-		if !planData.CPUs.IsUnknown() {
+		if !planData.RAM.IsUnknown() && !planData.RAM.IsNull() {
+			v := int(planData.RAM.ValueInt64())
+			node.RAM = &v
+		}
+		if !planData.CPUs.IsUnknown() && !planData.CPUs.IsNull() {
 			node.CPUs = int(planData.CPUs.ValueInt64())
 		}
-		if !planData.CPUlimit.IsUnknown() {
-			node.CPUlimit = int(planData.CPUlimit.ValueInt64())
+		if !planData.CPUlimit.IsUnknown() && !planData.CPUlimit.IsNull() {
+			v := int(planData.CPUlimit.ValueInt64())
+			node.CPUlimit = &v
 		}
-		if !planData.BootDiskSize.IsUnknown() {
-			node.BootDiskSize = int(planData.BootDiskSize.ValueInt64())
+		if !planData.BootDiskSize.IsUnknown() && !planData.BootDiskSize.IsNull() {
+			v := int(planData.BootDiskSize.ValueInt64())
+			node.BootDiskSize = &v
 		}
-		if !planData.DataVolume.IsUnknown() {
-			node.DataVolume = int(planData.DataVolume.ValueInt64())
+		if !planData.DataVolume.IsUnknown() && !planData.DataVolume.IsNull() {
+			v := int(planData.DataVolume.ValueInt64())
+			node.DataVolume = &v
 		}
-		if !planData.ImageDefinition.IsUnknown() {
-			node.ImageDefinition = planData.ImageDefinition.ValueString()
+		if !planData.ImageDefinition.IsUnknown() && !planData.ImageDefinition.IsNull() {
+			v := planData.ImageDefinition.ValueString()
+			if v != "" {
+				node.ImageDefinition = &v
+			}
 		}
 	}
 
 	// TODO: groups are missing!
 
-	newNode, err := r.cfg.Client().NodeUpdate(ctx, node)
+	newNode, err := r.cfg.Client().Node.Update(ctx, *node)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
@@ -98,45 +128,40 @@ func (r NodeResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	// Work around the fact that updating an external connector can "resolve" the
-	// device name (if given, worked in previous versions" with the label... e.g.
-	// virbr0 -> NAT, bridge0 -> System Bridge. We want to keep the original
-	// value in this case, otherwise we run into inconsistent state!
-	if node.NodeDefinition == "external_connector" {
-		// working with single string configuration or named configurations?
-		if len(*newNode.Configuration) > 0 {
-			nnc := cmlschema.NewConfigValue(*newNode.Configuration)
-			if !planData.Configuration.Equal(nnc) {
-				resp.Diagnostics.AddError(
-					"External connector configuration (single)",
-					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
-				)
-				return
-			}
-		} else {
-			nnc := cmlschema.NewNamedConfigs(ctx, newNode, &resp.Diagnostics)
-			if !planData.Configurations.Equal(nnc) {
-				resp.Diagnostics.AddError(
-					"External connector configurations (named)",
-					fmt.Sprintf("Provide proper external connector configuration, not a device name (deprecated). Was: %q, is: %q", *node.Configuration, *newNode.Configuration),
-				)
-				return
-			}
+	// When named configs are disabled provider-side, normalize any server-returned
+	// named configs back into the single configuration field to avoid state drift.
+	if !r.cfg.UseNamedConfigs() && len(newNode.Configurations) > 0 {
+		newNode.Configuration = newNode.Configurations[0].Content
+		newNode.Configurations = nil
+	}
+
+	// External connector back-compat: if the user provided a device name (e.g.
+	// "virbr0"), keep the config value in state to match the user's config.
+	// We still sent the normalized label to the API.
+	if node.NodeDefinition == "external_connector" && !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
+		inCfg := planData.Configuration.ValueString()
+		_, changed, _, _ := normalizeExtConnConfig(ctx, r.cfg, inCfg)
+		if changed {
+			newNode.Configuration = inCfg
+			newNode.Configurations = nil
 		}
 	}
+
+	// External connector: device-name inputs (e.g. virbr0) are normalized to
+	// labels (e.g. NAT) during planning for back-compat. Do not hard-fail here.
 
 	// When updating with named configs on, we need to move over the returned
 	// named config into the single configuration if it was previously used.
 	// tflog.Warn(ctx, "###u", map[string]any{"null": stateData.Configuration.IsNull(), "unknown": stateData.Configuration.IsUnknown(), "len": len(node.Configurations)})
 	if !stateData.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
-		newNode.Configuration = &newNode.Configurations[0].Content
+		newNode.Configuration = newNode.Configurations[0].Content
 		newNode.Configurations = nil
 	}
 
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(
 			ctx,
-			cmlschema.NewNode(ctx, newNode, &resp.Diagnostics),
+			cmlschema.NewNode(ctx, &newNode, &resp.Diagnostics),
 			types.ObjectType{AttrTypes: cmlschema.NodeAttrType},
 			&planData,
 		)...,

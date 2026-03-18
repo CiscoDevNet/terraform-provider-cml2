@@ -12,9 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	cmlclient "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
+// UserAttrType is the attribute type map for UserModel.
 var UserAttrType = map[string]attr.Type{
 	"id":            types.StringType,
 	"username":      types.StringType,
@@ -34,6 +35,7 @@ var UserAttrType = map[string]attr.Type{
 	},
 }
 
+// UserModel is the Terraform representation of a CML user.
 type UserModel struct {
 	ID           types.String `tfsdk:"id"`
 	Username     types.String `tfsdk:"username"`
@@ -49,9 +51,10 @@ type UserModel struct {
 	Labs         types.Set    `tfsdk:"labs"`
 }
 
-func NewUser(ctx context.Context, user *cmlclient.User, diags *diag.Diagnostics) attr.Value {
+// NewUser converts a CML user into a Terraform value.
+func NewUser(ctx context.Context, user *models.User, diags *diag.Diagnostics) attr.Value {
 	newUser := UserModel{
-		ID:          types.StringValue(user.ID),
+		ID:          types.StringValue(string(user.ID)),
 		Username:    types.StringValue(user.Username),
 		Password:    types.StringValue(user.Password),
 		Fullname:    types.StringValue(user.Fullname),
@@ -59,14 +62,14 @@ func NewUser(ctx context.Context, user *cmlclient.User, diags *diag.Diagnostics)
 		Description: types.StringValue(user.Description),
 		IsAdmin:     types.BoolValue(user.IsAdmin),
 		DirectoryDN: types.StringValue(user.DirectoryDN),
-		OptIn:       types.BoolValue(user.OptIn),
-		Groups:      newStringSet(ctx, user.Groups, diags),
-		Labs:        newStringSet(ctx, user.Labs, diags),
+		OptIn:       types.BoolValue(user.OptIn != nil && *user.OptIn == models.OptInAccepted),
+		Groups:      newUUIDSet(ctx, user.Groups, diags),
+		Labs:        newUUIDSet(ctx, user.Labs, diags),
 	}
 
 	newUser.ResourcePool = types.StringNull()
 	if user.ResourcePool != nil {
-		newUser.ResourcePool = types.StringValue(*user.ResourcePool)
+		newUser.ResourcePool = types.StringValue(string(*user.ResourcePool))
 	}
 
 	var value attr.Value
@@ -81,6 +84,7 @@ func NewUser(ctx context.Context, user *cmlclient.User, diags *diag.Diagnostics)
 	return value
 }
 
+// User returns the schema for a user resource.
 func User() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{

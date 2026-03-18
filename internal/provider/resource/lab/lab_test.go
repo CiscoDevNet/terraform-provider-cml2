@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
-	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
+	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -26,6 +27,8 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccLabResource(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -44,6 +47,9 @@ func TestAccLabResource(t *testing.T) {
 				ResourceName:      "cml2_lab.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"node_staging",
+				},
 			},
 			// Update and Read testing
 			{
@@ -118,6 +124,9 @@ resource "cml2_lab" "test" {
 	- topic two
 	This is where it's ending... PEBKAC
 	EOT
+	node_staging = {
+		enabled = false
+	}
 	groups = [
 		%[4]s
 	]
