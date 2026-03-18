@@ -8,12 +8,24 @@ on:
     branches: ["main"]
     paths-ignore:
       - "README.md"
+      - "GNUmakefile"
+      - "CHANGELOG.md"
+      - "TODO.md"
+      - "progress.md"
+      - "docs/**"
+      - "examples/**"
       - ".github/workflows/release.yml"
       - ".goreleaser.yml"
   push:
     branches: ["main"]
     paths-ignore:
       - "README.md"
+      - "GNUmakefile"
+      - "CHANGELOG.md"
+      - "TODO.md"
+      - "progress.md"
+      - "docs/**"
+      - "examples/**"
       - ".github/workflows/release.yml"
       - ".goreleaser.yml"
 
@@ -27,36 +39,77 @@ env:
   GOWORK: off
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.filter.outputs.run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            run:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'GNUmakefile'
+              - '.github/workflows/test.yml'
+              - '.github/workflows/lint.yml'
+              - '.github/workflows/codeql-analysis.yml'
+              - 'templates/**'
+              - 'tools/**'
+
   # Ensure project builds before running testing matrix
   build:
     name: Build
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Skip (docs-only)
+        if: needs.changes.outputs.run != 'true'
+        run: echo "docs-only change; skipping build"
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.run == 'true'
         with:
           go-version-file: go.mod
           cache: true
-      - run: go mod download
-      - run: go build -v .
+      - if: needs.changes.outputs.run == 'true'
+        run: go mod download
+      - if: needs.changes.outputs.run == 'true'
+        run: go build -v .
 
   tidy:
     name: go mod tidy
+    needs: changes
     runs-on: ubuntu-latest
     steps:
+      - name: Skip (docs-only)
+        if: needs.changes.outputs.run != 'true'
+        run: echo "docs-only change; skipping tidy checks"
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.run == 'true'
         with:
           go-version-file: go.mod
           cache: true
-      - run: go mod tidy
+      - if: needs.changes.outputs.run == 'true'
+        run: go mod tidy
       - name: git diff
+        if: needs.changes.outputs.run == 'true'
         run: |
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference after 'go mod tidy'. Run 'go mod tidy' and commit."; exit 1)
 
       - name: Ensure gocmlclient is published
+        if: needs.changes.outputs.run == 'true'
         run: |
           set -euo pipefail
           if rg -n 'github.com/rschmied/gocmlclient/pkg/(client|models|errors)' go.mod >/dev/null; then
@@ -68,6 +121,7 @@ jobs:
           fi
 
       - name: Block local-only replaces
+        if: needs.changes.outputs.run == 'true'
         run: |
           if grep -nE '^replace\s+github.com/rschmied/gocmlclient\s+=>\s+\.{0,2}/' go.mod >/dev/null; then
             echo "ERROR: go.mod contains a local path replace for gocmlclient."
@@ -76,6 +130,7 @@ jobs:
           fi
 
       - name: Ensure no go.work committed
+        if: needs.changes.outputs.run == 'true'
         run: |
           if test -f go.work; then
             echo "ERROR: go.work exists in the repository checkout.";
@@ -85,16 +140,26 @@ jobs:
 
   generate:
     # go generate needs Terraform in the path, use latest version
+    needs: changes
     runs-on: ubuntu-latest
     steps:
+      - name: Skip (docs-only)
+        if: needs.changes.outputs.run != 'true'
+        run: echo "docs-only change; skipping go generate"
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.run == 'true'
         with:
           go-version-file: go.mod
           cache: true
       - uses: hashicorp/setup-terraform@v3
-      - run: go generate ./...
+        if: needs.changes.outputs.run == 'true'
+      - if: needs.changes.outputs.run == 'true'
+        run: go generate ./...
       - name: git diff
+        if: needs.changes.outputs.run == 'true'
         run: |
           git diff --compact-summary --exit-code || \
             (echo; echo "Unexpected difference in directories after code generation. Run 'go generate ./...' command and commit."; exit 1)
@@ -102,7 +167,7 @@ jobs:
   # Run acceptance tests in a matrix with Terraform CLI versions
   test:
     name: Terraform Provider Acceptance Tests
-    needs: build
+    needs: [changes, build]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -124,13 +189,21 @@ jobs:
           - "1.14.7"
 
     steps:
+      - name: Skip (docs-only)
+        if: needs.changes.outputs.run != 'true'
+        run: echo "docs-only change; skipping acceptance tests"
+
       - uses: actions/checkout@v6
+        if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.run == 'true'
         with:
           go-version-file: go.mod
           cache: true
-      - run: go mod download
+      - if: needs.changes.outputs.run == 'true'
+        run: go mod download
       - uses: hashicorp/setup-terraform@v3
+        if: needs.changes.outputs.run == 'true'
         with:
           terraform_version: ${{ matrix.terraform }}
           terraform_wrapper: false
@@ -140,6 +213,7 @@ jobs:
           # to secrets when used with the tunnel.sh script.
           # TF_ACC: "0"
           NGROK_URL: ${{ secrets.NGROK_URL }}
+        if: needs.changes.outputs.run == 'true'
         run: |
           echo "setting env vars"
           echo "TF_VAR_address=https://localhost" >>$GITHUB_ENV
@@ -153,13 +227,16 @@ jobs:
           TF_VAR_password: ${{ secrets.PASSWORD }}
           TF_VAR_token: ${{ secrets.TOKEN }}
           TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
+        if: needs.changes.outputs.run == 'true'
         run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile -coverpkg=./internal/... ./internal/...
         timeout-minutes: 60
 
       - name: Install goveralls
+        if: needs.changes.outputs.run == 'true'
         run: go install github.com/mattn/goveralls@latest
 
       - name: Send coverage
+        if: needs.changes.outputs.run == 'true'
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
