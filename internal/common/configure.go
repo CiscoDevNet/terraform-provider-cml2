@@ -183,7 +183,7 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 
 	// Auth
 	if len(r.data.Token.ValueString()) > 0 {
-		opts = append(opts, cmlclient.WithToken(r.data.Token.ValueString()))
+		opts = append(opts, cmlclient.WithStaticToken(r.data.Token.ValueString()))
 	}
 	if len(r.data.Username.ValueString()) > 0 {
 		opts = append(opts, cmlclient.WithUsernamePassword(
