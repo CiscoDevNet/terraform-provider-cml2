@@ -328,57 +328,7 @@ resource "cml2_annotation" "a" {
 		border_color = "#808080FF"%[6]s
 	}
 }
-`, cfgStr, x1, y1, x2, y2, marker)
-}
-
-func testAccAnnotationLineNoMarkers(cfgStr string) string {
-	return fmt.Sprintf(`
-%[1]s
-
-resource "cml2_lab" "l" {
-	title = "acc annotation line no markers"
-}
-
-resource "cml2_annotation" "a" {
-	lab_id = cml2_lab.l.id
-	type   = "line"
-
-	line = {
-		x1 = 10
-		y1 = 20
-		x2 = 35
-		y2 = 45
-		border_color = "#808080FF"
-	}
-}
-`, cfgStr)
-}
-
-func testAccAnnotationLineOneMarker(cfgStr string, setStart bool) string {
-	marker := "\n\t\tline_end   = \"circle\""
-	if setStart {
-		marker = "\n\t\tline_start = \"square\""
-	}
-	return fmt.Sprintf(`
-%[1]s
-
-resource "cml2_lab" "l" {
-	title = "acc annotation line one marker"
-}
-
-resource "cml2_annotation" "a" {
-	lab_id = cml2_lab.l.id
-	type   = "line"
-
-	line = {
-		x1 = 10
-		y1 = 20
-		x2 = 35
-		y2 = 45
-		border_color = "#808080FF"%[2]s
-	}
-}
-`, cfgStr, marker)
+	`, cfgStr, x1, y1, x2, y2, marker)
 }
 
 func testAccAnnotationLineNullMarkers(cfgStr string) string {
@@ -436,6 +386,7 @@ resource "cml2_annotation" "a" {
 }
 `, cfgStr, start, end)
 }
+
 func testAccAnnotationLineInvalidMarker(cfgStr string) string {
 	return fmt.Sprintf(`
 %[1]s
