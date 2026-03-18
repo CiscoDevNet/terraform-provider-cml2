@@ -40,8 +40,10 @@ func TestSystemDataSource(t *testing.T) {
 				ExpectError: re1,
 			},
 			{
-				Config:      testSystemDataSourceConfig(cfg.CfgBroken, 0),
-				ExpectError: re1,
+				Config: testSystemDataSourceConfig(cfg.CfgBroken, 0),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckOutput("bla", "false"),
+				),
 			},
 			{
 				Config: testSystemDataSourceConfig(cfg.Cfg, 0),
