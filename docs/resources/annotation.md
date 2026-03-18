@@ -18,13 +18,20 @@ A classic annotation in a CML lab (currently: text annotations).
 ### Required
 
 - `lab_id` (String) Lab ID.
-- `type` (String) Annotation type. Supported: text, rectangle, ellipse, line.
+- `type` (String) Annotation type. Supported: `text`, `rectangle`, `ellipse`, `line`.
+
+Coordinate semantics differ by type:
+
+- `rectangle`/`ellipse`: `x1`/`y1` define the origin, `x2`/`y2` define width/height.
+- `line`: `x1`/`y1` and `x2`/`y2` are two endpoints.
+
+Colors are CSS-style hex strings, typically `#RRGGBB` or `#RRGGBBAA` (alpha).
 
 ### Optional
 
-- `ellipse` (Attributes) Ellipse annotation attributes (required when type = "ellipse"). (see [below for nested schema](#nestedatt--ellipse))
-- `line` (Attributes) Line annotation attributes (required when type = "line"). (see [below for nested schema](#nestedatt--line))
-- `rectangle` (Attributes) Rectangle annotation attributes (required when type = "rectangle"). (see [below for nested schema](#nestedatt--rectangle))
+- `ellipse` (Attributes) Ellipse annotation attributes (required when type = "ellipse"). Note: x2/y2 are width/height (not a second point). (see [below for nested schema](#nestedatt--ellipse))
+- `line` (Attributes) Line annotation attributes (required when type = "line"). Note: x1/y1 and x2/y2 are two endpoints. (see [below for nested schema](#nestedatt--line))
+- `rectangle` (Attributes) Rectangle annotation attributes (required when type = "rectangle"). Note: x2/y2 are width/height (not a second point). (see [below for nested schema](#nestedatt--rectangle))
 - `text` (Attributes) Text annotation attributes (required when type = "text"). (see [below for nested schema](#nestedatt--text))
 
 ### Read-Only
@@ -36,15 +43,17 @@ A classic annotation in a CML lab (currently: text annotations).
 
 Required:
 
-- `x1` (Number)
-- `x2` (Number)
-- `y1` (Number)
-- `y2` (Number)
+- `x1` (Number) Ellipse origin X in canvas coordinates.
+- `x2` (Number) Ellipse width (not an X coordinate of a second point).
+- `y1` (Number) Ellipse origin Y in canvas coordinates.
+- `y2` (Number) Ellipse height (not a Y coordinate of a second point).
 
 Optional:
 
-- `border_color` (String)
-- `color` (String)
+- `border_color` (String) Border color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `border_style` (String) Border style as dash pattern. Solid: `""`. Allowed values observed: `""`, `"2,2"`, `"4,2"`.
+- `color` (String) Fill color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `rotation` (Number) Ellipse rotation in degrees.
 - `thickness` (Number)
 - `z_index` (Number)
 
@@ -54,16 +63,18 @@ Optional:
 
 Required:
 
-- `x1` (Number)
-- `x2` (Number)
-- `y1` (Number)
-- `y2` (Number)
+- `x1` (Number) Line start point X in canvas coordinates.
+- `x2` (Number) Line end point X in canvas coordinates.
+- `y1` (Number) Line start point Y in canvas coordinates.
+- `y2` (Number) Line end point Y in canvas coordinates.
 
 Optional:
 
-- `color` (String)
-- `line_end` (String)
-- `line_start` (String)
+- `border_color` (String) Border color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `border_style` (String) Border style as dash pattern. Solid: `""`. Allowed values observed: `""`, `"2,2"`, `"4,2"`.
+- `color` (String) Line color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `line_end` (String) Marker/style at the end point (x2,y2). Allowed: `arrow`, `square`, `circle`, or `null`.
+- `line_start` (String) Marker/style at the start point (x1,y1). Allowed: `arrow`, `square`, `circle`, or `null`.
 - `thickness` (Number)
 - `z_index` (Number)
 
@@ -73,15 +84,18 @@ Optional:
 
 Required:
 
-- `x1` (Number)
-- `x2` (Number)
-- `y1` (Number)
-- `y2` (Number)
+- `x1` (Number) Rectangle origin X in canvas coordinates.
+- `x2` (Number) Rectangle width (not an X coordinate of a second point).
+- `y1` (Number) Rectangle origin Y in canvas coordinates.
+- `y2` (Number) Rectangle height (not a Y coordinate of a second point).
 
 Optional:
 
-- `border_color` (String)
-- `color` (String)
+- `border_color` (String) Border color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `border_radius` (Number) Border radius.
+- `border_style` (String) Border style as dash pattern. Solid: `""`. Allowed values observed: `""`, `"2,2"`, `"4,2"`.
+- `color` (String) Fill color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `rotation` (Number) Rectangle rotation in degrees.
 - `thickness` (Number)
 - `z_index` (Number)
 
@@ -92,12 +106,19 @@ Optional:
 Required:
 
 - `text_content` (String)
-- `x1` (Number)
-- `y1` (Number)
+- `x1` (Number) Text anchor X in canvas coordinates.
+- `y1` (Number) Text anchor Y in canvas coordinates.
 
 Optional:
 
-- `border_color` (String)
-- `color` (String)
+- `border_color` (String) Border color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `border_style` (String) Border style as dash pattern. Solid: `""`. Allowed values observed: `""`, `"2,2"`, `"4,2"`.
+- `color` (String) Text color as CSS hex, e.g. `#RRGGBB` or `#RRGGBBAA`.
+- `rotation` (Number) Text rotation in degrees.
+- `text_bold` (Boolean) Whether text is bold.
+- `text_font` (String) Font family name.
+- `text_italic` (Boolean) Whether text is italic.
+- `text_size` (Number) Text size.
+- `text_unit` (String) Text size unit (e.g. `px`, `pt`).
 - `thickness` (Number)
 - `z_index` (Number)

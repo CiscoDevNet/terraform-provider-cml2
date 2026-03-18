@@ -18,6 +18,13 @@ func clampThickness(v float64) float64 {
 	return v
 }
 
+func strOrDefault(v string, def string) string {
+	if len(v) == 0 {
+		return def
+	}
+	return v
+}
+
 func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, diags *diag.Diagnostics) (models.AnnotationCreate, error) {
 	typeStr := data.Type.ValueString()
 	switch typeStr {
@@ -38,6 +45,10 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !text.Color.IsNull() {
 			color = text.Color.ValueString()
 		}
+		borderStyle := models.BorderStyle("")
+		if !text.BorderStyle.IsNull() {
+			borderStyle = models.BorderStyle(text.BorderStyle.ValueString())
+		}
 		thickness := 1.0
 		if !text.Thickness.IsNull() {
 			thickness = clampThickness(text.Thickness.ValueFloat64())
@@ -46,24 +57,48 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !text.ZIndex.IsNull() {
 			z = text.ZIndex.ValueFloat64()
 		}
+		rot := 0.0
+		if !text.Rotation.IsNull() {
+			rot = text.Rotation.ValueFloat64()
+		}
+		textBold := false
+		if !text.TextBold.IsNull() {
+			textBold = text.TextBold.ValueBool()
+		}
+		textFont := "sans"
+		if !text.TextFont.IsNull() {
+			textFont = strOrDefault(text.TextFont.ValueString(), "sans")
+		}
+		textItalic := false
+		if !text.TextItalic.IsNull() {
+			textItalic = text.TextItalic.ValueBool()
+		}
+		textSize := 12.0
+		if !text.TextSize.IsNull() {
+			textSize = text.TextSize.ValueFloat64()
+		}
+		textUnit := "px"
+		if !text.TextUnit.IsNull() {
+			textUnit = strOrDefault(text.TextUnit.ValueString(), "px")
+		}
 		return models.AnnotationCreate{
 			Type: models.AnnotationTypeText,
 			Text: &models.TextAnnotation{
 				Type:        models.AnnotationTypeText,
-				Rotation:    0,
+				Rotation:    rot,
 				BorderColor: borderColor,
-				BorderStyle: "",
+				BorderStyle: borderStyle,
 				Color:       color,
 				Thickness:   thickness,
 				X1:          text.X1.ValueFloat64(),
 				Y1:          text.Y1.ValueFloat64(),
 				ZIndex:      z,
-				TextBold:    false,
+				TextBold:    textBold,
 				TextContent: text.TextContent.ValueString(),
-				TextFont:    "sans",
-				TextItalic:  false,
-				TextSize:    12,
-				TextUnit:    "px",
+				TextFont:    textFont,
+				TextItalic:  textItalic,
+				TextSize:    textSize,
+				TextUnit:    textUnit,
 			},
 		}, nil
 	case string(models.AnnotationTypeRectangle):
@@ -83,6 +118,10 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !rec.Color.IsNull() {
 			color = rec.Color.ValueString()
 		}
+		borderStyle := models.BorderStyle("")
+		if !rec.BorderStyle.IsNull() {
+			borderStyle = models.BorderStyle(rec.BorderStyle.ValueString())
+		}
 		thickness := 1.0
 		if !rec.Thickness.IsNull() {
 			thickness = clampThickness(rec.Thickness.ValueFloat64())
@@ -91,13 +130,21 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !rec.ZIndex.IsNull() {
 			z = rec.ZIndex.ValueFloat64()
 		}
+		rot := 0.0
+		if !rec.Rotation.IsNull() {
+			rot = rec.Rotation.ValueFloat64()
+		}
+		borderRadius := 0.0
+		if !rec.BorderRadius.IsNull() {
+			borderRadius = rec.BorderRadius.ValueFloat64()
+		}
 		return models.AnnotationCreate{
 			Type: models.AnnotationTypeRectangle,
 			Rectangle: &models.RectangleAnnotation{
 				Type:         models.AnnotationTypeRectangle,
-				Rotation:     0,
+				Rotation:     rot,
 				BorderColor:  borderColor,
-				BorderStyle:  "",
+				BorderStyle:  borderStyle,
 				Color:        color,
 				Thickness:    thickness,
 				X1:           rec.X1.ValueFloat64(),
@@ -105,7 +152,7 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 				X2:           rec.X2.ValueFloat64(),
 				Y2:           rec.Y2.ValueFloat64(),
 				ZIndex:       z,
-				BorderRadius: 0,
+				BorderRadius: borderRadius,
 			},
 		}, nil
 	case string(models.AnnotationTypeEllipse):
@@ -125,6 +172,10 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !el.Color.IsNull() {
 			color = el.Color.ValueString()
 		}
+		borderStyle := models.BorderStyle("")
+		if !el.BorderStyle.IsNull() {
+			borderStyle = models.BorderStyle(el.BorderStyle.ValueString())
+		}
 		thickness := 1.0
 		if !el.Thickness.IsNull() {
 			thickness = clampThickness(el.Thickness.ValueFloat64())
@@ -133,13 +184,17 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !el.ZIndex.IsNull() {
 			z = el.ZIndex.ValueFloat64()
 		}
+		rot := 0.0
+		if !el.Rotation.IsNull() {
+			rot = el.Rotation.ValueFloat64()
+		}
 		return models.AnnotationCreate{
 			Type: models.AnnotationTypeEllipse,
 			Ellipse: &models.EllipseAnnotation{
 				Type:        models.AnnotationTypeEllipse,
-				Rotation:    0,
+				Rotation:    rot,
 				BorderColor: borderColor,
-				BorderStyle: "",
+				BorderStyle: borderStyle,
 				Color:       color,
 				Thickness:   thickness,
 				X1:          el.X1.ValueFloat64(),
@@ -158,6 +213,14 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if diags.HasError() {
 			return models.AnnotationCreate{}, fmt.Errorf("invalid line block")
 		}
+		borderColor := "#000000"
+		if !ln.BorderColor.IsNull() {
+			borderColor = ln.BorderColor.ValueString()
+		}
+		borderStyle := models.BorderStyle("")
+		if !ln.BorderStyle.IsNull() {
+			borderStyle = models.BorderStyle(ln.BorderStyle.ValueString())
+		}
 		color := "#ffffff"
 		if !ln.Color.IsNull() {
 			color = ln.Color.ValueString()
@@ -170,18 +233,22 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 		if !ln.ZIndex.IsNull() {
 			z = ln.ZIndex.ValueFloat64()
 		}
-		if ln.LineStart.IsNull() || ln.LineEnd.IsNull() {
-			return models.AnnotationCreate{}, fmt.Errorf("line_start and line_end must be set when type=\"line\" (allowed: arrow, square, circle)")
+		var start *models.LineStyle
+		if !ln.LineStart.IsNull() && !ln.LineStart.IsUnknown() {
+			v := models.LineStyle(ln.LineStart.ValueString())
+			start = &v
 		}
-		start := models.LineStyle(ln.LineStart.ValueString())
-		end := models.LineStyle(ln.LineEnd.ValueString())
-		borderColor := "#000000"
+		var end *models.LineStyle
+		if !ln.LineEnd.IsNull() && !ln.LineEnd.IsUnknown() {
+			v := models.LineStyle(ln.LineEnd.ValueString())
+			end = &v
+		}
 		return models.AnnotationCreate{
 			Type: models.AnnotationTypeLine,
 			Line: &models.LineAnnotation{
 				Type:        models.AnnotationTypeLine,
 				BorderColor: borderColor,
-				BorderStyle: "",
+				BorderStyle: borderStyle,
 				Color:       color,
 				Thickness:   thickness,
 				X1:          ln.X1.ValueFloat64(),
@@ -189,8 +256,8 @@ func buildAnnotationCreate(ctx context.Context, data cmlschema.AnnotationModel, 
 				X2:          ln.X2.ValueFloat64(),
 				Y2:          ln.Y2.ValueFloat64(),
 				ZIndex:      z,
-				LineStart:   &start,
-				LineEnd:     &end,
+				LineStart:   start,
+				LineEnd:     end,
 			},
 		}, nil
 	default:
@@ -213,7 +280,18 @@ func buildAnnotationUpdate(ctx context.Context, data cmlschema.AnnotationModel, 
 		content := text.TextContent.ValueString()
 		x1 := text.X1.ValueFloat64()
 		y1 := text.Y1.ValueFloat64()
-		upd := models.AnnotationUpdate{Type: models.AnnotationTypeText, Text: &models.TextAnnotationPartial{Type: models.AnnotationTypeText, TextContent: &content, X1: &x1, Y1: &y1}}
+		rot := text.Rotation.ValueFloat64()
+		color := text.Color.ValueString()
+		borderColor := text.BorderColor.ValueString()
+		borderStyle := models.BorderStyle(text.BorderStyle.ValueString())
+		thickness := clampThickness(text.Thickness.ValueFloat64())
+		z := text.ZIndex.ValueFloat64()
+		textBold := text.TextBold.ValueBool()
+		textFont := text.TextFont.ValueString()
+		textItalic := text.TextItalic.ValueBool()
+		textSize := text.TextSize.ValueFloat64()
+		textUnit := text.TextUnit.ValueString()
+		upd := models.AnnotationUpdate{Type: models.AnnotationTypeText, Text: &models.TextAnnotationPartial{Type: models.AnnotationTypeText, TextContent: &content, X1: &x1, Y1: &y1, Rotation: &rot, Color: &color, BorderColor: &borderColor, BorderStyle: &borderStyle, Thickness: &thickness, ZIndex: &z, TextBold: &textBold, TextFont: &textFont, TextItalic: &textItalic, TextSize: &textSize, TextUnit: &textUnit}}
 		return upd, nil
 	case string(models.AnnotationTypeRectangle):
 		if data.Rectangle.IsNull() {
@@ -228,7 +306,14 @@ func buildAnnotationUpdate(ctx context.Context, data cmlschema.AnnotationModel, 
 		y1 := rec.Y1.ValueFloat64()
 		x2 := rec.X2.ValueFloat64()
 		y2 := rec.Y2.ValueFloat64()
-		upd := models.AnnotationUpdate{Type: models.AnnotationTypeRectangle, Rectangle: &models.RectangleAnnotationPartial{Type: models.AnnotationTypeRectangle, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2}}
+		rot := rec.Rotation.ValueFloat64()
+		color := rec.Color.ValueString()
+		borderColor := rec.BorderColor.ValueString()
+		borderStyle := models.BorderStyle(rec.BorderStyle.ValueString())
+		thickness := clampThickness(rec.Thickness.ValueFloat64())
+		z := rec.ZIndex.ValueFloat64()
+		borderRadius := rec.BorderRadius.ValueFloat64()
+		upd := models.AnnotationUpdate{Type: models.AnnotationTypeRectangle, Rectangle: &models.RectangleAnnotationPartial{Type: models.AnnotationTypeRectangle, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2, Rotation: &rot, Color: &color, BorderColor: &borderColor, BorderStyle: &borderStyle, Thickness: &thickness, ZIndex: &z, BorderRadius: &borderRadius}}
 		return upd, nil
 	case string(models.AnnotationTypeEllipse):
 		if data.Ellipse.IsNull() {
@@ -243,7 +328,13 @@ func buildAnnotationUpdate(ctx context.Context, data cmlschema.AnnotationModel, 
 		y1 := el.Y1.ValueFloat64()
 		x2 := el.X2.ValueFloat64()
 		y2 := el.Y2.ValueFloat64()
-		upd := models.AnnotationUpdate{Type: models.AnnotationTypeEllipse, Ellipse: &models.EllipseAnnotationPartial{Type: models.AnnotationTypeEllipse, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2}}
+		rot := el.Rotation.ValueFloat64()
+		color := el.Color.ValueString()
+		borderColor := el.BorderColor.ValueString()
+		borderStyle := models.BorderStyle(el.BorderStyle.ValueString())
+		thickness := clampThickness(el.Thickness.ValueFloat64())
+		z := el.ZIndex.ValueFloat64()
+		upd := models.AnnotationUpdate{Type: models.AnnotationTypeEllipse, Ellipse: &models.EllipseAnnotationPartial{Type: models.AnnotationTypeEllipse, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2, Rotation: &rot, Color: &color, BorderColor: &borderColor, BorderStyle: &borderStyle, Thickness: &thickness, ZIndex: &z}}
 		return upd, nil
 	case string(models.AnnotationTypeLine):
 		if data.Line.IsNull() {
@@ -258,7 +349,22 @@ func buildAnnotationUpdate(ctx context.Context, data cmlschema.AnnotationModel, 
 		y1 := ln.Y1.ValueFloat64()
 		x2 := ln.X2.ValueFloat64()
 		y2 := ln.Y2.ValueFloat64()
-		upd := models.AnnotationUpdate{Type: models.AnnotationTypeLine, Line: &models.LineAnnotationPartial{Type: models.AnnotationTypeLine, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2}}
+		color := ln.Color.ValueString()
+		borderColor := ln.BorderColor.ValueString()
+		borderStyle := models.BorderStyle(ln.BorderStyle.ValueString())
+		thickness := clampThickness(ln.Thickness.ValueFloat64())
+		z := ln.ZIndex.ValueFloat64()
+		var lineStart *models.LineStyle
+		if !ln.LineStart.IsNull() && !ln.LineStart.IsUnknown() {
+			v := models.LineStyle(ln.LineStart.ValueString())
+			lineStart = &v
+		}
+		var lineEnd *models.LineStyle
+		if !ln.LineEnd.IsNull() && !ln.LineEnd.IsUnknown() {
+			v := models.LineStyle(ln.LineEnd.ValueString())
+			lineEnd = &v
+		}
+		upd := models.AnnotationUpdate{Type: models.AnnotationTypeLine, Line: &models.LineAnnotationPartial{Type: models.AnnotationTypeLine, X1: &x1, Y1: &y1, X2: &x2, Y2: &y2, Color: &color, BorderColor: &borderColor, BorderStyle: &borderStyle, Thickness: &thickness, ZIndex: &z, LineStart: lineStart, LineEnd: lineEnd}}
 		return upd, nil
 	default:
 		return models.AnnotationUpdate{}, fmt.Errorf("unsupported annotation type %q", typeStr)
