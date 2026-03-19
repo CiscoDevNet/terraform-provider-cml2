@@ -19,15 +19,12 @@ func Converter(rSchema map[string]r_schema.Attribute) map[string]ds_schema.Attri
 		// computed := fromAttr.IsComputed()
 		// optional := fromAttr.IsOptional()
 
-		// for a datasource, all attributes are computed and the required attrs
-		// are on the container / outside.
+		// For a datasource, treat all attributes as computed. Some attributes in
+		// nested objects may still be configurable in resources (e.g. sensitive
+		// passwords), but in data sources we only ever read them.
 		required := false
 		computed := true
 		optional := false
-
-		if !required || !computed || !optional {
-			computed = true
-		}
 
 		switch fromAttrType := fromAttr.(type) {
 		case r_schema.StringAttribute:

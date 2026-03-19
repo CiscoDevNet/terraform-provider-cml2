@@ -3,7 +3,7 @@
 # Terraform Provider for Cisco CML2
 
 This repository implements a [Terraform](https://www.terraform.io) provider for
-Cisco Modeling Labs version 2.6 and later. It's current state is "beta". Changes
+Cisco Modeling Labs version 2.9 and later. It's current state is "beta". Changes
 can be expected, for example:
 
 - configuration (provider, resources, data-sources)
@@ -11,13 +11,16 @@ can be expected, for example:
 - features (additional resources, ...)
 
 > [!NOTE]
-> The provider needs CML 2.4 or newer. This is due to some additional API
-> capabilities which were introduced with 2.4.0. Older versions are blocked
-> within by the `gocmlclient`.
+> The provider needs CML 2.9 or newer. This is due to some additional API
+> capabilities which were introduced with 2.9 and due to changes introduced
+> with the new `gocmlclient` >=0.2.0. Older versions are blocked by the
+> `gocmlclient`. If you need support for older versions then it is recommended
+> to use version 0.8.5 or earlier.
 
 The current implementation provides:
 
 - Resources and a data sources (`internal/provider/`),
+  - resource `cml2_annotation` to create, update and destroy lab annotations
   - resource `cml2_lab` to create, update and destroy labs
   - resource `cml2_node` to create, update and destroy nodes in a lab
   - resource `cml2_link` to create, update and destroy links between nodes in a lab
@@ -41,7 +44,7 @@ The current implementation provides:
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.25.x
-- [CML2](https://cisco.com/go/cml) >= 2.6.0
+- [CML2](https://cisco.com/go/cml) >= 2.9.0
 
 ## Building The Provider
 

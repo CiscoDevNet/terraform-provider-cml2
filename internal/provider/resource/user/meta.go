@@ -13,8 +13,9 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
-	_ resource.Resource                = &UserResource{}
-	_ resource.ResourceWithImportState = &UserResource{}
+	_ resource.Resource                   = &UserResource{}
+	_ resource.ResourceWithImportState    = &UserResource{}
+	_ resource.ResourceWithValidateConfig = &UserResource{}
 )
 
 // UserResource implements the cml2_user resource.
@@ -44,6 +45,27 @@ func (r *UserResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 // Metadata sets the resource type name.
 func (r *UserResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_user"
+}
+
+func (r *UserResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var data cmlschema.UserModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.ResourcePool.IsNull() || data.ResourcePool.IsUnknown() {
+		return
+	}
+	if data.ResourcePoolTemplate.IsNull() || data.ResourcePoolTemplate.IsUnknown() {
+		return
+	}
+
+	resp.Diagnostics.AddAttributeError(
+		path.Root("resource_pool_template"),
+		"Conflicting attributes",
+		"Exactly one of resource_pool and resource_pool_template may be set.",
+	)
 }
 
 // ImportState imports a user resource.

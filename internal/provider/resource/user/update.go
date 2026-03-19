@@ -31,6 +31,24 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	if !data.ResourcePoolTemplate.IsUnknown() && !data.ResourcePool.IsUnknown() && !data.ResourcePoolTemplate.IsNull() && !data.ResourcePool.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("resource_pool_template"),
+			"Conflicting attributes",
+			"Exactly one of resource_pool and resource_pool_template may be set.",
+		)
+		return
+	}
+
+	if resourcePoolTemplateChanged(data.ResourcePoolTemplate, state.ResourcePoolTemplate) {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("resource_pool_template"),
+			"resource_pool_template is create-only",
+			"resource_pool_template can only be set at create time. To change it, create a new user resource.",
+		)
+		return
+	}
+
 	user := &models.User{
 		ID: models.UUID(data.ID.ValueString()),
 		UserBase: models.UserBase{
@@ -107,14 +125,23 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// }
 	// need to preserve "write once" values
 	updatedUser.Password = data.Password.ValueString()
+	updatedUserValue := cmlschema.NewUser(ctx, &updatedUser, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Preserve config-only template ID in state.
+	updatedUserModel := cmlschema.UserModel{}
+	resp.Diagnostics.Append(
+		tfsdk.ValueAs(ctx, updatedUserValue, &updatedUserModel)...,
+	)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	updatedUserModel.ResourcePoolTemplate = state.ResourcePoolTemplate
 
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewUser(ctx, &updatedUser, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.UserAttrType},
-			&data,
-		)...,
+		tfsdk.ValueFrom(ctx, updatedUserModel, types.ObjectType{AttrTypes: cmlschema.UserAttrType}, &data)...,
 	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

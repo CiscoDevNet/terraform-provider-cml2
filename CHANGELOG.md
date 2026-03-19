@@ -9,6 +9,8 @@ Lists the changes in the provider.
 - resource `cml2_annotation`: full classic annotation shape support (text/rectangle/ellipse/line)
 - annotation line markers (`line_start`/`line_end`) support explicit `null` to clear line endings (plain line)
 - updated docs and acceptance tests for annotations
+- introduce resource_pool_template attribute for user pool requests (fixes #170)
+- updated to latest dependencies
 
 ## Version 0.8.5
 

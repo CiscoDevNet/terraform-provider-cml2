@@ -30,6 +30,15 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	if !data.ResourcePoolTemplate.IsUnknown() && !data.ResourcePool.IsUnknown() && !data.ResourcePoolTemplate.IsNull() && !data.ResourcePool.IsNull() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("resource_pool_template"),
+			"Conflicting attributes",
+			"Exactly one of resource_pool and resource_pool_template may be set.",
+		)
+		return
+	}
+
 	user := models.User{}
 	user.Username = data.Username.ValueString()
 	user.Password = data.Password.ValueString()
@@ -44,15 +53,30 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	plannedGroups := userGroupIDsFromSet(ctx, &resp.Diagnostics, data.Groups)
 	user.Groups = nil
 
-	if !data.ResourcePool.IsUnknown() && !data.ResourcePool.IsNull() {
+	resourcePoolAttr := path.Root("resource_pool")
+	if !data.ResourcePoolTemplate.IsUnknown() && !data.ResourcePoolTemplate.IsNull() {
+		rptRaw := data.ResourcePoolTemplate.ValueString()
+		rptUUID, parseErr := uuid.Parse(rptRaw)
+		if parseErr != nil {
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool_template"), "Invalid resource_pool_template", fmt.Sprintf("resource_pool_template must be a valid UUID: %s", parseErr))
+			return
+		}
+		if rptUUID.Version() != 4 {
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool_template"), "Invalid resource_pool_template", "resource_pool_template must be a UUIDv4.")
+			return
+		}
+		ptr := models.UUID(rptUUID.String())
+		user.ResourcePool = &ptr
+		resourcePoolAttr = path.Root("resource_pool_template")
+	} else if !data.ResourcePool.IsUnknown() && !data.ResourcePool.IsNull() {
 		rpRaw := data.ResourcePool.ValueString()
 		rpUUID, parseErr := uuid.Parse(rpRaw)
 		if parseErr != nil {
-			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
+			resp.Diagnostics.AddAttributeError(resourcePoolAttr, "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
 			return
 		}
 		if rpUUID.Version() != 4 {
-			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", "resource_pool must be a UUIDv4.")
+			resp.Diagnostics.AddAttributeError(resourcePoolAttr, "Invalid resource_pool", "resource_pool must be a UUIDv4.")
 			return
 		}
 		ptr := models.UUID(rpUUID.String())
@@ -81,14 +105,23 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// need to preserve "write once" values as the read does not return the
 	// set password
 	newUser.Password = data.Password.ValueString()
+	newUserValue := cmlschema.NewUser(ctx, &newUser, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Preserve config-only template ID in state.
+	newUserModel := cmlschema.UserModel{}
+	resp.Diagnostics.Append(
+		tfsdk.ValueAs(ctx, newUserValue, &newUserModel)...,
+	)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	newUserModel.ResourcePoolTemplate = data.ResourcePoolTemplate
 
 	resp.Diagnostics.Append(
-		tfsdk.ValueFrom(
-			ctx,
-			cmlschema.NewUser(ctx, &newUser, &resp.Diagnostics),
-			types.ObjectType{AttrTypes: cmlschema.UserAttrType},
-			&data,
-		)...,
+		tfsdk.ValueFrom(ctx, newUserModel, types.ObjectType{AttrTypes: cmlschema.UserAttrType}, &data)...,
 	)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	tflog.Info(ctx, "Resource User CREATE done")
