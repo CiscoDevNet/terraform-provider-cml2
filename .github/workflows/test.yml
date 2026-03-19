@@ -154,7 +154,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         if: needs.changes.outputs.run == 'true'
       - if: needs.changes.outputs.run == 'true'
         run: go generate ./...
@@ -202,7 +202,7 @@ jobs:
           cache: true
       - if: needs.changes.outputs.run == 'true'
         run: go mod download
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         if: needs.changes.outputs.run == 'true'
         with:
           terraform_version: ${{ matrix.terraform }}
