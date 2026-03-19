@@ -47,6 +47,8 @@ func (r *UserResource) Metadata(ctx context.Context, req resource.MetadataReques
 	resp.TypeName = req.ProviderTypeName + "_user"
 }
 
+// ValidateConfig validates the resource configuration, ensuring that only one
+// resource pool related property is set
 func (r *UserResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var data cmlschema.UserModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)

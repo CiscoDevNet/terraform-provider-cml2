@@ -53,7 +53,6 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	plannedGroups := userGroupIDsFromSet(ctx, &resp.Diagnostics, data.Groups)
 	user.Groups = nil
 
-	resourcePoolAttr := path.Root("resource_pool")
 	if !data.ResourcePoolTemplate.IsUnknown() && !data.ResourcePoolTemplate.IsNull() {
 		rptRaw := data.ResourcePoolTemplate.ValueString()
 		rptUUID, parseErr := uuid.Parse(rptRaw)
@@ -67,16 +66,15 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 		ptr := models.UUID(rptUUID.String())
 		user.ResourcePool = &ptr
-		resourcePoolAttr = path.Root("resource_pool_template")
 	} else if !data.ResourcePool.IsUnknown() && !data.ResourcePool.IsNull() {
 		rpRaw := data.ResourcePool.ValueString()
 		rpUUID, parseErr := uuid.Parse(rpRaw)
 		if parseErr != nil {
-			resp.Diagnostics.AddAttributeError(resourcePoolAttr, "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", fmt.Sprintf("resource_pool must be a valid UUID: %s", parseErr))
 			return
 		}
 		if rpUUID.Version() != 4 {
-			resp.Diagnostics.AddAttributeError(resourcePoolAttr, "Invalid resource_pool", "resource_pool must be a UUIDv4.")
+			resp.Diagnostics.AddAttributeError(path.Root("resource_pool"), "Invalid resource_pool", "resource_pool must be a UUIDv4.")
 			return
 		}
 		ptr := models.UUID(rpUUID.String())
