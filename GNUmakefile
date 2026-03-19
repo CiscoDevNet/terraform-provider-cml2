@@ -70,7 +70,7 @@ test tests:
 # Run acceptance tests
 .PHONY: acc testacc
 acc testacc:
-	TF_ACC=1 $(GO) test $(TEST_PKGS) -v -timeout $(TEST_TIMEOUT) -cover -coverprofile $(COVERPROFILE)
+	TF_ACC=1 $(GO) test $(TEST_PKGS) -v -timeout $(TEST_TIMEOUT) -count 1 -cover -coverprofile $(COVERPROFILE)
 
 .PHONY: generate
 generate:

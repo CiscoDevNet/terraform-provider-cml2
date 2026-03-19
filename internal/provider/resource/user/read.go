@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
@@ -35,9 +36,20 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	// need to preserve "write once" values
 	user.Password = data.Password.ValueString()
 	value := cmlschema.NewUser(ctx, &user, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	newModel := cmlschema.UserModel{}
+	resp.Diagnostics.Append(tfsdk.ValueAs(ctx, value, &newModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Preserve config-only input in state.
+	newModel.ResourcePoolTemplate = data.ResourcePoolTemplate
 
 	// Save data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &value)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &newModel)...)
 
 	tflog.Info(ctx, "Resource User READ: done")
 }

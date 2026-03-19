@@ -3,6 +3,7 @@ package user_test
 import (
 	"fmt"
 	"math/rand"
+	"regexp"
 	"testing"
 	"time"
 
@@ -42,6 +43,11 @@ func TestAccUserResource(t *testing.T) {
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
+			{
+				Config:      testAccUserResourceConfigConflictPoolAndTemplate(cfg.Cfg, suffix),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile("Exactly one of resource_pool and resource_pool_template may be set"),
+			},
 			// Create and Read testing
 			{
 				Config: testAccUserResourceConfig(cfg.Cfg, suffix),
@@ -73,6 +79,21 @@ func TestAccUserResource(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func testAccUserResourceConfigConflictPoolAndTemplate(cfg, suffix string) string {
+	return fmt.Sprintf(`
+%[1]s
+
+resource "cml2_user" "acc_test_conflict" {
+	username               = "acc_test_user_conflict_%[2]s"
+	password               = "süpersücret"
+	description            = "acc test user description"
+	is_admin               = false
+	resource_pool          = "00000000-0000-4000-8000-000000000001"
+	resource_pool_template = "00000000-0000-4000-8000-000000000002"
+}
+`, cfg, suffix)
 }
 
 func testAccUserResourceConfig(cfg, suffix string) string {

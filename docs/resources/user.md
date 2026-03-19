@@ -40,7 +40,8 @@ resource "cml2_user" "student1" {
 - `fullname` (String) Full name of the user.
 - `groups` (Set of String) Set of group IDs where the user is member of.
 - `is_admin` (Boolean) True if the user has admin rights.
-- `resource_pool` (String) Resource pool ID, if any.
+- `resource_pool` (String) Resource pool ID (UUID), if any. If resource_pool_template is set, this is computed to the instantiated pool ID returned by CML.
+- `resource_pool_template` (String) Resource pool template ID (UUID). When set, CML creates a per-user resource pool from the template and the provider sets resource_pool to the instantiated pool ID.
 
 ### Read-Only
 

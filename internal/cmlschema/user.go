@@ -17,16 +17,17 @@ import (
 
 // UserAttrType is the attribute type map for UserModel.
 var UserAttrType = map[string]attr.Type{
-	"id":            types.StringType,
-	"username":      types.StringType,
-	"password":      types.StringType,
-	"fullname":      types.StringType,
-	"email":         types.StringType,
-	"description":   types.StringType,
-	"is_admin":      types.BoolType,
-	"directory_dn":  types.StringType,
-	"opt_in":        types.BoolType,
-	"resource_pool": types.StringType,
+	"id":                     types.StringType,
+	"username":               types.StringType,
+	"password":               types.StringType,
+	"fullname":               types.StringType,
+	"email":                  types.StringType,
+	"description":            types.StringType,
+	"is_admin":               types.BoolType,
+	"directory_dn":           types.StringType,
+	"opt_in":                 types.BoolType,
+	"resource_pool":          types.StringType,
+	"resource_pool_template": types.StringType,
 	"groups": types.SetType{
 		ElemType: types.StringType,
 	},
@@ -37,18 +38,19 @@ var UserAttrType = map[string]attr.Type{
 
 // UserModel is the Terraform representation of a CML user.
 type UserModel struct {
-	ID           types.String `tfsdk:"id"`
-	Username     types.String `tfsdk:"username"`
-	Password     types.String `tfsdk:"password"`
-	Fullname     types.String `tfsdk:"fullname"`
-	Email        types.String `tfsdk:"email"`
-	Description  types.String `tfsdk:"description"`
-	IsAdmin      types.Bool   `tfsdk:"is_admin"`
-	DirectoryDN  types.String `tfsdk:"directory_dn"`
-	OptIn        types.Bool   `tfsdk:"opt_in"`
-	ResourcePool types.String `tfsdk:"resource_pool"`
-	Groups       types.Set    `tfsdk:"groups"`
-	Labs         types.Set    `tfsdk:"labs"`
+	ID                   types.String `tfsdk:"id"`
+	Username             types.String `tfsdk:"username"`
+	Password             types.String `tfsdk:"password"`
+	Fullname             types.String `tfsdk:"fullname"`
+	Email                types.String `tfsdk:"email"`
+	Description          types.String `tfsdk:"description"`
+	IsAdmin              types.Bool   `tfsdk:"is_admin"`
+	DirectoryDN          types.String `tfsdk:"directory_dn"`
+	OptIn                types.Bool   `tfsdk:"opt_in"`
+	ResourcePool         types.String `tfsdk:"resource_pool"`
+	ResourcePoolTemplate types.String `tfsdk:"resource_pool_template"`
+	Groups               types.Set    `tfsdk:"groups"`
+	Labs                 types.Set    `tfsdk:"labs"`
 }
 
 // NewUser converts a CML user into a Terraform value.
@@ -71,6 +73,9 @@ func NewUser(ctx context.Context, user *models.User, diags *diag.Diagnostics) at
 	if user.ResourcePool != nil {
 		newUser.ResourcePool = types.StringValue(string(*user.ResourcePool))
 	}
+
+	// Config-only input. API does not return it.
+	newUser.ResourcePoolTemplate = types.StringNull()
 
 	var value attr.Value
 	diags.Append(
@@ -170,9 +175,17 @@ func User() map[string]schema.Attribute {
 			},
 		},
 		"resource_pool": schema.StringAttribute{
-			Description: "Resource pool ID, if any.",
+			Description: "Resource pool ID (UUID), if any. If resource_pool_template is set, this is computed to the instantiated pool ID returned by CML.",
 			Optional:    true,
 			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"resource_pool_template": schema.StringAttribute{
+			Description: "Resource pool template ID (UUID). When set, CML creates a per-user resource pool from the template and the provider sets resource_pool to the instantiated pool ID.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplaceIfConfigured(),
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
