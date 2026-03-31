@@ -127,17 +127,36 @@ func (d *SystemDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 			return
 		}
 
-		// if no timeout was specified, break immediately
-		if time.Now().After(endTime) {
+		// if no timeout was specified, break immediately after the first check
+		if tov <= 0 {
 			break
 		}
 
+		if time.Now().After(endTime) {
+			if !ignoreErrors {
+				resp.Diagnostics.AddError(
+					common.ErrorLabel,
+					fmt.Sprintf("ran into timeout (max %s)", timeout),
+				)
+				return
+			}
+			break
+		}
+
+		waitFor := snoozeFor
+		if remaining := time.Until(endTime); remaining < waitFor {
+			waitFor = remaining
+		}
+
 		select {
-		case <-time.After(snoozeFor):
+		case <-time.After(waitFor):
 		case <-ctx.Done():
 			return
 		}
 		if time.Now().After(endTime) {
+			if ignoreErrors {
+				break
+			}
 			resp.Diagnostics.AddError(
 				common.ErrorLabel,
 				fmt.Sprintf("ran into timeout (max %s)", timeout),

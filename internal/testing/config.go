@@ -107,7 +107,7 @@ variable "request_headers" {
 }
 provider "cml2" {
 	# something non-existent
-	address = "https://127.0.0.1:5555"
+	address = "https://127.0.0.1:1"
 	username = var.username
 	password = var.password
 	token = var.token

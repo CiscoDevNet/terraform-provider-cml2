@@ -2,6 +2,7 @@ package system_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -25,12 +26,18 @@ func testAccPreCheck(t *testing.T) {
 func TestSystemDataSource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
+	brokenEndpointError := regexp.MustCompile(`(?s)(ran into timeout|CML client error|connection refused|connect: cannot assign requested address)`)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testSystemDataSourceConfig(cfg.CfgBroken, 8),
+				Config:      testSystemDataSourceConfig(cfg.CfgBroken, 2),
+				ExpectError: brokenEndpointError,
+			},
+			{
+				Config: testSystemDataSourceConfigWithIgnoreErrors(cfg.CfgBroken, 2, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckOutput("bla", "false"),
 				),
@@ -52,13 +59,18 @@ func TestSystemDataSource(t *testing.T) {
 }
 
 func testSystemDataSourceConfig(cfg string, timeout int) string {
+	return testSystemDataSourceConfigWithIgnoreErrors(cfg, timeout, false)
+}
+
+func testSystemDataSourceConfigWithIgnoreErrors(cfg string, timeout int, ignoreErrors bool) string {
 	return fmt.Sprintf(`
 	%[1]s
 	data "cml2_system" "test" {
 		timeout = "%[2]ds"
+		ignore_errors = %[3]t
 	}
 	output "bla" {
 		value = data.cml2_system.test.ready
 	}
-	`, cfg, timeout)
+	`, cfg, timeout, ignoreErrors)
 }
