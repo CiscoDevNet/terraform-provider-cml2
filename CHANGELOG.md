@@ -4,7 +4,7 @@ Lists the changes in the provider.
 
 ## Version 0.9.0
 
-- bump gocmlclient to 0.2.3 and continue the migration to the newer client API
+- bump gocmlclient to 0.2.4 and continue the migration to the newer client API
 - provider auth/TLS modernization:
   - use static token auth when `token` is set (prevents auth refresh fallback)
   - add `token_cache` and `token_cache_file` for username/password authentication
@@ -18,6 +18,7 @@ Lists the changes in the provider.
 - lab/node behavior improvements:
   - add node `priority` handling
   - add `node_staging` support in the lab resource for newer CML versions
+  - adapt lab group handling to newer server schemas by writing lab permissions via group associations and rehydrating `groups` state on read
   - improve external connector configuration normalization/backward compatibility
   - fix several drift/update edge cases in lab, lifecycle, link, and node handling
 - introduce `resource_pool_template` attribute for user pool requests (fixes #170)

@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -64,21 +64,9 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		createReq.NodeStaging = desiredNodeStaging
 	}
 
-	if !labModel.Groups.IsUnknown() && !labModel.Groups.IsNull() {
-		groups := make([]models.LabGroup, 0)
-		var g cmlschema.LabGroupModel
-		for _, elem := range labModel.Groups.Elements() {
-			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &g)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			perm := models.OldPermissionReadOnly
-			if g.Permission.ValueString() == string(models.OldPermissionReadWrite) {
-				perm = models.OldPermissionReadWrite
-			}
-			groups = append(groups, models.LabGroup{ID: models.UUID(g.ID.ValueString()), Permission: perm})
-		}
-		createReq.Groups = groups
+	createReq.Associations = expandGroupAssociations(ctx, labModel.Groups, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	newLab, err := r.cfg.Client().Lab.Create(ctx, createReq)
@@ -94,6 +82,10 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
 	if err != nil {
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
+		return
+	}
+	if err := r.hydrateGroups(ctx, &fullLab); err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab groups, got error: %s", err))
 		return
 	}
 
@@ -114,6 +106,10 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 			fullLab, err = r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
 			if err != nil {
 				resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab after node_staging update, got error: %s", err))
+				return
+			}
+			if err := r.hydrateGroups(ctx, &fullLab); err != nil {
+				resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab groups after node_staging update, got error: %s", err))
 				return
 			}
 		}

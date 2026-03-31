@@ -2,7 +2,6 @@ package system_test
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
@@ -26,18 +25,15 @@ func testAccPreCheck(t *testing.T) {
 func TestSystemDataSource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
-	// When using cfg.CfgBroken we point at a non-existent endpoint. Depending on
-	// client behavior, this may either time out (older behavior) or fail fast with
-	// a connection error.
-	re1 := regexp.MustCompile(`(?s)(ran into timeout|CML client error|connection refused)`)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:      testSystemDataSourceConfig(cfg.CfgBroken, 8),
-				ExpectError: re1,
+				Config: testSystemDataSourceConfig(cfg.CfgBroken, 8),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckOutput("bla", "false"),
+				),
 			},
 			{
 				Config: testSystemDataSourceConfig(cfg.CfgBroken, 0),

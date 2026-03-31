@@ -36,6 +36,13 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 		)
 		return
 	}
+	if err := r.hydrateGroups(ctx, &lab); err != nil {
+		resp.Diagnostics.AddError(
+			common.ErrorLabel,
+			fmt.Sprintf("Unable to get lab groups, got error: %s", err),
+		)
+		return
+	}
 
 	// Save data into Terraform state
 	value := cmlschema.NewLab(ctx, &lab, &resp.Diagnostics)
