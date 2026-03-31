@@ -84,7 +84,7 @@ func (r *LabResource) Create(ctx context.Context, req resource.CreateRequest, re
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
 		return
 	}
-	if err := r.hydrateGroups(ctx, &fullLab); err != nil {
+	if err = r.hydrateGroups(ctx, &fullLab); err != nil {
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab groups, got error: %s", err))
 		return
 	}

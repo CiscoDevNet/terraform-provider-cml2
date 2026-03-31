@@ -27,7 +27,7 @@ type LabGroupModel struct {
 }
 
 // NewLabGroup converts a lab group entry into a Terraform value.
-func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value {
+func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value { //nolint:staticcheck
 	newGroup := LabGroupModel{
 		ID:         types.StringValue(string(group.ID)),
 		Permission: types.StringValue(string(group.Permission)),

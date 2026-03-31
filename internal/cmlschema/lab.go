@@ -181,13 +181,13 @@ func Lab() map[string]schema.Attribute {
 
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
 func NewLab(ctx context.Context, lab *models.Lab, diags *diag.Diagnostics) attr.Value {
-	groupCount := len(lab.Groups)
+	groupCount := len(lab.Groups) //nolint:staticcheck
 	if assocCount := len(lab.EffectivePermissions); assocCount > groupCount {
 		groupCount = assocCount
 	}
 	valueSet := make([]attr.Value, 0, groupCount)
-	for i := range lab.Groups {
-		valueSet = append(valueSet, NewLabGroup(ctx, &lab.Groups[i], diags))
+	for i := range lab.Groups { //nolint:staticcheck
+		valueSet = append(valueSet, NewLabGroup(ctx, &lab.Groups[i], diags)) //nolint:staticcheck
 	}
 	groups, diag := types.SetValue(types.ObjectType{AttrTypes: LabGroupAttrType}, valueSet)
 	diags.Append(diag...)

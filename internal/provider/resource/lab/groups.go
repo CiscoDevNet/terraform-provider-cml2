@@ -38,17 +38,17 @@ func expandGroupAssociations(ctx context.Context, groups types.Set, diags *diag.
 	return associations
 }
 
-func flattenLabGroupsFromAssociations(groups []models.Group, labID models.UUID) []models.LabGroup {
-	labGroups := make([]models.LabGroup, 0)
+func flattenLabGroupsFromAssociations(groups []models.Group, labID models.UUID) []models.LabGroup { //nolint:staticcheck
+	labGroups := make([]models.LabGroup, 0) //nolint:staticcheck
 	for _, group := range groups {
 		for _, assoc := range group.Associations {
 			if assoc.ID != labID {
 				continue
 			}
-			labGroups = append(labGroups, models.LabGroup{
+			labGroups = append(labGroups, models.LabGroup{ //nolint:staticcheck
 				ID:         group.ID,
 				Name:       group.Name,
-				Permission: models.OldPermission(cmlschema.TFGroupPermissionFromAssociationPermissions(assoc.Permissions)),
+				Permission: models.OldPermission(cmlschema.TFGroupPermissionFromAssociationPermissions(assoc.Permissions)), //nolint:staticcheck
 			})
 			break
 		}
@@ -66,6 +66,6 @@ func (r *LabResource) hydrateGroups(ctx context.Context, lab *models.Lab) error 
 	if err != nil {
 		return err
 	}
-	lab.Groups = flattenLabGroupsFromAssociations(groups, lab.ID)
+	lab.Groups = flattenLabGroupsFromAssociations(groups, lab.ID) //nolint:staticcheck
 	return nil
 }

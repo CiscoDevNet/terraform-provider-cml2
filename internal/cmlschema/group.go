@@ -54,6 +54,8 @@ type GroupModel struct {
 	Labs        types.Set    `tfsdk:"labs"`
 }
 
+// TFGroupPermissionFromAssociationPermissions is a helper to extract the from
+// resulting permission from the group associations
 func TFGroupPermissionFromAssociationPermissions(perms models.Permissions) string {
 	for _, p := range perms {
 		s := string(p)
