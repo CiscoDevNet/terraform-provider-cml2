@@ -4,13 +4,26 @@ Lists the changes in the provider.
 
 ## Version 0.9.0
 
-- bump gocmlclient to 0.2.2
-- provider: use static token auth when `token` is set (prevents auth refresh fallback)
-- resource `cml2_annotation`: full classic annotation shape support (text/rectangle/ellipse/line)
+- bump gocmlclient to 0.2.4 and continue the migration to the newer client API
+- provider auth/TLS modernization:
+  - use static token auth when `token` is set (prevents auth refresh fallback)
+  - add `token_cache` and `token_cache_file` for username/password authentication
+  - delegate CA / TLS handling to `gocmlclient` options instead of provider-specific transport glue
+- provider: add sensitive `request_headers` map to inject custom headers into every client request, including auth bootstrap requests
+- provider behavior updates:
+  - skip the eager readiness check during provider initialization; use the `cml2_system` data source when explicit readiness probing is needed
+  - keep `named_configs=false` as the default and stabilize node configuration fetching to avoid drift across CML versions
+- resource `cml2_annotation`: add full classic annotation support (text/rectangle/ellipse/line), including styling fields, import support, docs, examples, and acceptance tests
 - annotation line markers (`line_start`/`line_end`) support explicit `null` to clear line endings (plain line)
-- updated docs and acceptance tests for annotations
-- introduce resource_pool_template attribute for user pool requests (fixes #170)
-- updated to latest dependencies
+- lab/node behavior improvements:
+  - add node `priority` handling
+  - add `node_staging` support in the lab resource for newer CML versions
+  - adapt lab group handling to newer server schemas by writing lab permissions via group associations and rehydrating `groups` state on read
+  - improve external connector configuration normalization/backward compatibility
+  - fix several drift/update edge cases in lab, lifecycle, link, and node handling
+- introduce `resource_pool_template` attribute for user pool requests (fixes #170)
+- improve local-development, lint, CI, and release hygiene docs/workflows
+- update dependencies, examples, generated documentation, and provider tests
 
 ## Version 0.8.5
 

@@ -48,7 +48,7 @@ Read-Only:
 
 - `created` (String) Creation date/time string in ISO8601 format.
 - `description` (String) Lab description.
-- `groups` (Attributes Set) Groups assigned to the lab. (see [below for nested schema](#nestedatt--lab--groups))
+- `groups` (Attributes Set) Groups assigned to the lab. The provider keeps this legacy Terraform shape for compatibility; newer CML versions apply these permissions via backend group associations rather than the older direct lab groups payload. (see [below for nested schema](#nestedatt--lab--groups))
 - `id` (String) Lab identifier, a UUID.
 - `link_count` (Number) Number of links in the lab.
 - `modified` (String) Modification date/time string in ISO8601 format.

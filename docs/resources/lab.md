@@ -68,7 +68,7 @@ resource "cml2_link" "l1" {
 ### Optional
 
 - `description` (String) Lab description.
-- `groups` (Attributes Set) Groups assigned to the lab. (see [below for nested schema](#nestedatt--groups))
+- `groups` (Attributes Set) Groups assigned to the lab. The provider keeps this legacy Terraform shape for compatibility; newer CML versions apply these permissions via backend group associations rather than the older direct lab groups payload. (see [below for nested schema](#nestedatt--groups))
 - `node_staging` (Attributes) Optional lab node staging configuration. If omitted, the provider will not manage node staging and will ignore remote values. (see [below for nested schema](#nestedatt--node_staging))
 - `notes` (String) Lab notes.
 - `title` (String) Title of the lab.

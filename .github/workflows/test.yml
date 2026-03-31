@@ -186,7 +186,7 @@ jobs:
         #
         terraform:
           - "1.13.5"
-          - "1.14.7"
+          - "1.14.8"
 
     steps:
       - name: Skip (docs-only)
@@ -213,6 +213,7 @@ jobs:
           # to secrets when used with the tunnel.sh script.
           # TF_ACC: "0"
           NGROK_URL: ${{ secrets.NGROK_URL }}
+          REQUEST_HEADERS_JSON: ${{ secrets.REQUEST_HEADERS_JSON }}
         if: needs.changes.outputs.run == 'true'
         run: |
           echo "setting env vars"
@@ -220,6 +221,9 @@ jobs:
           if [ -n "$NGROK_URL" ]; then
             echo "TF_ACC=1" >> $GITHUB_ENV
             echo "TF_VAR_address=${NGROK_URL}" >> $GITHUB_ENV
+          fi
+          if [ -n "$REQUEST_HEADERS_JSON" ]; then
+            echo "TF_VAR_request_headers=${REQUEST_HEADERS_JSON}" >> $GITHUB_ENV
           fi
 
       - env:

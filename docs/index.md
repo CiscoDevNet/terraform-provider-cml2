@@ -37,6 +37,12 @@ provider "cml2" {
   username = var.username
   password = var.password
 
+  # optional: inject static headers into every request, e.g. when CML is behind
+  # an auth proxy.
+  # request_headers = {
+  #   Proxy-Authorization = "Bearer ${var.proxy_token}"
+  # }
+
   # read the CA certificate from file
   # if not specified, the system root CAs are used
   # cacert = file("ca.pem")
@@ -80,6 +86,7 @@ provider "cml2" {
 - `dynamic_config` (Boolean) Does late binding of the provider configuration. If set to `true` then provider configuration errors will only be caught when resources and data sources are actually created/read. Defaults to `false`
 - `named_configs` (Boolean) Enables the use of named configs (CML version >2.7.0 required!)
 - `password` (String, Sensitive) CML2 password.
+- `request_headers` (Map of String, Sensitive) Static HTTP headers to inject into every outbound CML client request, including authentication bootstrap requests.
 - `skip_verify` (Boolean) Disables TLS certificate verification (default is false -- will not skip / it will verify the certificate!)
 - `token` (String, Sensitive) CML2 API token (JWT).
 - `token_cache` (Boolean) Enables caching of an auth token in a local file when using username/password. Ignored when `token` is set.

@@ -54,7 +54,9 @@ type GroupModel struct {
 	Labs        types.Set    `tfsdk:"labs"`
 }
 
-func tfGroupPermissionFromAssociation(perms models.Permissions) string {
+// TFGroupPermissionFromAssociationPermissions is a helper to extract the from
+// resulting permission from the group associations
+func TFGroupPermissionFromAssociationPermissions(perms models.Permissions) string {
 	for _, p := range perms {
 		s := string(p)
 		if s == string(models.PermissionAdmin) || s == string(models.PermissionEdit) || s == string(models.PermissionExec) {
@@ -88,7 +90,7 @@ func newLabs(ctx context.Context, group *models.Group, diags *diag.Diagnostics) 
 	for _, assoc := range group.Associations {
 		m := GroupLabModel{
 			ID:         types.StringValue(string(assoc.ID)),
-			Permission: types.StringValue(tfGroupPermissionFromAssociation(assoc.Permissions)),
+			Permission: types.StringValue(TFGroupPermissionFromAssociationPermissions(assoc.Permissions)),
 		}
 		var v attr.Value
 		diags.Append(tfsdk.ValueFrom(ctx, m, types.ObjectType{AttrTypes: GroupLabAttrType}, &v)...)

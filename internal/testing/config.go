@@ -22,11 +22,17 @@ variable "token" {
 	type        = string
 	default     = ""
 }
+variable "request_headers" {
+	description = "Static request headers for the provider"
+	type        = map(string)
+	default     = {}
+}
 provider "cml2" {
 	address = var.address
 	username = var.username
 	password = var.password
 	token = var.token
+	request_headers = var.request_headers
 	token_cache = true
 	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
@@ -55,11 +61,17 @@ variable "token" {
 	type        = string
 	default     = ""
 }
+variable "request_headers" {
+	description = "Static request headers for the provider"
+	type        = map(string)
+	default     = {}
+}
 provider "cml2" {
 	address = var.address
 	username = var.username
 	password = var.password
 	token = var.token
+	request_headers = var.request_headers
 	token_cache = true
 	token_cache_file = "/tmp/terraform-provider-cml2-acc-token.json"
 	skip_verify = true
@@ -88,12 +100,18 @@ variable "token" {
 	type        = string
 	default     = ""
 }
+variable "request_headers" {
+	description = "Static request headers for the provider"
+	type        = map(string)
+	default     = {}
+}
 provider "cml2" {
 	# something non-existent
-	address = "https://127.0.0.1:5555"
+	address = "https://127.0.0.1:1"
 	username = var.username
 	password = var.password
 	token = var.token
+	request_headers = var.request_headers
 	skip_verify = true
 }
 `

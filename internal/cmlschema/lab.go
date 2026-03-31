@@ -168,7 +168,7 @@ func Lab() map[string]schema.Attribute {
 		"groups": schema.SetNestedAttribute{
 			Optional:    true,
 			Computed:    true,
-			Description: "Groups assigned to the lab.",
+			Description: "Groups assigned to the lab. The provider keeps this legacy Terraform shape for compatibility; newer CML versions apply these permissions via backend group associations rather than the older direct lab groups payload.",
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: LabGroup(),
 			},
@@ -181,9 +181,13 @@ func Lab() map[string]schema.Attribute {
 
 // NewLab creates a TF value from a CML2 lab object from the gocmlclient
 func NewLab(ctx context.Context, lab *models.Lab, diags *diag.Diagnostics) attr.Value {
-	valueSet := make([]attr.Value, 0, len(lab.Groups))
-	for i := range lab.Groups {
-		valueSet = append(valueSet, NewLabGroup(ctx, &lab.Groups[i], diags))
+	groupCount := len(lab.Groups) //nolint:staticcheck
+	if assocCount := len(lab.EffectivePermissions); assocCount > groupCount {
+		groupCount = assocCount
+	}
+	valueSet := make([]attr.Value, 0, groupCount)
+	for i := range lab.Groups { //nolint:staticcheck
+		valueSet = append(valueSet, NewLabGroup(ctx, &lab.Groups[i], diags)) //nolint:staticcheck
 	}
 	groups, diag := types.SetValue(types.ObjectType{AttrTypes: LabGroupAttrType}, valueSet)
 	diags.Append(diag...)

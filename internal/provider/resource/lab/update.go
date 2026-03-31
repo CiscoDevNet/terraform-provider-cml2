@@ -38,21 +38,9 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 		updateReq.NodeStaging = ns
 	}
 
-	if !data.Groups.IsUnknown() && !data.Groups.IsNull() {
-		groups := make([]models.LabGroup, 0)
-		var g cmlschema.LabGroupModel
-		for _, elem := range data.Groups.Elements() {
-			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, elem, &g)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			perm := models.OldPermissionReadOnly
-			if g.Permission.ValueString() == string(models.OldPermissionReadWrite) {
-				perm = models.OldPermissionReadWrite
-			}
-			groups = append(groups, models.LabGroup{ID: models.UUID(g.ID.ValueString()), Permission: perm})
-		}
-		updateReq.Groups = groups
+	updateReq.Associations = expandGroupAssociations(ctx, data.Groups, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	newLab, err := r.cfg.Client().Lab.Update(ctx, models.UUID(data.ID.ValueString()), updateReq)
@@ -68,6 +56,10 @@ func (r LabResource) Update(ctx context.Context, req resource.UpdateRequest, res
 	fullLab, err := r.cfg.Client().Lab.GetByID(ctx, newLab.ID, false)
 	if err != nil {
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab, got error: %s", err))
+		return
+	}
+	if err := r.hydrateGroups(ctx, &fullLab); err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to get lab groups, got error: %s", err))
 		return
 	}
 

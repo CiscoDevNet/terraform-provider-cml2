@@ -27,10 +27,28 @@ type LabGroupModel struct {
 }
 
 // NewLabGroup converts a lab group entry into a Terraform value.
-func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value {
+func NewLabGroup(ctx context.Context, group *models.LabGroup, diags *diag.Diagnostics) attr.Value { //nolint:staticcheck
 	newGroup := LabGroupModel{
 		ID:         types.StringValue(string(group.ID)),
 		Permission: types.StringValue(string(group.Permission)),
+	}
+	var value attr.Value
+	diags.Append(
+		tfsdk.ValueFrom(
+			ctx,
+			newGroup,
+			types.ObjectType{AttrTypes: LabGroupAttrType},
+			&value,
+		)...,
+	)
+	return value
+}
+
+// NewLabGroupFromAssociation converts a lab-group association into a Terraform value.
+func NewLabGroupFromAssociation(ctx context.Context, assoc *models.Association, diags *diag.Diagnostics) attr.Value {
+	newGroup := LabGroupModel{
+		ID:         types.StringValue(string(assoc.ID)),
+		Permission: types.StringValue(TFGroupPermissionFromAssociationPermissions(assoc.Permissions)),
 	}
 	var value attr.Value
 	diags.Append(
