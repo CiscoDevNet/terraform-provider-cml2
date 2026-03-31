@@ -11,6 +11,7 @@ type ProviderModel struct {
 	Username       types.String `tfsdk:"username"`
 	Password       types.String `tfsdk:"password"`
 	Token          types.String `tfsdk:"token"`
+	RequestHeaders types.Map    `tfsdk:"request_headers"`
 	TokenCache     types.Bool   `tfsdk:"token_cache"`
 	TokenCacheFile types.String `tfsdk:"token_cache_file"`
 	CAcert         types.String `tfsdk:"cacert"`
@@ -40,6 +41,12 @@ func Provider() map[string]schema.Attribute {
 			Description: "CML2 API token (JWT).",
 			Optional:    true,
 			Sensitive:   true,
+		},
+		"request_headers": schema.MapAttribute{
+			Description: "Static HTTP headers to inject into every outbound CML client request, including authentication bootstrap requests.",
+			Optional:    true,
+			Sensitive:   true,
+			ElementType: types.StringType,
 		},
 		"token_cache": schema.BoolAttribute{
 			Description: "Enables caching of an auth token in a local file when using username/password. Ignored when `token` is set.",

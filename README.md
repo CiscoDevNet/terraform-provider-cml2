@@ -94,6 +94,27 @@ export TF_VAR_token_cache_file="$TOKEN_FILE"
 terraform apply
 ```
 
+## Request Headers
+
+If your CML API is fronted by a reverse proxy that expects additional request
+headers, you can inject static headers into every outbound request, including
+the initial authentication request.
+
+```hcl
+provider "cml2" {
+  address  = var.address
+  username = var.username
+  password = var.password
+
+  request_headers = {
+    Proxy-Authorization = "Bearer ${var.proxy_token}"
+  }
+}
+```
+
+This is useful when nginx or another proxy performs authentication before
+forwarding traffic to the CML backend.
+
 ### HCL
 
 For some basic examples look in the `examples` directory

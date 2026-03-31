@@ -13,6 +13,12 @@ provider "cml2" {
   username = var.username
   password = var.password
 
+  # optional: inject static headers into every request, e.g. when CML is behind
+  # an auth proxy.
+  # request_headers = {
+  #   Proxy-Authorization = "Bearer ${var.proxy_token}"
+  # }
+
   # read the CA certificate from file
   # if not specified, the system root CAs are used
   # cacert = file("ca.pem")

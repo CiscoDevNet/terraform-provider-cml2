@@ -181,6 +181,22 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 	// This is independent from the user-facing named_configs setting.
 	opts = append(opts, cmlclient.WithNodeExcludeConfigurations(false))
 
+	if r.data.RequestHeaders.IsNull() {
+		r.data.RequestHeaders = types.MapNull(types.StringType)
+	} else if !r.data.RequestHeaders.IsUnknown() {
+		headers := make(map[string]string, len(r.data.RequestHeaders.Elements()))
+		for name, value := range r.data.RequestHeaders.Elements() {
+			headerValue := value.(types.String)
+			if headerValue.IsNull() || headerValue.IsUnknown() {
+				continue
+			}
+			headers[name] = headerValue.ValueString()
+		}
+		if len(headers) > 0 {
+			opts = append(opts, cmlclient.WithRequestHeaders(headers))
+		}
+	}
+
 	// Auth
 	if len(r.data.Token.ValueString()) > 0 {
 		opts = append(opts, cmlclient.WithStaticToken(r.data.Token.ValueString()))
