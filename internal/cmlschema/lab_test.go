@@ -63,3 +63,44 @@ func TestLabAttrs(t *testing.T) {
 		groups,
 	)
 }
+
+func TestNewLabGroupFromAssociation(t *testing.T) {
+	tests := []struct {
+		name           string
+		assoc          models.Association
+		wantPermission string
+	}{
+		{
+			name: "read only",
+			assoc: models.Association{
+				ID:          "group-read-only",
+				Permissions: models.Permissions{models.PermissionView},
+			},
+			wantPermission: "read_only",
+		},
+		{
+			name: "read write",
+			assoc: models.Association{
+				ID:          "group-read-write",
+				Permissions: models.Permissions{models.PermissionView, models.PermissionEdit},
+			},
+			wantPermission: "read_write",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			diag := &diag.Diagnostics{}
+			ctx := context.Background()
+
+			value := cmlschema.NewLabGroupFromAssociation(ctx, &tt.assoc, diag)
+			assert.False(t, diag.HasError())
+
+			var got cmlschema.LabGroupModel
+			diag.Append(tfsdk.ValueAs(ctx, value, &got)...)
+			assert.False(t, diag.HasError())
+			assert.Equal(t, string(tt.assoc.ID), got.ID.ValueString())
+			assert.Equal(t, tt.wantPermission, got.Permission.ValueString())
+		})
+	}
+}
