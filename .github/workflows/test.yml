@@ -213,6 +213,7 @@ jobs:
           # to secrets when used with the tunnel.sh script.
           # TF_ACC: "0"
           NGROK_URL: ${{ secrets.NGROK_URL }}
+          REQUEST_HEADERS_JSON: ${{ secrets.REQUEST_HEADERS_JSON }}
         if: needs.changes.outputs.run == 'true'
         run: |
           echo "setting env vars"
@@ -221,12 +222,14 @@ jobs:
             echo "TF_ACC=1" >> $GITHUB_ENV
             echo "TF_VAR_address=${NGROK_URL}" >> $GITHUB_ENV
           fi
+          if [ -n "$REQUEST_HEADERS_JSON" ]; then
+            echo "TF_VAR_request_headers=${REQUEST_HEADERS_JSON}" >> $GITHUB_ENV
+          fi
 
       - env:
           TF_VAR_username: ${{ secrets.USERNAME }}
           TF_VAR_password: ${{ secrets.PASSWORD }}
           TF_VAR_token: ${{ secrets.TOKEN }}
-          TF_VAR_request_headers: ${{ secrets.REQUEST_HEADERS_JSON }}
           TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform }}
         if: needs.changes.outputs.run == 'true'
         run: go test -timeout 1h -race -v -covermode atomic -coverprofile=covprofile -coverpkg=./internal/... ./internal/...
