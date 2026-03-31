@@ -18,6 +18,7 @@ func TestProviderAttrs(t *testing.T) {
 	}
 
 	got, diag := schema.TypeAtPath(context.TODO(), path.Root("address"))
+	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 	got, diag = schema.TypeAtPath(context.TODO(), path.Root("request_headers"))
 	assert.Equal(t, types.MapType{ElemType: types.StringType}, got)
