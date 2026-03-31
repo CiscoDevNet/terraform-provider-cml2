@@ -183,8 +183,6 @@ github.com/posener/complete v1.2.3 h1:NP0eAhjcjImqslEwo/1hq7gpajME0fTLTezBKDqfXq
 github.com/posener/complete v1.2.3/go.mod h1:WZIdtGGp+qx0sLrYKtIRAruyNpv6hFCicSgv7Sy7s/s=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
-github.com/rschmied/gocmlclient v0.2.3 h1:lwWUKTja86Eq7YdXzDEOcNx1LSroU0OhOwILTnbmITg=
-github.com/rschmied/gocmlclient v0.2.3/go.mod h1:tWz+30vYTM1QKcCAvjV9ghWNKNJAp7Ucas/q1uYBAGc=
 github.com/rschmied/gocmlclient v0.2.4 h1:AXCuRlcCuGMeWLaVhbs9IlgU5J1TXLiu3pxbUl0Et1U=
 github.com/rschmied/gocmlclient v0.2.4/go.mod h1:tWz+30vYTM1QKcCAvjV9ghWNKNJAp7Ucas/q1uYBAGc=
 github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 h1:n661drycOFuPLCN3Uc8sB6B/s6Z4t2xvBgU1htSHuq8=
