@@ -72,7 +72,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// these can only be changed when the node is DEFINED_ON_CORE
 	if stateData.State.ValueString() == string(models.NodeStateDefined) {
-		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
+		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && planData.Configurations.IsNull() {
 			cfgVal := planData.Configuration.ValueString()
 			if node.NodeDefinition == "external_connector" {
 				normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, cfgVal)
@@ -138,7 +138,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// External connector back-compat: if the user provided a device name (e.g.
 	// "virbr0"), keep the config value in state to match the user's config.
 	// We still sent the normalized label to the API.
-	if node.NodeDefinition == "external_connector" && !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() {
+	if node.NodeDefinition == "external_connector" && !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && planData.Configurations.IsNull() {
 		inCfg := planData.Configuration.ValueString()
 		_, changed, _, _ := normalizeExtConnConfig(ctx, r.cfg, inCfg)
 		if changed {
@@ -153,7 +153,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	// When updating with named configs on, we need to move over the returned
 	// named config into the single configuration if it was previously used.
 	// tflog.Warn(ctx, "###u", map[string]any{"null": stateData.Configuration.IsNull(), "unknown": stateData.Configuration.IsUnknown(), "len": len(node.Configurations)})
-	if !stateData.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
+	if !stateData.Configuration.IsUnknown() && !stateData.Configuration.IsNull() && len(newNode.Configurations) > 0 && planData.Configurations.IsNull() {
 		newNode.Configuration = newNode.Configurations[0].Content
 		newNode.Configurations = nil
 	}

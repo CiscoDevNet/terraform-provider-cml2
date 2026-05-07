@@ -87,6 +87,14 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("configurations"))
 	}
 
+	// If explicit named configurations are configured, make the single
+	// configuration value null in the plan. Otherwise UseStateForUnknown may pin
+	// it to a prior value (for example "NAT"), which would conflict with the
+	// post-apply state shape when only `configurations` is managed.
+	if !configData.Configurations.IsNull() && !configData.Configurations.IsUnknown() && configData.Configuration.IsNull() {
+		planData.Configuration = cmlschema.NewConfigNull()
+	}
+
 	if !configData.Priority.IsNull() && !configData.Priority.Equal(stateData.Priority) {
 		planData.Priority = configData.Priority
 	}

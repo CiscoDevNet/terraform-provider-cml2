@@ -406,12 +406,15 @@ func newTags(_ context.Context, node *models.Node, diags *diag.Diagnostics) type
 // NewNamedConfigs converts node named configurations into a Terraform list.
 func NewNamedConfigs(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {
-		// For some node definitions (e.g. unmanaged_switch) the API provides a
-		// default named config even if the client did not request named configs.
-		// Returning null for empty keeps state stable.
+		// Return null only when the API has no named configs at all.
+		// Keep explicit named configs (including a single "default" entry) so
+		// user-managed `configurations` does not collapse into `configuration`.
 		return types.ListNull(NamedConfigAttrType)
 	}
-	if len(node.Configurations) == 1 && node.Configurations[0].Name == "default" {
+	if node.NodeDefinition == "unmanaged_switch" && len(node.Configurations) == 1 && node.Configurations[0].Name == "default" {
+		// Controller-managed unmanaged switch bridge defaults are not user-managed
+		// named configs. Keep lifecycle/resource state stable by suppressing this
+		// synthetic default entry.
 		return types.ListNull(NamedConfigAttrType)
 	}
 	valueList := make([]attr.Value, 0)
