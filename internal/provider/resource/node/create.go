@@ -19,11 +19,17 @@ import (
 func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var (
 		data            cmlschema.NodeModel
+		configData      cmlschema.NodeModel
 		err             error
 		extConnStateCfg string
 	)
 
 	tflog.Info(ctx, "Resource Node CREATE")
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -31,7 +37,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// ensure named configs are only used when configured!
-	if len(data.Configurations.Elements()) > 0 && !r.cfg.UseNamedConfigs() {
+	if len(configData.Configurations.Elements()) > 0 && !r.cfg.UseNamedConfigs() {
 		resp.Diagnostics.AddError(
 			"Node config conflict",
 			"Provider option \"named_configs\" required to use named configurations!",
@@ -42,7 +48,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	// tflog.Info(ctx, "CFG", map[string]any{"v": fmt.Sprintf("%+v", data.Configuration.IsUnknown())})
 
 	// can't configure both at the same time!
-	if len(data.Configurations.Elements()) > 0 && !data.Configuration.IsUnknown() {
+	if len(configData.Configurations.Elements()) > 0 && !configData.Configuration.IsUnknown() && !configData.Configuration.IsNull() {
 		resp.Diagnostics.AddError(
 			"Node config conflict",
 			"Can't provide both, configuration and configurations",
@@ -177,7 +183,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// WAS UNKNOWN??
 	// tflog.Warn(ctx, "###2", map[string]any{"null": data.Configuration.IsNull(), "unknown": data.Configuration.IsUnknown(), "len": len(node.Configurations)})
-	if !data.Configuration.IsUnknown() && len(newNode.Configurations) > 0 {
+	if !data.Configuration.IsUnknown() && !data.Configuration.IsNull() && len(newNode.Configurations) > 0 {
 		newNode.Configuration = newNode.Configurations[0].Content
 		newNode.Configurations = nil
 	}

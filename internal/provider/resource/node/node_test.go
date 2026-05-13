@@ -292,6 +292,52 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceExtConnNamedConfigCreate(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNodeResourceExtConnNamedConfigTransition(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.CfgNamedConfigs, "NAT"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "NAT"),
+				),
+			},
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccNodeResourceNamedConfig(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
@@ -399,6 +445,25 @@ resource "cml2_node" "ext" {
 	%[2]s
 }
 `, cfg, config)
+}
+
+func testAccNodeResourceConfigNodeDefExtConnNamed(cfg, extconnName string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+}
+resource "cml2_node" "ext" {
+	lab_id         = cml2_lab.test.id
+	label          = "ext0"
+	nodedefinition = "external_connector"
+	configurations = [
+		{
+			name    = "default"
+			content = %[2]q
+		},
+	]
+}
+`, cfg, extconnName)
 }
 
 func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
