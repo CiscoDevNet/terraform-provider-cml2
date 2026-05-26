@@ -27,7 +27,7 @@ jobs:
           go-version-file: "go.mod"
           cache: true
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3.9.1
+        uses: sigstore/cosign-installer@v4.1.2
 
       # This uses an action (hashicorp/ghaction-import-gpg) that assumes you
       # set your private key in the `GPG_PRIVATE_KEY` secret and passphrase
