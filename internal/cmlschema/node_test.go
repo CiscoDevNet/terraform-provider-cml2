@@ -135,6 +135,14 @@ func TestNewNamedConfigs(t *testing.T) {
 			},
 			1,
 		},
+		{
+			"ums-default-suppressed",
+			&models.Node{
+				NodeDefinition: "unmanaged_switch",
+				Configurations: []models.NodeConfig{{Name: "default", Content: "bridge"}},
+			},
+			0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
