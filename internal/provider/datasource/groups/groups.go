@@ -97,8 +97,10 @@ func (d *GroupDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			continue
 		}
 		groupCopy := group
-		groupList = append(groupList, cmlschema.NewGroup(
-			ctx, &groupCopy, &resp.Diagnostics),
+		groupList = append(
+			groupList, cmlschema.NewGroup(
+				ctx, &groupCopy, &resp.Diagnostics,
+			),
 		)
 	}
 

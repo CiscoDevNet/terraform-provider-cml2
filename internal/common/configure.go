@@ -114,7 +114,8 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 	if len(r.data.Token.ValueString()) > 0 && len(r.data.Username.ValueString()) > 0 {
 		diags.AddWarning(
 			"Conflicting configuration",
-			"both token and username / password were provided")
+			"both token and username / password were provided",
+		)
 	}
 
 	// an address must be specified

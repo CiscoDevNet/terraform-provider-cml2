@@ -131,8 +131,10 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		if !data.NodeDef.IsNull() && img.NodeDefID != data.NodeDef.ValueString() {
 			continue
 		}
-		imageList = append(imageList, cmlschema.NewImageDefinition(
-			ctx, &img, &resp.Diagnostics),
+		imageList = append(
+			imageList, cmlschema.NewImageDefinition(
+				ctx, &img, &resp.Diagnostics,
+			),
 		)
 	}
 

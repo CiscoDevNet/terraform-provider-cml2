@@ -156,7 +156,8 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 		configString := config.(types.String).ValueString()
 		err = r.cfg.Client().Node.SetConfig(ctx, node, configString)
 		if err != nil {
-			diags.AddError("set node config failed",
+			diags.AddError(
+				"set node config failed",
 				fmt.Sprintf("setting the new node configuration failed: %s", err),
 			)
 		}
@@ -181,7 +182,8 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 		configs := cmlschema.GetNamedConfigs(ctx, *diags, ba)
 		err = r.cfg.Client().Node.SetNamedConfigs(ctx, node, configs)
 		if err != nil {
-			diags.AddError("set node named config failed",
+			diags.AddError(
+				"set node named config failed",
 				fmt.Sprintf("setting the new node configurations failed: %s", err),
 			)
 		}

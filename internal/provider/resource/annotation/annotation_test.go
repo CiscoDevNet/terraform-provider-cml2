@@ -255,7 +255,7 @@ resource "cml2_annotation" "a" {
 `, cfgStr, content, bold)
 }
 
-func testAccAnnotationRectangle(cfgStr string, x1, y1, x2, y2 int, rotation int, borderStyle string) string {
+func testAccAnnotationRectangle(cfgStr string, x1, y1, x2, y2, rotation int, borderStyle string) string {
 	return fmt.Sprintf(`
 %[1]s
 
@@ -280,7 +280,7 @@ resource "cml2_annotation" "a" {
 `, cfgStr, x1, y1, x2, y2, rotation, borderStyle)
 }
 
-func testAccAnnotationEllipse(cfgStr string, x1, y1, x2, y2 int, rotation int) string {
+func testAccAnnotationEllipse(cfgStr string, x1, y1, x2, y2, rotation int) string {
 	return fmt.Sprintf(`
 %[1]s
 

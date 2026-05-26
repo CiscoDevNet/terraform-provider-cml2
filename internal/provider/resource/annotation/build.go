@@ -18,7 +18,7 @@ func clampThickness(v float64) float64 {
 	return v
 }
 
-func strOrDefault(v string, def string) string {
+func strOrDefault(v, def string) string {
 	if len(v) == 0 {
 		return def
 	}

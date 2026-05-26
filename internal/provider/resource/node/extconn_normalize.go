@@ -21,7 +21,22 @@ func normalizeExtConnConfig(ctx context.Context, cfg *common.ProviderConfig, in 
 		return "", false, "", nil
 	}
 
-	connectors, err := cfg.Client().ExtConn.List(ctx)
+	// Defensive nil checks to avoid panics when provider/client isn't
+	// initialized. Return a descriptive error so callers can surface it.
+	// Using a concrete *common.ProviderConfig (not an interface) makes cfg == nil
+	// a reliable check — there is no typed-nil ambiguity with a concrete pointer.
+	if cfg == nil {
+		return in, false, "", fmt.Errorf("list external connectors: provider config is nil")
+	}
+	cli := cfg.Client()
+	if cli == nil {
+		return in, false, "", fmt.Errorf("list external connectors: client not initialized")
+	}
+	if cli.ExtConn == nil {
+		return in, false, "", fmt.Errorf("list external connectors: extconn service unavailable")
+	}
+
+	connectors, err := cli.ExtConn.List(ctx)
 	if err != nil {
 		return in, false, "", fmt.Errorf("list external connectors: %w", err)
 	}

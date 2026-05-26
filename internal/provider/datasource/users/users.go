@@ -97,8 +97,10 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			continue
 		}
 		userCopy := user
-		userList = append(userList, cmlschema.NewUser(
-			ctx, &userCopy, &resp.Diagnostics),
+		userList = append(
+			userList, cmlschema.NewUser(
+				ctx, &userCopy, &resp.Diagnostics,
+			),
 		)
 	}
 

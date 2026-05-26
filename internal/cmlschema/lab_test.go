@@ -54,7 +54,8 @@ func TestLabAttrs(t *testing.T) {
 	assert.Equal(t, 12, len(labschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
-	assert.Equal(t,
+	assert.Equal(
+		t,
 		types.SetType{
 			ElemType: types.ObjectType{
 				AttrTypes: cmlschema.LabGroupAttrType,
