@@ -2,6 +2,20 @@
 
 Lists the changes in the provider.
 
+## Version 0.9.1
+
+- fix: preserve explicit named configurations on nodes; avoid collapsing them
+  to the default config across CML versions (#190)
+- fix: external connector normalization robustness
+  - restore concrete `*ProviderConfig` parameter type; nil check is now
+    reliable (no typed-nil ambiguity)
+  - add nil guards for uninitialized client and extconn service
+  - suppress default config entry for `unmanaged_switch` nodes
+  - expand unit test coverage: device-name→label mapping, label no-op, empty
+    input, unknown connector, API error, and nil-guard paths
+- bump `sigstore/cosign-installer` from 3.9.1 to 4.1.2 (#191)
+- apply gofumpt formatting across several source files
+
 ## Version 0.9.0
 
 - bump gocmlclient to 0.2.4 and continue the migration to the newer client API
