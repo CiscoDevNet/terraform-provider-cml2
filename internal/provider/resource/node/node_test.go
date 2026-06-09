@@ -1,7 +1,9 @@
 package node_test
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -9,6 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	gocml "github.com/rschmied/gocmlclient"
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
@@ -116,6 +122,111 @@ func TestAccNodeResource(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	baseCfg := testAccNodeResourceConfig(cfg.Cfg, 1)
+	var (
+		initialNodeID string
+		labID         string
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: baseCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						labID = rs.Primary.Attributes["lab_id"]
+						initialNodeID = rs.Primary.ID
+						if labID == "" || initialNodeID == "" {
+							return fmt.Errorf("expected lab_id and id to be set in state")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				// Simulate external drift: delete the node directly via the upstream
+				// gocmlclient (not through Terraform) so Terraform has stale state.
+				Config: baseCfg,
+				// We intentionally create (via Terraform), then delete (via API) in the
+				// Check callback. That means a subsequent refresh-only plan must not be
+				// empty; otherwise the test harness will fail the step.
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					addr := os.Getenv("TF_VAR_address")
+					username := os.Getenv("TF_VAR_username")
+					password := os.Getenv("TF_VAR_password")
+					// Token is optional; provider config supports either token or username/password.
+					token := os.Getenv("TF_VAR_token")
+					if addr == "" {
+						return fmt.Errorf("TF_VAR_address must be set")
+					}
+					if token == "" && (username == "" || password == "") {
+						return fmt.Errorf("either TF_VAR_token or TF_VAR_username + TF_VAR_password must be set")
+					}
+
+					if labID == "" || initialNodeID == "" {
+						return fmt.Errorf("internal test error: expected captured lab_id and id")
+					}
+
+					opts := make([]gocml.Option, 0)
+					opts = append(opts, gocml.SkipReadyCheck())
+					// Acceptance config uses skip_verify=true, so mirror that.
+					opts = append(opts, gocml.WithInsecureTLS())
+					if token != "" {
+						opts = append(opts, gocml.WithStaticToken(token))
+					} else {
+						opts = append(opts, gocml.WithUsernamePassword(username, password))
+					}
+
+					client, err := gocml.New(addr, opts...)
+					if err != nil {
+						return fmt.Errorf("creating gocmlclient: %w", err)
+					}
+
+					// Best-effort: wait a moment to avoid racing with any eventual
+					// propagation delay.
+					// Keep it short to not slow down acceptance runs too much.
+					_ = client // keep linter quiet in case of build tags
+					return client.Node.Delete(safeCtx(), models.UUID(labID), models.UUID(initialNodeID))
+				},
+			},
+			{
+				// Re-apply and assert the node exists again.
+				Config: baseCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						if rs.Primary.ID == initialNodeID {
+							return fmt.Errorf("expected node to be recreated (id should change), still %q", initialNodeID)
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+				),
+			},
+		},
+	})
+}
+
+func safeCtx() context.Context {
+	// The upstream client methods accept a context; we keep it simple for the test.
+	return context.Background()
 }
 
 func TestAccNodeResourceTags(t *testing.T) {

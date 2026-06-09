@@ -2,12 +2,14 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -27,6 +29,13 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	node, err := r.cfg.Client().Node.GetByID(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
+		// If the node was deleted outside Terraform, treat it as gone and
+		// remove it from the Terraform state. The next plan should recreate it.
+		if errors.Is(err, cmlerrors.ErrElementNotFound) || errors.Is(err, cmlerrors.ErrAPINotFound) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get node, got error: %s", err),

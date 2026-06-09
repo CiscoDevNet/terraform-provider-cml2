@@ -2,10 +2,12 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -31,6 +33,10 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Stop(ctx, labID, nodeID)
 	if err != nil {
+		if errors.Is(err, cmlerrors.ErrElementNotFound) || errors.Is(err, cmlerrors.ErrAPINotFound) {
+			// Node already gone (deleted externally). Treat as successful cleanup.
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to stop node, got error: %s", err),
@@ -40,6 +46,9 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Wipe(ctx, labID, nodeID)
 	if err != nil {
+		if errors.Is(err, cmlerrors.ErrElementNotFound) || errors.Is(err, cmlerrors.ErrAPINotFound) {
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to wipe node, got error: %s", err),
@@ -49,6 +58,9 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Delete(ctx, labID, nodeID)
 	if err != nil {
+		if errors.Is(err, cmlerrors.ErrElementNotFound) || errors.Is(err, cmlerrors.ErrAPINotFound) {
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy node, got error: %s", err),
