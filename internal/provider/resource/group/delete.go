@@ -6,6 +6,7 @@ import (
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )

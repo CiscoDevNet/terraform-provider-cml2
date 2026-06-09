@@ -34,8 +34,8 @@ func TestAccGroupResource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
 	// Keep short to satisfy CML username length constraints.
-	rand.Seed(time.Now().UnixNano())
-	suffix := fmt.Sprintf("%012d", rand.Int63()%1_000_000_000_000)
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	suffix := fmt.Sprintf("%012d", rng.Int63()%1_000_000_000_000)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -95,8 +95,8 @@ func TestAccGroupResourceRecreatesWhenDeletedExternally(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
 	// CML enforces max 32 chars for usernames; keep names short to avoid 400s.
-	rand.Seed(time.Now().UnixNano())
-	suffix := fmt.Sprintf("%012d", rand.Int63()%1_000_000_000_000)
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	suffix := fmt.Sprintf("%012d", rng.Int63()%1_000_000_000_000)
 
 	config := testAccGroupResourceConfig(cfg.Cfg, suffix)
 	var initialGroupID string
