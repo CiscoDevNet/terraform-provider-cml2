@@ -1,12 +1,16 @@
 package group_test
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
@@ -29,13 +33,17 @@ func testAccPreCheck(t *testing.T) {
 func TestAccGroupResource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
+	// Keep short to satisfy CML username length constraints.
+	rand.Seed(time.Now().UnixNano())
+	suffix := fmt.Sprintf("%012d", rand.Int63()%1_000_000_000_000)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccGroupResourceConfig(cfg.Cfg),
+				Config: testAccGroupResourceConfig(cfg.Cfg, suffix),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_group.test", "description", "description"),
 					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "2"),
@@ -50,7 +58,7 @@ func TestAccGroupResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccGroupResourceConfigUpdate(cfg.Cfg),
+				Config: testAccGroupResourceConfigUpdate(cfg.Cfg, suffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_group.test", "name", "new name"),
 					resource.TestCheckResourceAttr("cml2_group.test", "description", "new description"),
@@ -59,7 +67,7 @@ func TestAccGroupResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccGroupResourceConfigUpdate2(cfg.Cfg, "read_write"),
+				Config: testAccGroupResourceConfigUpdate2(cfg.Cfg, "read_write", suffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "1"),
 					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "2"),
@@ -69,7 +77,7 @@ func TestAccGroupResource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccGroupResourceConfigUpdate2(cfg.Cfg, "read_only"),
+				Config: testAccGroupResourceConfigUpdate2(cfg.Cfg, "read_only", suffix),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_group.test", "labs.#", "1"),
 					resource.TestCheckResourceAttr("cml2_group.test", "members.#", "2"),
@@ -79,6 +87,68 @@ func TestAccGroupResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccGroupResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	// CML enforces max 32 chars for usernames; keep names short to avoid 400s.
+	rand.Seed(time.Now().UnixNano())
+	suffix := fmt.Sprintf("%012d", rand.Int63()%1_000_000_000_000)
+
+	config := testAccGroupResourceConfig(cfg.Cfg, suffix)
+	var initialGroupID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "name", fmt.Sprintf("acc_test_group_%s", suffix)),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_group.test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_group.test")
+						}
+						initialGroupID = rs.Primary.ID
+						if initialGroupID == "" {
+							return fmt.Errorf("expected cml2_group.test.id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					return client.Group.Delete(context.Background(), initialGroupID)
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_group.test", "name", fmt.Sprintf("acc_test_group_%s", suffix)),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_group.test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_group.test")
+						}
+						if rs.Primary.ID == initialGroupID {
+							return fmt.Errorf("expected group to be recreated; id still %q", initialGroupID)
+						}
+						return nil
+					},
+				),
+			},
 		},
 	})
 }
@@ -104,12 +174,17 @@ func TestAccGroupResourceNoLists(t *testing.T) {
 	})
 }
 
-func testAccGroupResourceConfig(cfg string) string {
+func testAccGroupResourceConfig(cfg, suffix string) string {
+	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
+	groupName := fmt.Sprintf("acc_test_group_%s", suffix)
+	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
+	lab2Title := fmt.Sprintf("group_acc_test_lab2_%s", suffix)
+
 	return fmt.Sprintf(`
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_group_user"
+	username      = %[2]q
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -118,37 +193,41 @@ resource "cml2_user" "acc_test" {
 }
 
 resource "cml2_lab" "lab1" {
-	title       = "group_acc_test_lab1"
+	title       = %[3]q
 }
 
 resource "cml2_lab" "lab2" {
-	title       = "group_acc_test_lab2"
+	title       = %[4]q
 }
 
 resource "cml2_group" "test" {
 	description = "description"
-	name = "acc_test_group"
+	name = %[5]q
 	members = [ cml2_user.acc_test.id ]
 	labs = [
-		{
-			id = cml2_lab.lab1.id
-			permission = "read_only"
-		},
-		{
-			id = cml2_lab.lab2.id
-			permission = "read_only"
-		}
-	]
+	{
+		id = cml2_lab.lab1.id
+		permission = "read_only"
+	},
+	{
+		id = cml2_lab.lab2.id
+		permission = "read_only"
+	}
+]
 }
-`, cfg)
+`, cfg, groupUserName, lab1Title, lab2Title, groupName)
 }
 
-func testAccGroupResourceConfigUpdate(cfg string) string {
+func testAccGroupResourceConfigUpdate(cfg, suffix string) string {
+	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
+	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
+	lab2Title := fmt.Sprintf("group_acc_test_lab2_%s", suffix)
+
 	return fmt.Sprintf(`
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_group_user"
+	username      = %[2]q
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -157,11 +236,11 @@ resource "cml2_user" "acc_test" {
 }
 
 resource "cml2_lab" "lab1" {
-	title       = "group_acc_test_lab1"
+	title       = %[3]q
 }
 
 resource "cml2_lab" "lab2" {
-	title       = "group_acc_test_lab2"
+	title       = %[4]q
 }
 
 resource "cml2_group" "test" {
@@ -169,21 +248,25 @@ resource "cml2_group" "test" {
 	name = "new name"
 	members = []
 	labs = [
-		{
-			id = cml2_lab.lab1.id
-			permission = "read_only"
-		}
-	]
+	{
+		id = cml2_lab.lab1.id
+		permission = "read_only"
+	}
+]
 }
-`, cfg)
+`, cfg, groupUserName, lab1Title, lab2Title)
 }
 
-func testAccGroupResourceConfigUpdate2(cfg, permission string) string {
+func testAccGroupResourceConfigUpdate2(cfg, permission, suffix string) string {
+	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
+	groupUser2Name := fmt.Sprintf("acc_test_group_user_2_%s", suffix)
+	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
+
 	return fmt.Sprintf(`
 %[1]s
 
 resource "cml2_user" "acc_test" {
-	username      = "acc_test_group_user"
+	username      = %[2]q
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -192,7 +275,7 @@ resource "cml2_user" "acc_test" {
 }
 
 resource "cml2_user" "acc_test_2" {
-	username      = "acc_test_group_user_2"
+	username      = %[3]q
 	password      = "süpersücret"
 	fullname      = "firstname, lastname"
 	email         = "bla@cml.lab"
@@ -201,7 +284,7 @@ resource "cml2_user" "acc_test_2" {
 }
 
 resource "cml2_lab" "lab1" {
-	title       = "group_acc_test_lab1"
+	title       = %[4]q
 }
 
 resource "cml2_group" "test" {
@@ -209,13 +292,13 @@ resource "cml2_group" "test" {
 	name = "new name"
 	members = [ cml2_user.acc_test.id, cml2_user.acc_test_2.id ]
 	labs = [
-		{
-			id = cml2_lab.lab1.id
-			permission = %[2]q
-		},
-	]
+	{
+		id = cml2_lab.lab1.id
+		permission = %[5]q
+	},
+]
 }
-`, cfg, permission)
+`, cfg, groupUserName, groupUser2Name, lab1Title, permission)
 }
 
 func testAccGroupResourceConfigNoLists(cfg string) string {

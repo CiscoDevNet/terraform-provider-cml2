@@ -1,12 +1,18 @@
 package lab_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
@@ -29,13 +35,17 @@ func testAccPreCheck(t *testing.T) {
 func TestAccLabResource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
+	// Use unique group names to avoid 409 "already exists" errors across test runs.
+	group1Name := fmt.Sprintf("user_acc_lab_test_group1_%d", time.Now().UnixNano())
+	group2Name := fmt.Sprintf("user_acc_lab_test_group2_%d", time.Now().UnixNano())
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLabResourceConfig(cfg.Cfg, "thistitle", "description", 1),
+				Config: testAccLabResourceConfig(cfg.Cfg, "thistitle", "description", 1, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "thistitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "description"),
@@ -58,7 +68,7 @@ func TestAccLabResource(t *testing.T) {
 				// Update: workaround for now is to disable the UseStateForUnknown modifier
 				// in the schema for the nested schema objects in the set.
 				// SkipFunc: func() (bool, error) { return true, nil },
-				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2),
+				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
@@ -71,7 +81,7 @@ func TestAccLabResource(t *testing.T) {
 			{
 				// should use the disabled one above and remove this.
 				// using this to have some test for update.
-				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 1),
+				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 1, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
@@ -82,7 +92,72 @@ func TestAccLabResource(t *testing.T) {
 	})
 }
 
-func testAccLabResourceConfig(cfg, title, description string, group int) string {
+func TestAccLabResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	title := fmt.Sprintf("drift-lab-%d", time.Now().UnixNano())
+	config := "" // set below with unique group names
+	var initialLabID string
+
+	// Use unique group names to avoid 409 "already exists" errors across test runs.
+	group1Name := fmt.Sprintf("user_acc_lab_test_group1_%d", time.Now().UnixNano())
+	group2Name := fmt.Sprintf("user_acc_lab_test_group2_%d", time.Now().UnixNano())
+	config = testAccLabResourceConfig(cfg.Cfg, title, "description", 1, group1Name, group2Name)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", title),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lab.test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lab.test")
+						}
+						initialLabID = rs.Primary.ID
+						if initialLabID == "" {
+							return fmt.Errorf("expected cml2_lab.test.id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					// delete the lab directly to simulate external drift
+					return client.Lab.Delete(context.Background(), models.UUID(initialLabID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", title),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lab.test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lab.test")
+						}
+						if rs.Primary.ID == initialLabID {
+							return fmt.Errorf("expected lab to be recreated; id still %q", initialLabID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccLabResourceConfig(cfg, title, description string, group int, group1Name, group2Name string) string {
 	var groupCfg string
 	if group == 1 {
 		groupCfg = `
@@ -104,32 +179,33 @@ func testAccLabResourceConfig(cfg, title, description string, group int) string 
 		`
 	}
 
+	// Keep fmt placeholders sequential to avoid accidental index drift.
 	return fmt.Sprintf(`
-%[1]s
+	%[1]s
 
-resource "cml2_group" "group1" {
-	name       = "user_acc_lab_test_group1"
-}
-
-resource "cml2_group" "group2" {
-	name       = "user_acc_lab_test_group2"
-}
-
-resource "cml2_lab" "test" {
-	title       = %[2]q
-	description = %[3]q
-	notes       = <<-EOT
-	# Heading
-	- topic one
-	- topic two
-	This is where it's ending... PEBKAC
-	EOT
-	node_staging = {
-		enabled = false
+	resource "cml2_group" "group1" {
+		name = %q
 	}
-	groups = [
-		%[4]s
-	]
-}
-`, cfg, title, description, groupCfg)
+
+	resource "cml2_group" "group2" {
+		name = %q
+	}
+
+	resource "cml2_lab" "test" {
+		title       = %q
+		description = %q
+		notes       = <<-EOT
+		# Heading
+		- topic one
+		- topic two
+		This is where it's ending... PEBKAC
+		EOT
+		node_staging = {
+			enabled = false
+		}
+		groups = [
+			%s
+		]
+	}
+`, cfg, group1Name, group2Name, title, description, groupCfg)
 }

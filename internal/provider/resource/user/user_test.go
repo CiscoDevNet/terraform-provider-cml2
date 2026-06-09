@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -10,9 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -77,6 +81,65 @@ func TestAccUserResource(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"password"},
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccUserResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	suffix := RandomString(8)
+	config := testAccUserResourceConfig(cfg.Cfg, suffix)
+
+	var initialUserID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_user.acc_test", "username", fmt.Sprintf("acc_test_user_%s", suffix)),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_user.acc_test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_user.acc_test")
+						}
+						initialUserID = rs.Primary.ID
+						if initialUserID == "" {
+							return fmt.Errorf("expected cml2_user.acc_test.id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					return client.User.Delete(context.Background(), models.UUID(initialUserID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_user.acc_test"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_user.acc_test")
+						}
+						if rs.Primary.ID == initialUserID {
+							return fmt.Errorf("expected user to be recreated (id should change), still %q", initialUserID)
+						}
+						return nil
+					},
+				),
+			},
 		},
 	})
 }

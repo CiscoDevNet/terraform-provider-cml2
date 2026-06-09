@@ -2,14 +2,12 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	cmlerrors "github.com/rschmied/gocmlclient/pkg/errors"
 	"github.com/rschmied/gocmlclient/pkg/models"
 
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
@@ -31,7 +29,7 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if err != nil {
 		// If the node was deleted outside Terraform, treat it as gone and
 		// remove it from the Terraform state. The next plan should recreate it.
-		if errors.Is(err, cmlerrors.ErrElementNotFound) || errors.Is(err, cmlerrors.ErrAPINotFound) {
+		if common.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}

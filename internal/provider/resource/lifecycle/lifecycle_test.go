@@ -1,6 +1,7 @@
 package lifecycle_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -14,6 +15,8 @@ import (
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -61,6 +64,305 @@ func TestAccLifecycleResource(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func TestAccLifecycleResourceRestartsWhenStoppedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	var labID string
+	var lifecycleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						lifecycleID = rs.Primary.ID
+						labID = rs.Primary.Attributes["lab_id"]
+						if lifecycleID == "" || labID == "" {
+							return fmt.Errorf("expected lifecycle id and lab_id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+
+					// Simulate external drift relevant to lifecycle: stop the lab
+					// outside Terraform while the desired state remains STARTED.
+					return client.Lab.Stop(context.Background(), models.UUID(labID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						if rs.Primary.ID != lifecycleID {
+							return fmt.Errorf("expected lifecycle not to be recreated; id changed from %q to %q", lifecycleID, rs.Primary.ID)
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccLifecycleResourceStopsWhenStartedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	configStarted := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	configStopped := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STOPPED")
+	var labID string
+	var lifecycleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: configStarted,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						lifecycleID = rs.Primary.ID
+						labID = rs.Primary.Attributes["lab_id"]
+						if lifecycleID == "" || labID == "" {
+							return fmt.Errorf("expected lifecycle id and lab_id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             configStopped,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					if labID == "" {
+						return fmt.Errorf("expected lab_id")
+					}
+					// Simulate external drift: force lab into STARTED while desired is STOPPED.
+					// (Even though it should already be STARTED from step 1, we do it
+					// explicitly to reduce timing flakiness.)
+					return client.Lab.Start(context.Background(), models.UUID(labID))
+				},
+			},
+			{
+				Config: configStopped,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						if rs.Primary.ID != lifecycleID {
+							return fmt.Errorf("expected lifecycle not to be recreated")
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STOPPED"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccLifecycleResourceDefinesWhenStoppedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "DEFINED_ON_CORE")
+	var labID string
+	var lifecycleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						lifecycleID = rs.Primary.ID
+						labID = rs.Primary.Attributes["lab_id"]
+						if lifecycleID == "" || labID == "" {
+							return fmt.Errorf("expected lifecycle id and lab_id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					if labID == "" {
+						return fmt.Errorf("expected lab_id")
+					}
+					// Simulate external drift: make the lab STARTED while desired state is
+					// DEFINED_ON_CORE. Provider should stop + wipe back to DEFINED_ON_CORE.
+					return client.Lab.Start(context.Background(), models.UUID(labID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						if rs.Primary.ID != lifecycleID {
+							return fmt.Errorf("expected lifecycle not to be recreated")
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccLifecycleResourceStartsWhenDefinedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	var labID string
+	var lifecycleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						lifecycleID = rs.Primary.ID
+						labID = rs.Primary.Attributes["lab_id"]
+						if lifecycleID == "" || labID == "" {
+							return fmt.Errorf("expected lifecycle id and lab_id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					if labID == "" {
+						return fmt.Errorf("expected lab_id")
+					}
+					// Simulate external drift: remove running state and wipe to get DEFINED_ON_CORE while desired is STARTED.
+					if err := client.Lab.Stop(context.Background(), models.UUID(labID)); err != nil {
+						return err
+					}
+					return client.Lab.Wipe(context.Background(), models.UUID(labID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						if rs.Primary.ID != lifecycleID {
+							return fmt.Errorf("expected lifecycle not to be recreated")
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+				),
+			},
+		},
+	})
+}
+
+func testAccLifecycleResourceConfigWithState(cfg, state string) string {
+	return fmt.Sprintf(`
+	%[1]s
+	resource "cml2_lab" "this" {}
+
+	resource "cml2_node" "r1" {
+	  lab_id         = cml2_lab.this.id
+	  label          = "R1"
+	  nodedefinition = "nginx"
+	}
+
+	resource "cml2_node" "r2" {
+	  lab_id         = cml2_lab.this.id
+	  label          = "R2"
+	  nodedefinition = "nginx"
+	}
+
+	resource "cml2_link" "l1" {
+	  lab_id = cml2_lab.this.id
+	  node_a = cml2_node.r1.id
+	  node_b = cml2_node.r2.id
+	}
+
+	resource "cml2_lifecycle" "top" {
+	  lab_id = cml2_lab.this.id
+	  state  = %q
+	  depends_on = [
+	    cml2_node.r1,
+	    cml2_node.r2,
+	    cml2_link.l1,
+	  ]
+	}
+`, cfg, state)
 }
 
 func TestAccLifecycleImport(t *testing.T) {
