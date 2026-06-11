@@ -2,6 +2,23 @@
 
 Lists the changes in the provider.
 
+## Version 0.9.2
+
+- Added shared 404/not-found detection helper (internal/common/not_found.go) used across resources.
+- Updated Read behavior to remove resources from Terraform state when the backing CML resource is missing (404).
+- Updated Delete behavior to treat missing resources as successfully cleaned up (no error when already deleted externally).
+- Extended external-deletion handling across multiple resources, including:
+  - Node (Read + Delete)
+  - Annotation (Read + Delete)
+  - Group (Read + Delete)
+  - User (Read + Delete)
+  - Link (Read + Delete)
+  - Lab (Read + Delete)
+  - Lab Lifecycle (Read + lifecycle reconcile/cleanup)
+- Updated acceptance test infrastructure and coverage:
+  - Acceptance client construction from TF_VAR_* env vars (internal/testing/gocmlclient_env.go)
+  - Resource test updates for the affected resources (plus lint/dependency/changelog updates).
+
 ## Version 0.9.1
 
 - fix: preserve explicit named configurations on nodes; avoid collapsing them
