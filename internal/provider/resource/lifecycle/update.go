@@ -37,71 +37,11 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	if stateData.State.ValueString() != planData.State.ValueString() {
-		tflog.Info(ctx, "state changed")
+	desired := models.LabState(planData.State.ValueString())
+	stateChanged := models.LabState(stateData.State.ValueString()) != desired
 
-		start := startData{
-			staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
-			timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
-			wait:     planData.Wait.IsNull() || planData.Wait.ValueBool(),
-		}
-
-		// need to get the lab data here
-		lab, getErr := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
-		start.lab = &lab
-		if getErr != nil {
-			resp.Diagnostics.AddError(
-				common.ErrorLabel,
-				fmt.Sprintf("Unable to fetch lab, got error: %s", getErr),
-			)
-			return
-		}
-
-		// this is very blunt ...
-		if stateData.State.ValueString() == string(models.LabStateStarted) {
-			if planData.State.ValueString() == string(models.LabStateStopped) {
-				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
-			}
-			if planData.State.ValueString() == string(models.LabStateDefined) {
-				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
-				timeout := start.timeouts.Update.ValueString()
-				common.Converge(
-					ctx, r.cfg.Client(), &resp.Diagnostics,
-					planData.LabID.ValueString(), timeout,
-				)
-				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
-			}
-		}
-
-		if stateData.State.ValueString() == string(models.LabStateStopped) {
-			if planData.State.ValueString() == string(models.LabStateStarted) {
-				r.startNodes(ctx, &resp.Diagnostics, start)
-			}
-			if planData.State.ValueString() == string(models.LabStateDefined) {
-				r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
-			}
-		}
-
-		if stateData.State.ValueString() == string(models.LabStateDefined) {
-			if planData.State.ValueString() == string(models.LabStateStarted) {
-				r.startNodes(ctx, &resp.Diagnostics, start)
-			}
-		}
-		// not sure if this makes sense... state could change when not waiting
-		// for convergence.  then again, there's no differentiation at the lab
-		// level between "STARTED" and "BOOTED" (e.g. converged).  It's always
-		// started...
-		if start.wait {
-			timeout := start.timeouts.Update.ValueString()
-			common.Converge(
-				ctx, r.cfg.Client(), &resp.Diagnostics,
-				planData.LabID.ValueString(), timeout,
-			)
-		}
-	}
-
-	// since we have changed lab state, we need to re-read all the node
-	// state...
+	// Fetch current lab state once.  We need it both to detect drift (when
+	// lifecycle.state is unchanged) and to drive the corrective action.
 	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -110,7 +50,56 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		)
 		return
 	}
+
+	// Decide whether to act: explicit state transition OR dependency drift
+	// (node/link state diverged from desired lifecycle state while
+	// lifecycle.state itself stayed the same).
+	if stateChanged || labHasDrift(&lab, desired) {
+		tflog.Info(ctx, "Resource LabLifecycle UPDATE: applying state change or correcting drift",
+			map[string]any{"desired": desired, "state_changed": stateChanged},
+		)
+
+		start := startData{
+			lab:      &lab,
+			staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
+			timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
+			wait:     planData.Wait.IsNull() || planData.Wait.ValueBool(),
+		}
+
+		switch desired {
+		case models.LabStateStarted:
+			r.startNodes(ctx, &resp.Diagnostics, start)
+			if start.wait {
+				timeout := start.timeouts.Update.ValueString()
+				common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.LabID.ValueString(), timeout)
+			}
+		case models.LabStateStopped:
+			r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
+		case models.LabStateDefined:
+			// Wipe requires a stop first if the lab (or any node) is still running.
+			if lab.State == models.LabStateStarted || lab.Running() {
+				r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
+				if start.wait {
+					timeout := start.timeouts.Update.ValueString()
+					common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.LabID.ValueString(), timeout)
+				}
+			}
+			r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
+		}
+
+		// Re-read after action so we reflect the post-apply state.
+		lab, err = r.cfg.Client().Lab.GetByID(ctx, models.UUID(planData.LabID.ValueString()), true)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				common.ErrorLabel,
+				fmt.Sprintf("Unable to fetch lab after action, got error: %s", err),
+			)
+			return
+		}
+	}
+
 	tflog.Info(ctx, fmt.Sprintf("Update: lab state: %s", lab.State))
+
 	// If the user explicitly configured a desired state, keep it in state after
 	// apply to avoid "inconsistent result" errors when the simulator returns a
 	// transitional/lagging state (e.g. wait=false).

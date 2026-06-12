@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -125,6 +126,174 @@ func TestAccLifecycleResourceRestartsWhenStoppedExternally(t *testing.T) {
 					},
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccLifecycleResourceRestartsWhenNodeAndLinkStoppedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	var labID string
+	var nodeID string
+	var linkID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						labID = rs.Primary.Attributes["lab_id"]
+						if labID == "" {
+							return fmt.Errorf("expected lab_id")
+						}
+
+						nodeRS, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						nodeID = nodeRS.Primary.ID
+						if nodeID == "" {
+							return fmt.Errorf("expected node id")
+						}
+
+						linkRS, ok := s.RootModule().Resources["cml2_link.l1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_link.l1")
+						}
+						linkID = linkRS.Primary.ID
+						if linkID == "" {
+							return fmt.Errorf("expected link id")
+						}
+
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+
+					if labID == "" || nodeID == "" || linkID == "" {
+						return fmt.Errorf("internal test error: expected captured lab_id/node_id/link_id")
+					}
+
+					// Simulate external drift: stop a single node.
+					if err := client.Node.Stop(context.Background(), models.UUID(labID), models.UUID(nodeID)); err != nil {
+						return err
+					}
+
+					// Wait briefly for CML to update operational state.
+					var lab *models.Lab
+					var lastErr error
+					deadline := time.Now().Add(30 * time.Second)
+					for time.Now().Before(deadline) {
+						l, getErr := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if getErr != nil {
+							lastErr = getErr
+							continue
+						}
+						lab = &l
+
+						n := lab.Nodes[models.UUID(nodeID)]
+						if n != nil && n.State == models.NodeStateStopped {
+							break
+						}
+						time.Sleep(2 * time.Second)
+					}
+					if lab == nil {
+						if lastErr != nil {
+							return lastErr
+						}
+						return fmt.Errorf("timeout waiting for node to become STOPPED")
+					}
+
+					// Validate we hit the intended drift scenario: lab state unchanged
+					// while dependent node/link states changed.
+					if lab.State != models.LabStateStarted {
+						return fmt.Errorf("expected lab state to remain STARTED during drift, got %s", lab.State)
+					}
+
+					if n := lab.Nodes[models.UUID(nodeID)]; n == nil || n.State != models.NodeStateStopped {
+						return fmt.Errorf("expected node to be STOPPED, got %v", func() models.NodeState {
+							if n == nil {
+								return ""
+							}
+							return n.State
+						}())
+					}
+
+					var linkState string
+					for _, l := range lab.Links {
+						if l.ID == models.UUID(linkID) {
+							linkState = l.State
+							break
+						}
+					}
+					if linkState == "" {
+						return fmt.Errorf("link not found in lab during drift check")
+					}
+					if linkState == models.LinkStateStarted {
+						return fmt.Errorf("expected link state to not be STARTED during drift, got %s", linkState)
+					}
+
+					return nil
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						client, err := cfg.NewCMLClientFromTFEnv()
+						if err != nil {
+							return err
+						}
+						lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if err != nil {
+							return err
+						}
+
+						n := lab.Nodes[models.UUID(nodeID)]
+						if n == nil {
+							return fmt.Errorf("expected node to exist after drift correction")
+						}
+						if n.State != models.NodeStateBooted {
+							return fmt.Errorf("expected node to be BOOTED after drift correction, got %s", n.State)
+						}
+
+						var linkState string
+						for _, l := range lab.Links {
+							if l.ID == models.UUID(linkID) {
+								linkState = l.State
+								break
+							}
+						}
+						if linkState == "" {
+							return fmt.Errorf("link not found in lab after drift correction")
+						}
+						if linkState != models.LinkStateStarted {
+							return fmt.Errorf("expected link to be STARTED after drift correction, got %s", linkState)
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 				),
 			},
 		},

@@ -191,6 +191,63 @@ func (r *LabLifecycleResource) injectConfigs(ctx context.Context, lab *models.La
 	tflog.Info(ctx, "injectConfigs: done")
 }
 
+// labHasDrift reports whether any node or link in lab is not in the state
+// expected for the given desired lifecycle state.  It is used by both
+// ModifyPlan (operating on Terraform node models from prior state) and Update
+// (operating on a freshly-fetched models.Lab) to decide whether a corrective
+// action is necessary.
+//
+// For desired == LabStateStarted  : nodes must be STARTED or BOOTED, links STARTED.
+// For desired == LabStateStopped  : nodes must be STOPPED,            links STOPPED.
+// For desired == LabStateDefined  : nodes must be DEFINED_ON_CORE,    links DEFINED_ON_CORE.
+func labHasDrift(lab *models.Lab, desired models.LabState) bool {
+	switch desired {
+	case models.LabStateStarted:
+		for _, node := range lab.Nodes {
+			if node == nil {
+				continue
+			}
+			if node.State != models.NodeStateStarted && node.State != models.NodeStateBooted {
+				return true
+			}
+		}
+		for _, link := range lab.Links {
+			if link.State != models.LinkStateStarted {
+				return true
+			}
+		}
+	case models.LabStateStopped:
+		for _, node := range lab.Nodes {
+			if node == nil {
+				continue
+			}
+			if node.State != models.NodeStateStopped {
+				return true
+			}
+		}
+		for _, link := range lab.Links {
+			if link.State != models.LinkStateStopped {
+				return true
+			}
+		}
+	case models.LabStateDefined:
+		for _, node := range lab.Nodes {
+			if node == nil {
+				continue
+			}
+			if node.State != models.NodeStateDefined {
+				return true
+			}
+		}
+		for _, link := range lab.Links {
+			if link.State != models.LinkStateDefined {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *models.Lab, diags *diag.Diagnostics) types.Map {
 	// we want this as a stable sort by node UUID
 	nodeList := []*models.Node{}

@@ -68,19 +68,63 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	changeNeeded := false
+	var nodes map[string]cmlschema.NodeModel
 	if !noState {
-		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
-	}
-
-	if changeNeeded {
-		tflog.Info(ctx, "ModifyPlan: change detected")
-
-		var nodes map[string]cmlschema.NodeModel
-
+		// Fetch prior node state once; used for both drift detection and plan
+		// annotation below.
 		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, stateData.Nodes, &nodes)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
+		// Explicit lifecycle.state transition.
+		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
+
+		// Dependency drift: node/link state diverged from desired lifecycle
+		// state without the lifecycle.state field itself changing (e.g. CML
+		// keeps lab.state=STARTED while a single node was stopped externally).
+		// We detect this from the Terraform-managed node state already in prior
+		// state — no extra API call needed at plan time.
+		if !changeNeeded {
+			desired := models.LabState(planData.State.ValueString())
+			switch desired {
+			case models.LabStateStarted:
+				for _, node := range nodes {
+					if node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					s := node.State.ValueString()
+					if s != string(models.NodeStateStarted) && s != string(models.NodeStateBooted) {
+						changeNeeded = true
+						break
+					}
+				}
+			case models.LabStateStopped:
+				for _, node := range nodes {
+					if node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					if node.State.ValueString() != string(models.NodeStateStopped) {
+						changeNeeded = true
+						break
+					}
+				}
+			case models.LabStateDefined:
+				for _, node := range nodes {
+					if node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					if node.State.ValueString() != string(models.NodeStateDefined) {
+						changeNeeded = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if changeNeeded {
+		tflog.Info(ctx, "ModifyPlan: change detected")
 
 		plannedState := planData.State.ValueString()
 
