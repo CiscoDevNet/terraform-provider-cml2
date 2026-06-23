@@ -51,11 +51,17 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	// Decide whether to act: explicit state transition OR dependency drift
-	// (node/link state diverged from desired lifecycle state while
-	// lifecycle.state itself stayed the same).
-	if stateChanged || labHasDrift(&lab, desired) {
-		tflog.Info(ctx, "Resource LabLifecycle UPDATE: applying state change or correcting drift",
+	// Decide whether to act:
+	// - Explicit lifecycle.state transition, OR
+	// - Dependency drift (node/link state diverged while lifecycle.state stayed
+	//   the same), OR
+	// - Desired state is STARTED: always attempt startNodes because a dependent
+	//   resource (e.g. an external_connector node) may have been replaced during
+	//   this apply cycle.  Lab.Start / Node.Start are idempotent — already-running
+	//   nodes are left untouched by the CML API.
+	if stateChanged || desired == models.LabStateStarted || labHasDrift(&lab, desired) {
+		tflog.Info(
+			ctx, "Resource LabLifecycle UPDATE: applying state change or correcting drift",
 			map[string]any{"desired": desired, "state_changed": stateChanged},
 		)
 

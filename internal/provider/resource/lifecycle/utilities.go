@@ -259,6 +259,20 @@ func (r *LabLifecycleResource) populateNodes(ctx context.Context, lab *models.La
 	})
 	valueMap := make(map[string]attr.Value, 0)
 	for _, node := range nodeList {
+		// External connector nodes always store the canonical label on the
+		// server side. To keep lifecycle state consistent with what the
+		// standalone node resource stores (see node/read.go back-compat guard),
+		// collapse any server-returned named config back into the single
+		// configuration field and clear the configurations list.  This prevents
+		// "Provider produced inconsistent result after apply" when a device-name
+		// input (e.g. "bridge0") was normalised to a label (e.g. "System Bridge")
+		// by the server.
+		if node.NodeDefinition == "external_connector" {
+			if len(node.Configurations) > 0 && node.Configuration == nil {
+				node.Configuration = node.Configurations[0].Content
+			}
+			node.Configurations = nil
+		}
 		valueMap[string(node.ID)] = cmlschema.NewNode(ctx, node, diags)
 	}
 	nodes, _ := types.MapValue(

@@ -1256,3 +1256,193 @@ resource "cml2_lifecycle" "top" {
 }
 `, cfg, configs, namedConfigs)
 }
+
+// TestAccLifecycleExtConnDeviceNameNoInconsistency reproduces the bug where
+// changing an external_connector node's configuration from a label to a device
+// name caused "Provider produced inconsistent result after apply" in the
+// lifecycle resource.
+//
+// Two known connector pairs on the test CML instance are exercised:
+//
+//	"bridge0" (device name) <-> "System Bridge" (label)
+//	"virbr0"  (device name) <-> "NAT"           (label)
+//
+// Scenario:
+//  1. Create lifecycle with extconn using label "System Bridge".
+//  2. Update to device name "bridge0" (server normalises → "System Bridge").
+//  3. Update to label "NAT".
+//  4. Update to device name "virbr0" (server normalises → "NAT").
+//  5. Idempotency check — re-apply device name, expect empty plan.
+//  6. Switch back to label "System Bridge" for clean teardown.
+func TestAccLifecycleExtConnDeviceNameNoInconsistency(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: baseline with label.
+				Config: testAccLifecycleExtConnConfig(cfg.Cfg, "System Bridge"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "System Bridge"),
+				),
+			},
+			{
+				// Step 2: switch to device name "bridge0".
+				// Before the fix this produced:
+				//   .nodes["..."].configurations[0].content:
+				//     was cty.StringVal("System Bridge"), but now cty.StringVal("System Bridge")
+				// (or an equivalent inconsistent-result error).
+				Config: testAccLifecycleExtConnConfig(cfg.Cfg, "bridge0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+					// Standalone node keeps the device-name in state (back-compat).
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "bridge0"),
+				),
+			},
+			{
+				// Step 3: idempotency — re-apply device name, must produce empty plan.
+				Config:   testAccLifecycleExtConnConfig(cfg.Cfg, "bridge0"),
+				PlanOnly: true,
+			},
+			{
+				// Step 4: switch to the other label.
+				Config: testAccLifecycleExtConnConfig(cfg.Cfg, "NAT"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "NAT"),
+				),
+			},
+			{
+				// Step 5: switch to device name "virbr0" (normalises to "NAT").
+				Config: testAccLifecycleExtConnConfig(cfg.Cfg, "virbr0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "DEFINED_ON_CORE"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "virbr0"),
+				),
+			},
+			{
+				// Step 6: idempotency — re-apply device name, must produce empty plan.
+				Config:   testAccLifecycleExtConnConfig(cfg.Cfg, "virbr0"),
+				PlanOnly: true,
+			},
+			{
+				// Step 7: return to a label for clean teardown.
+				Config: testAccLifecycleExtConnConfig(cfg.Cfg, "System Bridge"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "System Bridge"),
+				),
+			},
+		},
+	})
+}
+
+func testAccLifecycleExtConnConfig(providerCfg, extconnConfig string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  nodedefinition = "external_connector"
+  configuration  = %[2]q
+}
+
+resource "cml2_lifecycle" "top" {
+  lab_id = cml2_lab.this.id
+  state  = "DEFINED_ON_CORE"
+  depends_on = [
+    cml2_node.ext,
+  ]
+}
+`, providerCfg, extconnConfig)
+}
+
+// TestAccLifecycleExtConnNodeReplaceRestartsLab verifies that when an
+// external_connector node is replaced (config change while STARTED triggers
+// destroy+create) the lifecycle resource restarts the new node so the lab
+// remains fully running.
+//
+// Before the fix, lifecycle Update() only called startNodes when labHasDrift()
+// detected a stopped node.  But labHasDrift() is evaluated after fetching the
+// lab — which happens before the node replacement completes in the same apply
+// cycle when Terraform evaluates ModifyPlan.  The result was the new node
+// stayed in DEFINED_ON_CORE after apply.
+func TestAccLifecycleExtConnNodeReplaceRestartsLab(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	configStarted := func(extconn string) string {
+		return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  nodedefinition = "external_connector"
+  configuration  = %[2]q
+}
+
+resource "cml2_lifecycle" "top" {
+  lab_id = cml2_lab.this.id
+  state  = "STARTED"
+  depends_on = [
+    cml2_node.ext,
+  ]
+}
+`, cfg.Cfg, extconn)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: create lab with extconn "NAT", start lifecycle.
+				Config: configStarted("NAT"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "NAT"),
+				),
+			},
+			{
+				// Step 2: change extconn config to a different label.
+				// This replaces the node (destroy + create at DEFINED_ON_CORE).
+				// The lifecycle Update() must restart the new node so the lab
+				// stays STARTED.
+				Config: configStarted("System Bridge"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "System Bridge"),
+					// Confirm the node is actually running, not stuck at DEFINED_ON_CORE.
+					func(s *terraform.State) error {
+						nodeRS, ok := s.RootModule().Resources["cml2_node.ext"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.ext")
+						}
+						labID := nodeRS.Primary.Attributes["lab_id"]
+						nodeID := nodeRS.Primary.ID
+						client, err := cfg.NewCMLClientFromTFEnv()
+						if err != nil {
+							return err
+						}
+						lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if err != nil {
+							return err
+						}
+						n := lab.Nodes[models.UUID(nodeID)]
+						if n == nil {
+							return fmt.Errorf("node not found in lab after replace")
+						}
+						if n.State == models.NodeStateDefined || n.State == models.NodeStateStopped {
+							return fmt.Errorf("expected node to be running after lifecycle restart, got %s", n.State)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}

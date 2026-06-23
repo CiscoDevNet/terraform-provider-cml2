@@ -243,6 +243,16 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				node.Configurations = types.ListNull(cmlschema.NamedConfigAttrType)
 			}
 
+			// External connector nodes may have their configuration normalised by
+			// the server (device name → label, e.g. "bridge0" → "System Bridge").
+			// Mark both configuration forms unknown so the plan does not pin the
+			// prior-state value and produce an "inconsistent result after apply"
+			// error when the server returns the normalised label form.
+			if node.NodeDefinition.ValueString() == "external_connector" {
+				node.Configuration = cmlschema.NewConfigUnknown()
+				node.Configurations = types.ListUnknown(cmlschema.NamedConfigAttrType)
+			}
+
 			var ifaces []cmlschema.InterfaceModel
 			resp.Diagnostics.Append(tfsdk.ValueAs(ctx, node.Interfaces, &ifaces)...)
 			if resp.Diagnostics.HasError() {
