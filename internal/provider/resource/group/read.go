@@ -25,6 +25,11 @@ func (r *GroupResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	group, err := r.cfg.Client().Group.GetByID(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get group, got error: %s", err),

@@ -25,6 +25,11 @@ func (r *LabLifecycleResource) Read(ctx context.Context, req resource.ReadReques
 
 	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), true)
 	if err != nil {
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to fetch lab, got error: %s", err),

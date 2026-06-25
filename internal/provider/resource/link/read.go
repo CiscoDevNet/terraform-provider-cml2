@@ -27,6 +27,11 @@ func (r *LinkResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	link, err := r.cfg.Client().Link.GetByID(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get link, got error: %s", err),

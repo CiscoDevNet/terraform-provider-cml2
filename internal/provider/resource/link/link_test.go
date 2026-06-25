@@ -1,15 +1,19 @@
 package link_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -63,6 +67,66 @@ func TestAccLinkResource(t *testing.T) {
 			// 	),
 			// },
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestAccLinkResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLinkResourceConfig(cfg.Cfg)
+	var initialLinkID string
+	var initialLabID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "label", "r1-eth0<->r2-eth0"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_link.l0"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_link.l0")
+						}
+						initialLinkID = rs.Primary.ID
+						initialLabID = rs.Primary.Attributes["lab_id"]
+						if initialLinkID == "" || initialLabID == "" {
+							return fmt.Errorf("expected lab_id and id to be set in state")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					return client.Link.Delete(context.Background(), models.UUID(initialLabID), models.UUID(initialLinkID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_link.l0", "label", "r1-eth0<->r2-eth0"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_link.l0"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_link.l0")
+						}
+						if rs.Primary.ID == initialLinkID {
+							return fmt.Errorf("expected link to be recreated; id still %q", initialLinkID)
+						}
+						return nil
+					},
+				),
+			},
 		},
 	})
 }
@@ -170,7 +234,7 @@ resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.devnet-expert.id
 	nodedefinition = "external_connector"
 	label          = "Internet"
-	configuration  = "NAT"
+	configuration  = "virbr0"
   }
 
   resource "cml2_node" "nat1" {

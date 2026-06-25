@@ -29,6 +29,13 @@ func (r *AnnotationResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	out, err := r.cfg.Client().Annotation.Get(ctx, labID, annID)
 	if err != nil {
+		// External deletion: remove the resource from state so Terraform can
+		// recreate it on the next plan.
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("unable to read annotation: %s", err))
 		return
 	}

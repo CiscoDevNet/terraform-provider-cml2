@@ -43,7 +43,7 @@ func (r *NodeResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 		"once. Changing attributes will then require a replace.  " +
 		"Node configurations are \"day zero\" configurations. Replacing a configuration typically requires a " +
 		"node replacement if the node has been started.  No Configurations can be provided for unmanaged switches. " +
-		"External connectors require the connector label (like \"NAT\"), not the device name (like \"virbr0\"). " +
+		"External connectors require the connector device name (like \"virbr0\"), not the label (like \"NAT\"). " +
 		"The available connectors can be retrieved via the external connector data source."
 	resp.Schema.Attributes = cmlschema.Node()
 	resp.Diagnostics = nil

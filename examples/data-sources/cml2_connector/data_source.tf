@@ -9,7 +9,7 @@ data "cml2_connector" "nat" {
 }
 
 output "nat_connector" {
-  # The label can be used as the configuration of an external connector node
+  # external_connector configuration expects device_name.
   # The ID is mostly for internal use.
-  value = data.cml2_connector.nat.connectors[0].label
+  value = data.cml2_connector.nat.connectors[0].device_name
 }

@@ -27,6 +27,11 @@ func (r *AnnotationResource) Delete(ctx context.Context, req resource.DeleteRequ
 	annID := models.UUID(data.ID.ValueString())
 
 	if err := r.cfg.Client().Annotation.Delete(ctx, labID, annID); err != nil {
+		if common.IsNotFound(err) {
+			// Annotation already gone (deleted externally). Treat as successful cleanup.
+			return
+		}
+
 		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("unable to delete annotation: %s", err))
 		return
 	}

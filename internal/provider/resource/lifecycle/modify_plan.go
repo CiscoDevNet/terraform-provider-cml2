@@ -68,17 +68,154 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	changeNeeded := false
+	stateTransition := false
+	triggerChanged := false
+	var nodes map[string]cmlschema.NodeModel
 	if !noState {
-		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
+		// Fetch prior node state once; used for both drift detection and plan
+		// annotation below.
+		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, stateData.Nodes, &nodes)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		// Explicit lifecycle.state transition.
+		stateTransition = planData.State.ValueString() != stateData.State.ValueString()
+		changeNeeded = stateTransition
+
+		// Synthetic trigger diff: force lifecycle Update when update_triggers changed.
+		if !changeNeeded && !configData.UpdateTriggers.IsUnknown() && !configData.UpdateTriggers.Equal(stateData.UpdateTriggers) {
+			triggerChanged = true
+			changeNeeded = true
+		}
+
+		// Determine staging behavior from config once.
+		staging := getStaging(ctx, req.Config, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		shouldBeStarted := func(node cmlschema.NodeModel) bool {
+			// No staging configured => STARTED applies to all nodes.
+			if staging == nil {
+				return true
+			}
+			// Default is start_remaining=true.
+			if staging.StartRemaining.IsNull() || staging.StartRemaining.ValueBool() {
+				return true
+			}
+
+			// start_remaining=false: only nodes matched by stages are expected to start.
+			stages := map[string]struct{}{}
+			for _, elem := range staging.Stages.Elements() {
+				stage := elem.(types.String).ValueString()
+				stages[stage] = struct{}{}
+			}
+			if len(stages) == 0 || node.Tags.IsNull() || node.Tags.IsUnknown() {
+				return false
+			}
+			for _, elem := range node.Tags.Elements() {
+				tag := elem.(types.String).ValueString()
+				if _, ok := stages[tag]; ok {
+					return true
+				}
+			}
+			return false
+		}
+
+		// Dependency drift: node/link state diverged from desired lifecycle state
+		// without lifecycle.state itself changing.
+		if !changeNeeded {
+			desired := models.LabState(planData.State.ValueString())
+			switch desired {
+			case models.LabStateStarted:
+				for _, node := range nodes {
+					if !shouldBeStarted(node) || node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					s := node.State.ValueString()
+					if s != string(models.NodeStateStarted) && s != string(models.NodeStateBooted) {
+						changeNeeded = true
+						break
+					}
+				}
+			case models.LabStateStopped:
+				for _, node := range nodes {
+					if node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					s := node.State.ValueString()
+					// Nodes that were never started can legitimately remain
+					// DEFINED_ON_CORE when the lifecycle desired state is STOPPED.
+					if s != string(models.NodeStateStopped) && s != string(models.NodeStateDefined) {
+						changeNeeded = true
+						break
+					}
+				}
+			case models.LabStateDefined:
+				for _, node := range nodes {
+					if node.State.IsNull() || node.State.IsUnknown() {
+						continue
+					}
+					if node.State.ValueString() != string(models.NodeStateDefined) {
+						changeNeeded = true
+						break
+					}
+				}
+			}
+
+			// Link drift detection: unlike nodes, links are not currently stored in
+			// lifecycle Terraform state, so inspect current lab links directly.
+			if !changeNeeded {
+				labID := stateData.LabID.ValueString()
+				if labID == "" && !planData.LabID.IsNull() && !planData.LabID.IsUnknown() {
+					labID = planData.LabID.ValueString()
+				}
+				if labID != "" {
+					if lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(labID), true); err == nil {
+						switch desired {
+						case models.LabStateStarted:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateStarted {
+									changeNeeded = true
+									break
+								}
+							}
+						case models.LabStateStopped:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateStopped {
+									changeNeeded = true
+									break
+								}
+							}
+						case models.LabStateDefined:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateDefined {
+									changeNeeded = true
+									break
+								}
+							}
+						}
+					} else {
+						tflog.Warn(ctx, "ModifyPlan: unable to fetch lab for link drift check", map[string]any{
+							"lab_id": labID,
+							"error":  common.ErrorString(err),
+						})
+					}
+				}
+			}
+		}
 	}
 
 	if changeNeeded {
 		tflog.Info(ctx, "ModifyPlan: change detected")
 
-		var nodes map[string]cmlschema.NodeModel
-
-		resp.Diagnostics.Append(tfsdk.ValueAs(ctx, stateData.Nodes, &nodes)...)
-		if resp.Diagnostics.HasError() {
+		// For synthetic trigger-only updates, do not rewrite nested computed
+		// node data from prior state. Doing so can conflict with concurrent
+		// node add/replace operations in the same apply.
+		if triggerChanged && !stateTransition {
+			resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
+			tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN done")
 			return
 		}
 
@@ -197,6 +334,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			if node.NodeDefinition.ValueString() == "unmanaged_switch" {
 				node.Configuration = cmlschema.NewConfigUnknown()
 				node.Configurations = types.ListNull(cmlschema.NamedConfigAttrType)
+			}
+
+			// External connector nodes may return varying configuration shapes
+			// across state transitions. Mark both forms unknown to avoid pinning
+			// stale values and producing inconsistent-result errors.
+			if node.NodeDefinition.ValueString() == "external_connector" {
+				node.Configuration = cmlschema.NewConfigUnknown()
+				node.Configurations = types.ListUnknown(cmlschema.NamedConfigAttrType)
 			}
 
 			var ifaces []cmlschema.InterfaceModel

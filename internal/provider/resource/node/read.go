@@ -24,9 +24,17 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	savedGeneration := data.Generation
 
 	node, err := r.cfg.Client().Node.GetByID(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
+		// If the node was deleted outside Terraform, treat it as gone and
+		// remove it from the Terraform state. The next plan should recreate it.
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get node, got error: %s", err),
@@ -36,22 +44,28 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	// Prefer the format that was used in config/state to avoid drift between
 	// `configuration` (single) and `configurations` (named).
-	//
-	// External connector back-compat: if configuration was set in state, keep it
-	// in state even if the controller returns the label form. This preserves
-	// deprecated device-name configs (e.g. "virbr0") and prevents perpetual diffs.
-	if node.NodeDefinition == "external_connector" && !data.Configuration.IsNull() && !data.Configuration.IsUnknown() {
-		node.Configuration = data.Configuration.ValueString()
-		node.Configurations = nil
+	if node.NodeDefinition == "external_connector" {
+		if !data.Configuration.IsNull() && !data.Configuration.IsUnknown() {
+			node.Configuration = data.Configuration.ValueString()
+			node.Configurations = nil
+		}
+		if !data.Configurations.IsNull() && !data.Configurations.IsUnknown() {
+			node.Configuration = nil
+			node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations)
+		}
+		tflog.Debug(ctx, "extconn read state alignment", map[string]any{
+			"saved_configuration": data.Configuration.ValueString(),
+			"saved_named_count":   len(data.Configurations.Elements()),
+			"api_configuration":   fmt.Sprintf("%v", node.Configuration),
+		})
 	}
-
 	switch {
 	case !r.cfg.UseNamedConfigs() && len(node.Configurations) > 0:
 		if node.Configuration == nil {
 			node.Configuration = node.Configurations[0].Content
 		}
 		node.Configurations = nil
-	case !data.Configurations.IsNull():
+	case !data.Configurations.IsNull() && !data.Configurations.IsUnknown():
 		node.Configuration = nil
 		// keep node.Configurations as-is
 	case !data.Configuration.IsNull() && len(node.Configurations) > 0:
@@ -67,6 +81,8 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 			&data,
 		)...,
 	)
+
+	data.Generation = savedGeneration
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

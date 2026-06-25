@@ -31,6 +31,11 @@ func (r *LinkResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Link.Delete(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
+		if common.IsNotFound(err) {
+			// Link already deleted externally.
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy link, got error: %s", err),

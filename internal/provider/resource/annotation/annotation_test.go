@@ -1,6 +1,7 @@
 package annotation_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -12,6 +13,8 @@ import (
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 )
 
 func testCheckAttrNullOrEmpty(resourceName, attrPath string) resource.TestCheckFunc {
@@ -90,6 +93,66 @@ func TestAccAnnotationResourceText(t *testing.T) {
 					}
 					return fmt.Sprintf("%s/%s", labID, rs.Primary.ID), nil
 				},
+			},
+		},
+	})
+}
+
+func TestAccAnnotationResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccAnnotationText(cfg.Cfg, "drift-annotation", false)
+	var labID string
+	var annotationID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() {},
+		ProtoV6ProviderFactories: testAccAnnotationProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_annotation.a", "type", "text"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_annotation.a"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_annotation.a")
+						}
+						labID = rs.Primary.Attributes["lab_id"]
+						annotationID = rs.Primary.ID
+						if labID == "" || annotationID == "" {
+							return fmt.Errorf("expected lab_id and id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					return client.Annotation.Delete(context.Background(), models.UUID(labID), models.UUID(annotationID))
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_annotation.a", "text.text_content", "drift-annotation"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_annotation.a"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_annotation.a")
+						}
+						if rs.Primary.ID == annotationID {
+							return fmt.Errorf("expected annotation to be recreated; id still %q", annotationID)
+						}
+						return nil
+					},
+				),
 			},
 		},
 	})

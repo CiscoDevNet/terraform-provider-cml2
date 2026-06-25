@@ -30,6 +30,11 @@ func (r *LabResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.ID.ValueString()), false)
 	if err != nil {
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get lab, got error: %s", err),

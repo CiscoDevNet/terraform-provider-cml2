@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/cmlschema"
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Delete deletes a group.
@@ -27,6 +27,11 @@ func (r *GroupResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	err = r.cfg.Client().Group.Delete(ctx, data.ID.ValueString())
 	if err != nil {
+		if common.IsNotFound(err) {
+			// Group already deleted externally.
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to delete group, got error: %s", err),

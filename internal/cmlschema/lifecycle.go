@@ -15,18 +15,19 @@ import (
 
 // LabLifecycleModel is the Terraform representation of the lifecycle resource state.
 type LabLifecycleModel struct {
-	ID           types.String `tfsdk:"id"`
-	LabID        types.String `tfsdk:"lab_id"`
-	Topology     types.String `tfsdk:"topology"`
-	Wait         types.Bool   `tfsdk:"wait"`
-	State        types.String `tfsdk:"state"`
-	Booted       types.Bool   `tfsdk:"booted"`
-	Nodes        types.Map    `tfsdk:"nodes"`
-	Configs      types.Map    `tfsdk:"configs"`
-	NamedConfigs types.Map    `tfsdk:"named_configs"`
-	Staging      types.Object `tfsdk:"staging"`
-	Timeouts     types.Object `tfsdk:"timeouts"`
-	Elements     types.List   `tfsdk:"elements"`
+	ID             types.String `tfsdk:"id"`
+	LabID          types.String `tfsdk:"lab_id"`
+	Topology       types.String `tfsdk:"topology"`
+	Wait           types.Bool   `tfsdk:"wait"`
+	State          types.String `tfsdk:"state"`
+	Booted         types.Bool   `tfsdk:"booted"`
+	Nodes          types.Map    `tfsdk:"nodes"`
+	UpdateTriggers types.Map    `tfsdk:"update_triggers"`
+	Configs        types.Map    `tfsdk:"configs"`
+	NamedConfigs   types.Map    `tfsdk:"named_configs"`
+	Staging        types.Object `tfsdk:"staging"`
+	Timeouts       types.Object `tfsdk:"timeouts"`
+	Elements       types.List   `tfsdk:"elements"`
 }
 
 // Lifecycle returns the schema for the lifecycle resource.
@@ -85,6 +86,14 @@ func Lifecycle() map[string]schema.Attribute {
 			},
 			// Do not pin computed nodes to prior state values.
 			// The simulator may update coordinates and other fields during apply.
+		},
+		"update_triggers": schema.MapAttribute{
+			Description: "Synthetic trigger map; lifecycle Update is planned when values change.",
+			Optional:    true,
+			ElementType: types.StringType,
+			PlanModifiers: []planmodifier.Map{
+				mapplanmodifier.UseStateForUnknown(),
+			},
 		},
 		"configs": schema.MapAttribute{
 			Description: "Map of node configurations to store into nodes, the key is the label of the node, the value is the node configuration.",

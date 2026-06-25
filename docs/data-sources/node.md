@@ -49,6 +49,7 @@ Read-Only:
 - `cpu_limit` (Number) CPU limit in %, 20-100. Can be changed until the node is started once. Will require a replace in that case.
 - `cpus` (Number) Number of CPUs. Can be changed until the node is started once. Will require a replace in that case.
 - `data_volume` (Number) Size of data volume, in GB. Can be changed until the node is started once. Will require a replace in that case.
+- `generation` (String) Deterministic generation hash derived from replacement-relevant Terraform inputs.
 - `hide_links` (Boolean) If true, links are not shown in the topology. This is a visual cue and does not influence any simulation function.
 - `id` (String) Node ID (UUID).
 - `imagedefinition` (String) Image definition, must match the node type. Can be changed until the node is started once. Will require a replace in that case.

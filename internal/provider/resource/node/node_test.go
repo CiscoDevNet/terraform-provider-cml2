@@ -1,6 +1,7 @@
 package node_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -9,6 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	"github.com/rschmied/gocmlclient/pkg/models"
 
 	cml "github.com/ciscodevnet/terraform-provider-cml2/internal/provider"
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
@@ -116,6 +120,85 @@ func TestAccNodeResource(t *testing.T) {
 			// Delete testing automatically occurs in TestCase
 		},
 	})
+}
+
+func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	baseCfg := testAccNodeResourceConfig(cfg.Cfg, 1)
+	var (
+		initialNodeID string
+		labID         string
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: baseCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						labID = rs.Primary.Attributes["lab_id"]
+						initialNodeID = rs.Primary.ID
+						if labID == "" || initialNodeID == "" {
+							return fmt.Errorf("expected lab_id and id to be set in state")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				// Simulate external drift: delete the node directly via the upstream
+				// gocmlclient (not through Terraform) so Terraform has stale state.
+				Config: baseCfg,
+				// We intentionally create (via Terraform), then delete (via API) in the
+				// Check callback. That means a subsequent refresh-only plan must not be
+				// empty; otherwise the test harness will fail the step.
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					if labID == "" || initialNodeID == "" {
+						return fmt.Errorf("internal test error: expected captured lab_id and id")
+					}
+
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+
+					return client.Node.Delete(safeCtx(), models.UUID(labID), models.UUID(initialNodeID))
+				},
+			},
+			{
+				// Re-apply and assert the node exists again.
+				Config: baseCfg,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						if rs.Primary.ID == initialNodeID {
+							return fmt.Errorf("expected node to be recreated (id should change), still %q", initialNodeID)
+						}
+						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+				),
+			},
+		},
+	})
+}
+
+func safeCtx() context.Context {
+	// The upstream client methods accept a context; we keep it simple for the test.
+	return context.Background()
 }
 
 func TestAccNodeResourceTags(t *testing.T) {
@@ -239,28 +322,6 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, ""),
-				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "NAT"
-					if value == expected {
-						return nil
-					}
-					return fmt.Errorf("expected %q to contain %q", value, expected)
-				}),
-				// Destroy: ,
-			},
-			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "NAT"),
-				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "NAT"
-					if value == expected {
-						return nil
-					}
-					return fmt.Errorf("expected %q to contain %q", value, expected)
-				}),
-			},
-			// this tests the error condition in Update!
-			{
 				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
 				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
 					expected := "virbr0"
@@ -270,18 +331,18 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 					return fmt.Errorf("expected %q to equal %q", value, expected)
 				}),
 			},
-		},
-	})
-	// same test, this time the error is raised in Create!
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				// ExpectNonEmptyPlan: true,
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "NAT"),
+				ExpectError: regexp.MustCompile(`is a label; use device name "virbr0"`),
+			},
+			{
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "nonexistent"),
+				ExpectError: regexp.MustCompile(`does not exist`),
+			},
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "bridge0"),
 				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "virbr0"
+					expected := "bridge0"
 					if value == expected {
 						return nil
 					}
@@ -300,12 +361,12 @@ func TestAccNodeResourceExtConnNamedConfigCreate(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
-					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "virbr0"),
 				),
 			},
 		},
@@ -320,18 +381,18 @@ func TestAccNodeResourceExtConnNamedConfigTransition(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "virbr0"),
 				),
 			},
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
-					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "virbr0"),
 				),
 			},
 		},

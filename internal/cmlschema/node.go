@@ -42,6 +42,7 @@ type NodeModel struct {
 	VNCkey          types.String `tfsdk:"vnc_key"`
 	SerialDevices   types.List   `tfsdk:"serial_devices"`
 	ComputeID       types.String `tfsdk:"compute_id"`
+	Generation      types.String `tfsdk:"generation"`
 }
 
 type serialDeviceModel struct {
@@ -150,6 +151,7 @@ var NodeAttrType = map[string]attr.Type{
 	"vnc_key":        types.StringType,
 	"serial_devices": types.ListType{ElemType: SerialDevicesAttrType},
 	"compute_id":     types.StringType,
+	"generation":     types.StringType,
 }
 
 // NamedConfigAttrType is the Terraform object type for NamedConfigModel.
@@ -352,6 +354,13 @@ func Node() map[string]schema.Attribute {
 		},
 		"compute_id": schema.StringAttribute{
 			Description: "ID of a compute this node is on, a UUID4.",
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"generation": schema.StringAttribute{
+			Description: "Deterministic generation hash derived from replacement-relevant Terraform inputs.",
 			Computed:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),

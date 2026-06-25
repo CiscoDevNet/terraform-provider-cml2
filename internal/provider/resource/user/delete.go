@@ -28,6 +28,11 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().User.Delete(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
+		if common.IsNotFound(err) {
+			// User already deleted externally.
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to delete user, got error: %s", err),

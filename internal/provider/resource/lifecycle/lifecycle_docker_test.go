@@ -54,7 +54,7 @@ resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.this.id
 	label          = "Internet"
 	nodedefinition = "external_connector"
-	configuration  = "NAT"
+	configuration  = "virbr0"
 	tags           = ["stage-1"]
 }
 

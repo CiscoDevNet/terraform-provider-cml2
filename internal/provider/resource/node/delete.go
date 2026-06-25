@@ -31,6 +31,10 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Stop(ctx, labID, nodeID)
 	if err != nil {
+		if common.IsNotFound(err) {
+			// Node already gone (deleted externally). Treat as successful cleanup.
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to stop node, got error: %s", err),
@@ -40,6 +44,9 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Wipe(ctx, labID, nodeID)
 	if err != nil {
+		if common.IsNotFound(err) {
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to wipe node, got error: %s", err),
@@ -49,6 +56,9 @@ func (r *NodeResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = r.cfg.Client().Node.Delete(ctx, labID, nodeID)
 	if err != nil {
+		if common.IsNotFound(err) {
+			return
+		}
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to destroy node, got error: %s", err),

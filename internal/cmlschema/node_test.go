@@ -107,7 +107,7 @@ func TestNodeAttrs(t *testing.T) {
 
 	got, diag := nodeschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 22, len(nodeschema.Attributes))
+	assert.Equal(t, 23, len(nodeschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }

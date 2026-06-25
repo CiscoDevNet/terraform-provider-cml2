@@ -2,6 +2,49 @@
 
 Lists the changes in the provider.
 
+## Version 0.9.3
+
+### Breaking changes
+
+- External connector configuration now requires the connector **device name** (for example `virbr0`, `bridge0`) instead of the connector label (for example `NAT`, `System Bridge`).
+- Provider behavior changes for `cml2_node` / `external_connector` configuration:
+  - label inputs now fail with an actionable error (for example: `"NAT" is a label; use device name "virbr0"`)
+  - unknown connector values fail fast (`... does not exist`)
+  - warning-based device-name→label normalization has been removed
+- If existing configurations use labels, update them to device names before upgrading.
+
+### Other changes
+
+- Lifecycle reconciliation improvements:
+  - Added link drift detection in `cml2_lifecycle.ModifyPlan` so externally stopped links can trigger lifecycle updates.
+  - Added runtime link reconciliation in `cml2_lifecycle.Update` using link start/stop API calls.
+  - Refined lifecycle drift checks to be staging-aware and avoid false-positive updates in staged startup scenarios.
+- Added deterministic lifecycle scheduling for same-apply node add/replace flows:
+  - `cml2_node.generation` (computed deterministic hash over replacement-relevant node inputs)
+  - `cml2_lifecycle.update_triggers` (synthetic trigger map to force lifecycle Update when dependent node generations change)
+- Acceptance tests:
+  - Added external link-stop drift acceptance coverage for lifecycle.
+  - Updated lifecycle acceptance tests for add/replace scenarios to use `generation` + `update_triggers`.
+- Updated docs/examples for the new scheduling mechanism (`generation` and `update_triggers`).
+- Upgraded `gocmlclient` to `v0.2.5`.
+
+## Version 0.9.2
+
+- Added shared 404/not-found detection helper (internal/common/not_found.go) used across resources.
+- Updated Read behavior to remove resources from Terraform state when the backing CML resource is missing (404).
+- Updated Delete behavior to treat missing resources as successfully cleaned up (no error when already deleted externally).
+- Extended external-deletion handling across multiple resources, including:
+  - Node (Read + Delete)
+  - Annotation (Read + Delete)
+  - Group (Read + Delete)
+  - User (Read + Delete)
+  - Link (Read + Delete)
+  - Lab (Read + Delete)
+  - Lab Lifecycle (Read + lifecycle reconcile/cleanup)
+- Updated acceptance test infrastructure and coverage:
+  - Acceptance client construction from TF_VAR_* env vars (internal/testing/gocmlclient_env.go)
+  - Resource test updates for the affected resources (plus lint/dependency/changelog updates).
+
 ## Version 0.9.1
 
 - fix: preserve explicit named configurations on nodes; avoid collapsing them

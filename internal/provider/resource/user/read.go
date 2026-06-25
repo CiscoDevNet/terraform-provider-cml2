@@ -26,6 +26,11 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	user, err := r.cfg.Client().User.GetByID(ctx, models.UUID(data.ID.ValueString()))
 	if err != nil {
+		if common.IsNotFound(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to get user, got error: %s", err),

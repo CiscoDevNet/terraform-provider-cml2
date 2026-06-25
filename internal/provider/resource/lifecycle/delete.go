@@ -30,6 +30,11 @@ func (r *LabLifecycleResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(data.LabID.ValueString()), false)
 	if err != nil {
+		if common.IsNotFound(err) {
+			// Lab already deleted externally.
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			common.ErrorLabel,
 			fmt.Sprintf("Unable to read CML2 lab, got error: %s", err),
