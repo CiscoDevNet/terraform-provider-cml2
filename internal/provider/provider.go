@@ -53,6 +53,12 @@ func (p *CML2Provider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
+	// Fill unset attributes from environment variables.
+	resp.Diagnostics.Append(data.ApplyEnvVars()...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// https://dev.to/camptocamp-ops/how-to-allow-dynamic-terraform-provider-configuration-20ik
 	dynamicConfig := false
 	if data.DynamicConfig.IsNull() {
