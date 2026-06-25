@@ -2,7 +2,11 @@ package lifecycle_test
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -291,6 +295,183 @@ func TestAccLifecycleResourceRestartsWhenNodeAndLinkStoppedExternally(t *testing
 							return fmt.Errorf("expected link to be STARTED after drift correction, got %s", linkState)
 						}
 						return nil
+					},
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+				),
+			},
+		},
+	})
+}
+
+func stopLinkViaAPI(ctx context.Context, labID, linkID string) error {
+	addr := strings.TrimRight(os.Getenv("TF_VAR_address"), "/")
+	token := os.Getenv("TF_VAR_token")
+	if addr == "" {
+		return fmt.Errorf("TF_VAR_address must be set")
+	}
+	if token == "" {
+		return fmt.Errorf("TF_VAR_token must be set for link stop drift test")
+	}
+
+	url := fmt.Sprintf("%s/api/v0/labs/%s/links/%s/state/stop", addr, labID, linkID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	hc := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	resp, err := hc.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		return fmt.Errorf("stop link API failed: status=%d body=%q", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+func TestAccLifecycleResourceRestartsWhenLinkStoppedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	var labID string
+	var nodeID string
+	var linkID string
+	var lifecycleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						lifecycleID = rs.Primary.ID
+						labID = rs.Primary.Attributes["lab_id"]
+						if lifecycleID == "" || labID == "" {
+							return fmt.Errorf("expected lifecycle id and lab_id")
+						}
+
+						nodeRS, ok := s.RootModule().Resources["cml2_node.r1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.r1")
+						}
+						nodeID = nodeRS.Primary.ID
+						if nodeID == "" {
+							return fmt.Errorf("expected node id")
+						}
+
+						linkRS, ok := s.RootModule().Resources["cml2_link.l1"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_link.l1")
+						}
+						linkID = linkRS.Primary.ID
+						if linkID == "" {
+							return fmt.Errorf("expected link id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					if labID == "" || nodeID == "" || linkID == "" {
+						return fmt.Errorf("internal test error: expected captured lab_id/node_id/link_id")
+					}
+
+					if err := stopLinkViaAPI(context.Background(), labID, linkID); err != nil {
+						return err
+					}
+
+					deadline := time.Now().Add(30 * time.Second)
+					for time.Now().Before(deadline) {
+						lab, getErr := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if getErr != nil {
+							time.Sleep(2 * time.Second)
+							continue
+						}
+						if lab.State != models.LabStateStarted {
+							return fmt.Errorf("expected lab state to remain STARTED during link drift, got %s", lab.State)
+						}
+
+						n := lab.Nodes[models.UUID(nodeID)]
+						if n == nil {
+							return fmt.Errorf("node not found during link drift check")
+						}
+						if n.State != models.NodeStateStarted && n.State != models.NodeStateBooted {
+							return fmt.Errorf("expected node to remain running during link drift, got %s", n.State)
+						}
+
+						var linkState string
+						for _, l := range lab.Links {
+							if l.ID == models.UUID(linkID) {
+								linkState = l.State
+								break
+							}
+						}
+						if linkState == models.LinkStateStopped {
+							return nil
+						}
+						time.Sleep(2 * time.Second)
+					}
+					return fmt.Errorf("timeout waiting for link to become STOPPED")
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_lifecycle.top"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_lifecycle.top")
+						}
+						if rs.Primary.ID != lifecycleID {
+							return fmt.Errorf("expected lifecycle not to be recreated; id changed from %q to %q", lifecycleID, rs.Primary.ID)
+						}
+
+						client, err := cfg.NewCMLClientFromTFEnv()
+						if err != nil {
+							return err
+						}
+						lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if err != nil {
+							return err
+						}
+
+						n := lab.Nodes[models.UUID(nodeID)]
+						if n == nil {
+							return fmt.Errorf("expected node to exist after drift correction")
+						}
+						if n.State != models.NodeStateStarted && n.State != models.NodeStateBooted {
+							return fmt.Errorf("expected node to remain running after drift correction, got %s", n.State)
+						}
+
+						for _, l := range lab.Links {
+							if l.ID == models.UUID(linkID) {
+								if l.State != models.LinkStateStarted {
+									return fmt.Errorf("expected link to be STARTED after drift correction, got %s", l.State)
+								}
+								return nil
+							}
+						}
+						return fmt.Errorf("link not found in lab after drift correction")
 					},
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
