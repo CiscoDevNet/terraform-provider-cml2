@@ -45,7 +45,7 @@ jobs:
     outputs:
       run: ${{ steps.filter.outputs.run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: filter
         uses: dorny/paths-filter@v4
         with:
@@ -72,7 +72,7 @@ jobs:
         if: needs.changes.outputs.run != 'true'
         run: echo "docs-only change; skipping build"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
         if: needs.changes.outputs.run == 'true'
@@ -93,7 +93,7 @@ jobs:
         if: needs.changes.outputs.run != 'true'
         run: echo "docs-only change; skipping tidy checks"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
         if: needs.changes.outputs.run == 'true'
@@ -147,7 +147,7 @@ jobs:
         if: needs.changes.outputs.run != 'true'
         run: echo "docs-only change; skipping go generate"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
         if: needs.changes.outputs.run == 'true'
@@ -193,7 +193,7 @@ jobs:
         if: needs.changes.outputs.run != 'true'
         run: echo "docs-only change; skipping acceptance tests"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: needs.changes.outputs.run == 'true'
       - uses: actions/setup-go@v6
         if: needs.changes.outputs.run == 'true'
