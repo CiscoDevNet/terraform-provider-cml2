@@ -2,11 +2,7 @@ package lifecycle_test
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -304,36 +300,6 @@ func TestAccLifecycleResourceRestartsWhenNodeAndLinkStoppedExternally(t *testing
 	})
 }
 
-func stopLinkViaAPI(ctx context.Context, labID, linkID string) error {
-	addr := strings.TrimRight(os.Getenv("TF_VAR_address"), "/")
-	token := os.Getenv("TF_VAR_token")
-	if addr == "" {
-		return fmt.Errorf("TF_VAR_address must be set")
-	}
-	if token == "" {
-		return fmt.Errorf("TF_VAR_token must be set for link stop drift test")
-	}
-
-	url := fmt.Sprintf("%s/api/v0/labs/%s/links/%s/state/stop", addr, labID, linkID)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	hc := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
-	resp, err := hc.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return fmt.Errorf("stop link API failed: status=%d body=%q", resp.StatusCode, string(body))
-	}
-	return nil
-}
-
 func TestAccLifecycleResourceRestartsWhenLinkStoppedExternally(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
@@ -396,7 +362,7 @@ func TestAccLifecycleResourceRestartsWhenLinkStoppedExternally(t *testing.T) {
 						return fmt.Errorf("internal test error: expected captured lab_id/node_id/link_id")
 					}
 
-					if err := stopLinkViaAPI(context.Background(), labID, linkID); err != nil {
+					if err := client.Link.Stop(context.Background(), models.UUID(labID), models.UUID(linkID)); err != nil {
 						return err
 					}
 

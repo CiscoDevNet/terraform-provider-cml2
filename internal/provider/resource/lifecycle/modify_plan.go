@@ -114,7 +114,7 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			return false
 		}
 
-		// Dependency drift: node state diverged from desired lifecycle state
+		// Dependency drift: node/link state diverged from desired lifecycle state
 		// without lifecycle.state itself changing.
 		if !changeNeeded {
 			desired := models.LabState(planData.State.ValueString())
@@ -151,6 +151,47 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 					if node.State.ValueString() != string(models.NodeStateDefined) {
 						changeNeeded = true
 						break
+					}
+				}
+			}
+
+			// Link drift detection: unlike nodes, links are not currently stored in
+			// lifecycle Terraform state, so inspect current lab links directly.
+			if !changeNeeded {
+				labID := stateData.LabID.ValueString()
+				if labID == "" && !planData.LabID.IsNull() && !planData.LabID.IsUnknown() {
+					labID = planData.LabID.ValueString()
+				}
+				if labID != "" {
+					if lab, err := r.cfg.Client().Lab.GetByID(ctx, models.UUID(labID), true); err == nil {
+						switch desired {
+						case models.LabStateStarted:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateStarted {
+									changeNeeded = true
+									break
+								}
+							}
+						case models.LabStateStopped:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateStopped {
+									changeNeeded = true
+									break
+								}
+							}
+						case models.LabStateDefined:
+							for _, link := range lab.Links {
+								if link.State != models.LinkStateDefined {
+									changeNeeded = true
+									break
+								}
+							}
+						}
+					} else {
+						tflog.Warn(ctx, "ModifyPlan: unable to fetch lab for link drift check", map[string]any{
+							"lab_id": labID,
+							"error":  common.ErrorString(err),
+						})
 					}
 				}
 			}

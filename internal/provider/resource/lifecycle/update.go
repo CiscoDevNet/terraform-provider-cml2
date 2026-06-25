@@ -72,15 +72,44 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 			wait:     planData.Wait.IsNull() || planData.Wait.ValueBool(),
 		}
 
+		reconcileLinks := func(current *models.Lab, want models.LabState) {
+			for _, l := range current.Links {
+				switch want {
+				case models.LabStateStarted:
+					if l.State != models.LinkStateStarted {
+						if err := r.cfg.Client().Link.Start(ctx, current.ID, l.ID); err != nil {
+							resp.Diagnostics.AddError(
+								common.ErrorLabel,
+								fmt.Sprintf("Unable to start link %s, got error: %s", l.ID, err),
+							)
+						}
+					}
+				case models.LabStateStopped:
+					if l.State != models.LinkStateStopped {
+						if err := r.cfg.Client().Link.Stop(ctx, current.ID, l.ID); err != nil {
+							resp.Diagnostics.AddError(
+								common.ErrorLabel,
+								fmt.Sprintf("Unable to stop link %s, got error: %s", l.ID, err),
+							)
+						}
+					}
+				}
+			}
+		}
+
 		switch desired {
 		case models.LabStateStarted:
 			r.startNodes(ctx, &resp.Diagnostics, start)
+			// Explicitly reconcile links: lab/node start is not sufficient when a
+			// link was manually stopped out-of-band.
+			reconcileLinks(&lab, desired)
 			if start.wait {
 				timeout := start.timeouts.Update.ValueString()
 				common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.LabID.ValueString(), timeout)
 			}
 		case models.LabStateStopped:
 			r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
+			reconcileLinks(&lab, desired)
 		case models.LabStateDefined:
 			// Wipe requires a stop first if the lab (or any node) is still running.
 			if lab.State == models.LabStateStarted || lab.Running() {
