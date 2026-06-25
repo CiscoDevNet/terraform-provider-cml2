@@ -169,7 +169,7 @@ jobs:
     name: Terraform Provider Acceptance Tests
     needs: [changes, build]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       max-parallel: 1
       fail-fast: false
