@@ -77,19 +77,21 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 				switch want {
 				case models.LabStateStarted:
 					if l.State != models.LinkStateStarted {
-						if err := r.cfg.Client().Link.Start(ctx, current.ID, l.ID); err != nil {
+						linkErr := r.cfg.Client().Link.Start(ctx, current.ID, l.ID)
+						if linkErr != nil {
 							resp.Diagnostics.AddError(
 								common.ErrorLabel,
-								fmt.Sprintf("Unable to start link %s, got error: %s", l.ID, err),
+								fmt.Sprintf("Unable to start link %s, got error: %s", l.ID, linkErr),
 							)
 						}
 					}
 				case models.LabStateStopped:
 					if l.State != models.LinkStateStopped {
-						if err := r.cfg.Client().Link.Stop(ctx, current.ID, l.ID); err != nil {
+						linkErr := r.cfg.Client().Link.Stop(ctx, current.ID, l.ID)
+						if linkErr != nil {
 							resp.Diagnostics.AddError(
 								common.ErrorLabel,
-								fmt.Sprintf("Unable to stop link %s, got error: %s", l.ID, err),
+								fmt.Sprintf("Unable to stop link %s, got error: %s", l.ID, linkErr),
 							)
 						}
 					}

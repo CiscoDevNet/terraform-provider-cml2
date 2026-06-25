@@ -84,7 +84,8 @@ func TestNormalizeExtConnConfig(t *testing.T) {
 	}
 
 	// Label must be rejected with guidance.
-	if _, err := normalizeExtConnConfig(context.Background(), cfg, "System Bridge"); err == nil {
+	_, err = normalizeExtConnConfig(context.Background(), cfg, "System Bridge")
+	if err == nil {
 		t.Fatalf("expected error for label input")
 	}
 
@@ -98,13 +99,15 @@ func TestNormalizeExtConnConfig(t *testing.T) {
 	}
 
 	// Unknown connector should error.
-	if _, err := normalizeExtConnConfig(context.Background(), cfg, "unknown-conn"); err == nil {
+	_, err = normalizeExtConnConfig(context.Background(), cfg, "unknown-conn")
+	if err == nil {
 		t.Fatalf("expected error for unknown connector")
 	}
 
 	// API error path: server returns 500 — error must propagate.
 	mode = 1
-	if _, err := normalizeExtConnConfig(context.Background(), cfg, "virbr0"); err == nil {
+	_, err = normalizeExtConnConfig(context.Background(), cfg, "virbr0")
+	if err == nil {
 		t.Fatalf("expected error when API returns 500")
 	}
 }
