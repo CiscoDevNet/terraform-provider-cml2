@@ -73,23 +73,30 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	// these can only be changed when the node is DEFINED_ON_CORE
 	if stateData.State.ValueString() == string(models.NodeStateDefined) {
-		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && planData.Configurations.IsNull() {
+		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && (planData.Configurations.IsNull() || planData.Configurations.IsUnknown()) {
 			cfgVal := planData.Configuration.ValueString()
 			if node.NodeDefinition == "external_connector" {
-				normalized, changed, warn, nerr := normalizeExtConnConfig(ctx, r.cfg, cfgVal)
+				normalized, nerr := normalizeExtConnConfig(ctx, r.cfg, cfgVal)
 				if nerr != nil {
 					resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
 					return
 				}
-				if changed {
-					resp.Diagnostics.AddWarning("External connector configuration normalized", warn)
-					cfgVal = normalized
-				}
+				cfgVal = normalized
 			}
 			node.Configuration = cfgVal
 		}
 		if !planData.Configurations.IsUnknown() && !planData.Configurations.IsNull() {
 			node.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
+			if node.NodeDefinition == "external_connector" {
+				for i := range node.Configurations {
+					normalized, nerr := normalizeExtConnConfig(ctx, r.cfg, node.Configurations[i].Content)
+					if nerr != nil {
+						resp.Diagnostics.AddError(common.ErrorLabel, nerr.Error())
+						return
+					}
+					node.Configurations[i].Content = normalized
+				}
+			}
 		}
 		if !planData.RAM.IsUnknown() && !planData.RAM.IsNull() {
 			v := int(planData.RAM.ValueInt64())
@@ -136,27 +143,30 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		newNode.Configurations = nil
 	}
 
-	// External connector back-compat: if the user provided a device name (e.g.
-	// "virbr0"), keep the config value in state to match the user's config.
-	// We still sent the normalized label to the API.
-	if node.NodeDefinition == "external_connector" && !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && planData.Configurations.IsNull() {
-		inCfg := planData.Configuration.ValueString()
-		_, changed, _, _ := normalizeExtConnConfig(ctx, r.cfg, inCfg)
-		if changed {
-			newNode.Configuration = inCfg
-			newNode.Configurations = nil
-		}
-	}
-
-	// External connector: device-name inputs (e.g. virbr0) are normalized to
-	// labels (e.g. NAT) during planning for back-compat. Do not hard-fail here.
-
 	// When updating with named configs on, we need to move over the returned
 	// named config into the single configuration if it was previously used.
 	// tflog.Warn(ctx, "###u", map[string]any{"null": stateData.Configuration.IsNull(), "unknown": stateData.Configuration.IsUnknown(), "len": len(node.Configurations)})
-	if !stateData.Configuration.IsUnknown() && !stateData.Configuration.IsNull() && len(newNode.Configurations) > 0 && planData.Configurations.IsNull() {
+	if !stateData.Configuration.IsUnknown() && !stateData.Configuration.IsNull() && len(newNode.Configurations) > 0 && (planData.Configurations.IsNull() || planData.Configurations.IsUnknown()) {
 		newNode.Configuration = newNode.Configurations[0].Content
 		newNode.Configurations = nil
+	}
+
+	// External connector: keep Terraform state aligned with user-provided
+	// device-name configuration, even if controller responses vary.
+	if node.NodeDefinition == "external_connector" {
+		if !planData.Configuration.IsUnknown() && !planData.Configuration.IsNull() && (planData.Configurations.IsNull() || planData.Configurations.IsUnknown()) {
+			newNode.Configuration = planData.Configuration.ValueString()
+			newNode.Configurations = nil
+		}
+		if !planData.Configurations.IsUnknown() && !planData.Configurations.IsNull() {
+			newNode.Configuration = nil
+			newNode.Configurations = cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations)
+		}
+		tflog.Debug(ctx, "extconn update state alignment", map[string]any{
+			"planned_configuration":  planData.Configuration.ValueString(),
+			"returned_configuration": fmt.Sprintf("%v", newNode.Configuration),
+			"returned_named_count":   len(newNode.Configurations),
+		})
 	}
 
 	resp.Diagnostics.Append(

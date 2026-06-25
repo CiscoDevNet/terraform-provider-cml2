@@ -4,6 +4,17 @@ Lists the changes in the provider.
 
 ## Version 0.9.3
 
+### Breaking changes
+
+- External connector configuration now requires the connector **device name** (for example `virbr0`, `bridge0`) instead of the connector label (for example `NAT`, `System Bridge`).
+- Provider behavior changes for `cml2_node` / `external_connector` configuration:
+  - label inputs now fail with an actionable error (for example: `"NAT" is a label; use device name "virbr0"`)
+  - unknown connector values fail fast (`... does not exist`)
+  - warning-based device-name→label normalization has been removed
+- If existing configurations use labels, update them to device names before upgrading.
+
+### Other changes
+
 - Lifecycle reconciliation improvements:
   - Added link drift detection in `cml2_lifecycle.ModifyPlan` so externally stopped links can trigger lifecycle updates.
   - Added runtime link reconciliation in `cml2_lifecycle.Update` using link start/stop API calls.

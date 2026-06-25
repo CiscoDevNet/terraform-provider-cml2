@@ -322,28 +322,6 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, ""),
-				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "NAT"
-					if value == expected {
-						return nil
-					}
-					return fmt.Errorf("expected %q to contain %q", value, expected)
-				}),
-				// Destroy: ,
-			},
-			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "NAT"),
-				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "NAT"
-					if value == expected {
-						return nil
-					}
-					return fmt.Errorf("expected %q to contain %q", value, expected)
-				}),
-			},
-			// this tests the error condition in Update!
-			{
 				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
 				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
 					expected := "virbr0"
@@ -353,18 +331,18 @@ func TestAccNodeResourceExtConn(t *testing.T) {
 					return fmt.Errorf("expected %q to equal %q", value, expected)
 				}),
 			},
-		},
-	})
-	// same test, this time the error is raised in Create!
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "virbr0"),
-				// ExpectNonEmptyPlan: true,
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "NAT"),
+				ExpectError: regexp.MustCompile(`is a label; use device name "virbr0"`),
+			},
+			{
+				Config:      testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "nonexistent"),
+				ExpectError: regexp.MustCompile(`does not exist`),
+			},
+			{
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.Cfg, "bridge0"),
 				Check: resource.TestCheckResourceAttrWith("cml2_node.ext", "configuration", func(value string) error {
-					expected := "virbr0"
+					expected := "bridge0"
 					if value == expected {
 						return nil
 					}
@@ -383,12 +361,12 @@ func TestAccNodeResourceExtConnNamedConfigCreate(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
-					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "virbr0"),
 				),
 			},
 		},
@@ -403,18 +381,18 @@ func TestAccNodeResourceExtConnNamedConfigTransition(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConn(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configuration", "virbr0"),
 				),
 			},
 			{
-				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "NAT"),
+				Config: testAccNodeResourceConfigNodeDefExtConnNamed(cfg.CfgNamedConfigs, "virbr0"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("cml2_node.ext", "configuration"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.#", "1"),
 					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.name", "default"),
-					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "NAT"),
+					resource.TestCheckResourceAttr("cml2_node.ext", "configurations.0.content", "virbr0"),
 				),
 			},
 		},

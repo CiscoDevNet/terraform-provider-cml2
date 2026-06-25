@@ -234,7 +234,7 @@ resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.devnet-expert.id
 	nodedefinition = "external_connector"
 	label          = "Internet"
-	configuration  = "NAT"
+	configuration  = "virbr0"
   }
 
   resource "cml2_node" "nat1" {

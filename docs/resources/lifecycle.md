@@ -114,7 +114,7 @@ resource "cml2_lifecycle" "top" {
   #
   # Practical example:
   # external_connector nodes are commonly replaced when configuration changes
-  # (for example "NAT" -> "System Bridge"). Tying lifecycle to
+  # (for example "virbr0" -> "bridge0"). Tying lifecycle to
   # cml2_node.ext.generation ensures the lifecycle update is scheduled and the
   # lab is reconciled back to the configured state (e.g. STARTED).
   update_triggers = {

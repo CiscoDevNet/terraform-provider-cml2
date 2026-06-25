@@ -3,12 +3,12 @@
 page_title: "cml2_node Resource - terraform-provider-cml2"
 subcategory: ""
 description: |-
-  A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to STARTED (see the lifecyle resource) once. Changing attributes will then require a replace.  Node configurations are "day zero" configurations. Replacing a configuration typically requires a node replacement if the node has been started.  No Configurations can be provided for unmanaged switches. External connectors require the connector label (like "NAT"), not the device name (like "virbr0"). The available connectors can be retrieved via the external connector data source.
+  A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to STARTED (see the lifecyle resource) once. Changing attributes will then require a replace.  Node configurations are "day zero" configurations. Replacing a configuration typically requires a node replacement if the node has been started.  No Configurations can be provided for unmanaged switches. External connectors require the connector device name (like "virbr0"), not the label (like "NAT"). The available connectors can be retrieved via the external connector data source.
 ---
 
 # cml2_node (Resource)
 
-A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the `lifecyle` resource) once. Changing attributes will then require a replace.  Node configurations are "day zero" configurations. Replacing a configuration typically requires a node replacement if the node has been started.  No Configurations can be provided for unmanaged switches. External connectors require the connector label (like "NAT"), not the device name (like "virbr0"). The available connectors can be retrieved via the external connector data source.
+A node resource represents a CML node. At create time, the lab ID, a node definition and a label must be provided.  Other attributes are optional.  Note that some attributes can't be changed after the node state has changed to `STARTED` (see the `lifecyle` resource) once. Changing attributes will then require a replace.  Node configurations are "day zero" configurations. Replacing a configuration typically requires a node replacement if the node has been started.  No Configurations can be provided for unmanaged switches. External connectors require the connector device name (like "virbr0"), not the label (like "NAT"). The available connectors can be retrieved via the external connector data source.
 
 ## Example Usage
 
