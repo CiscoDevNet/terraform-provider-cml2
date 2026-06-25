@@ -27,6 +27,7 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	plannedGeneration := planData.Generation
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
 	if resp.Diagnostics.HasError() {
@@ -166,6 +167,8 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			&planData,
 		)...,
 	)
+
+	planData.Generation = plannedGeneration
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planData)...)
 

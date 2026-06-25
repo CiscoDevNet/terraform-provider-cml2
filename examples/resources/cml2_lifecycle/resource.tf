@@ -90,6 +90,26 @@ resource "cml2_link" "l4" {
 
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
+
+  # Why update_triggers exists:
+  # Terraform only calls cml2_lifecycle.Update() when the lifecycle resource
+  # itself has a diff. If a dependent node is replaced in the same apply, the
+  # new node may come up as DEFINED_ON_CORE and would otherwise miss lifecycle
+  # reconciliation in that apply.
+  #
+  # Practical example:
+  # external_connector nodes are commonly replaced when configuration changes
+  # (for example "NAT" -> "System Bridge"). Tying lifecycle to
+  # cml2_node.ext.generation ensures the lifecycle update is scheduled and the
+  # lab is reconciled back to the configured state (e.g. STARTED).
+  update_triggers = {
+    ext  = cml2_node.ext.generation
+    ums1 = cml2_node.ums1.generation
+    r1   = cml2_node.r1.generation
+    r2   = cml2_node.r2.generation
+    r3   = cml2_node.r3.generation
+  }
+
   depends_on = [
     cml2_node.ext,
     cml2_node.ums1,

@@ -35,6 +35,7 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	plannedGeneration := data.Generation
 
 	// ensure named configs are only used when configured!
 	if len(configData.Configurations.Elements()) > 0 && !r.cfg.UseNamedConfigs() {
@@ -199,6 +200,8 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 			&data,
 		)...,
 	)
+	data.Generation = plannedGeneration
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 
 	tflog.Info(ctx, "Resource Node CREATE done")

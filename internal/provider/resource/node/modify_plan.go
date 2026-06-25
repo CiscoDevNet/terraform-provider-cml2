@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -203,6 +204,13 @@ func (r *NodeResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		planData.Tags = tags
 		resp.Diagnostics.Append(dia...)
 	}
+
+	generation, err := generationFromNodeModel(ctx, configData)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("Unable to compute node generation: %s", err))
+		return
+	}
+	planData.Generation = generation
 
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
 

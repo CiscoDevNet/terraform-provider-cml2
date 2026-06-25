@@ -2,6 +2,21 @@
 
 Lists the changes in the provider.
 
+## Version 0.9.3
+
+- Lifecycle reconciliation improvements:
+  - Added link drift detection in `cml2_lifecycle.ModifyPlan` so externally stopped links can trigger lifecycle updates.
+  - Added runtime link reconciliation in `cml2_lifecycle.Update` using link start/stop API calls.
+  - Refined lifecycle drift checks to be staging-aware and avoid false-positive updates in staged startup scenarios.
+- Added deterministic lifecycle scheduling for same-apply node add/replace flows:
+  - `cml2_node.generation` (computed deterministic hash over replacement-relevant node inputs)
+  - `cml2_lifecycle.update_triggers` (synthetic trigger map to force lifecycle Update when dependent node generations change)
+- Acceptance tests:
+  - Added external link-stop drift acceptance coverage for lifecycle.
+  - Updated lifecycle acceptance tests for add/replace scenarios to use `generation` + `update_triggers`.
+- Updated docs/examples for the new scheduling mechanism (`generation` and `update_triggers`).
+- Upgraded `gocmlclient` to `v0.2.5`.
+
 ## Version 0.9.2
 
 - Added shared 404/not-found detection helper (internal/common/not_found.go) used across resources.

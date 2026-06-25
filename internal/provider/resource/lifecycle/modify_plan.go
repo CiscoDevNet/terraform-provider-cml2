@@ -68,6 +68,8 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	changeNeeded := false
+	stateTransition := false
+	triggerChanged := false
 	var nodes map[string]cmlschema.NodeModel
 	if !noState {
 		// Fetch prior node state once; used for both drift detection and plan
@@ -78,7 +80,14 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		}
 
 		// Explicit lifecycle.state transition.
-		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
+		stateTransition = planData.State.ValueString() != stateData.State.ValueString()
+		changeNeeded = stateTransition
+
+		// Synthetic trigger diff: force lifecycle Update when update_triggers changed.
+		if !changeNeeded && !configData.UpdateTriggers.IsUnknown() && !configData.UpdateTriggers.Equal(stateData.UpdateTriggers) {
+			triggerChanged = true
+			changeNeeded = true
+		}
 
 		// Determine staging behavior from config once.
 		staging := getStaging(ctx, req.Config, &resp.Diagnostics)
@@ -200,6 +209,15 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 
 	if changeNeeded {
 		tflog.Info(ctx, "ModifyPlan: change detected")
+
+		// For synthetic trigger-only updates, do not rewrite nested computed
+		// node data from prior state. Doing so can conflict with concurrent
+		// node add/replace operations in the same apply.
+		if triggerChanged && !stateTransition {
+			resp.Diagnostics.Append(resp.Plan.Set(ctx, &planData)...)
+			tflog.Info(ctx, "Resource Lifecycle MODIFYPLAN done")
+			return
+		}
 
 		plannedState := planData.State.ValueString()
 

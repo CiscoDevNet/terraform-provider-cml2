@@ -105,6 +105,26 @@ resource "cml2_link" "l4" {
 
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
+
+  # Why update_triggers exists:
+  # Terraform only calls cml2_lifecycle.Update() when the lifecycle resource
+  # itself has a diff. If a dependent node is replaced in the same apply, the
+  # new node may come up as DEFINED_ON_CORE and would otherwise miss lifecycle
+  # reconciliation in that apply.
+  #
+  # Practical example:
+  # external_connector nodes are commonly replaced when configuration changes
+  # (for example "NAT" -> "System Bridge"). Tying lifecycle to
+  # cml2_node.ext.generation ensures the lifecycle update is scheduled and the
+  # lab is reconciled back to the configured state (e.g. STARTED).
+  update_triggers = {
+    ext  = cml2_node.ext.generation
+    ums1 = cml2_node.ums1.generation
+    r1   = cml2_node.r1.generation
+    r2   = cml2_node.r2.generation
+    r3   = cml2_node.r3.generation
+  }
+
   depends_on = [
     cml2_node.ext,
     cml2_node.ums1,
@@ -149,6 +169,7 @@ output "r1_ip_address" {
 - `state` (String) Lab state, one of `DEFINED_ON_CORE`, `STARTED` or `STOPPED`.
 - `timeouts` (Attributes) Timeouts for operations, given as a parsable string as in `60m` or `2h`. (see [below for nested schema](#nestedatt--timeouts))
 - `topology` (String, Sensitive) The topology to start, must be valid YAML. Can't be configured if the lab `id` is configured.
+- `update_triggers` (Map of String) Synthetic trigger map; lifecycle Update is planned when values change.
 - `wait` (Boolean) If set to `true` then wait until the lab has completely `BOOTED`.
 
 ### Read-Only
@@ -210,6 +231,7 @@ Optional:
 Read-Only:
 
 - `compute_id` (String) ID of a compute this node is on, a UUID4.
+- `generation` (String) Deterministic generation hash derived from replacement-relevant Terraform inputs.
 - `id` (String) Node ID (UUID).
 - `interfaces` (Attributes List) List of interfaces on the node. (see [below for nested schema](#nestedatt--nodes--interfaces))
 - `serial_devices` (List of Object) List of serial devices (consoles). (see [below for nested schema](#nestedatt--nodes--serial_devices))

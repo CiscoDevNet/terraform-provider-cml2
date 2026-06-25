@@ -24,6 +24,7 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	savedGeneration := data.Generation
 
 	node, err := r.cfg.Client().Node.GetByID(ctx, models.UUID(data.LabID.ValueString()), models.UUID(data.ID.ValueString()))
 	if err != nil {
@@ -74,6 +75,8 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 			&data,
 		)...,
 	)
+
+	data.Generation = savedGeneration
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

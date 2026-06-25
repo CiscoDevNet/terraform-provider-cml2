@@ -1215,6 +1215,12 @@ resource "cml2_link" "l2" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
+	update_triggers = {
+		ext = cml2_node.ext.generation
+		ums = cml2_node.ums.generation
+		r1  = cml2_node.r1.generation
+		r2  = cml2_node.r2.generation
+	}
 	depends_on = [
 		cml2_node.ext,
 		cml2_node.ums,
@@ -1290,6 +1296,13 @@ resource "cml2_link" "l3" {
 
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
+	update_triggers = {
+		ext = cml2_node.ext.generation
+		ums = cml2_node.ums.generation
+		r1  = cml2_node.r1.generation
+		r2  = cml2_node.r2.generation
+		r3  = cml2_node.r3.generation
+	}
 	depends_on = [
 		cml2_node.ext,
 		cml2_node.ums,
@@ -1535,6 +1548,9 @@ resource "cml2_node" "ext" {
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
   state  = "STARTED"
+  update_triggers = {
+    ext = cml2_node.ext.generation
+  }
   depends_on = [
     cml2_node.ext,
   ]

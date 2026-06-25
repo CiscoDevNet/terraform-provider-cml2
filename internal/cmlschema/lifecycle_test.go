@@ -20,7 +20,7 @@ func TestLifecycleAttrs(t *testing.T) {
 
 	got, diag := lifecycleschema.TypeAtPath(context.TODO(), path.Root("id"))
 	t.Log(diag.Errors())
-	assert.Equal(t, 12, len(lifecycleschema.Attributes))
+	assert.Equal(t, 13, len(lifecycleschema.Attributes))
 	assert.False(t, diag.HasError())
 	assert.Equal(t, types.StringType, got)
 }
