@@ -80,17 +80,48 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		// Explicit lifecycle.state transition.
 		changeNeeded = planData.State.ValueString() != stateData.State.ValueString()
 
-		// Dependency drift: node/link state diverged from desired lifecycle
-		// state without the lifecycle.state field itself changing (e.g. CML
-		// keeps lab.state=STARTED while a single node was stopped externally).
-		// We detect this from the Terraform-managed node state already in prior
-		// state — no extra API call needed at plan time.
+		// Determine staging behavior from config once.
+		staging := getStaging(ctx, req.Config, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		shouldBeStarted := func(node cmlschema.NodeModel) bool {
+			// No staging configured => STARTED applies to all nodes.
+			if staging == nil {
+				return true
+			}
+			// Default is start_remaining=true.
+			if staging.StartRemaining.IsNull() || staging.StartRemaining.ValueBool() {
+				return true
+			}
+
+			// start_remaining=false: only nodes matched by stages are expected to start.
+			stages := map[string]struct{}{}
+			for _, elem := range staging.Stages.Elements() {
+				stage := elem.(types.String).ValueString()
+				stages[stage] = struct{}{}
+			}
+			if len(stages) == 0 || node.Tags.IsNull() || node.Tags.IsUnknown() {
+				return false
+			}
+			for _, elem := range node.Tags.Elements() {
+				tag := elem.(types.String).ValueString()
+				if _, ok := stages[tag]; ok {
+					return true
+				}
+			}
+			return false
+		}
+
+		// Dependency drift: node state diverged from desired lifecycle state
+		// without lifecycle.state itself changing.
 		if !changeNeeded {
 			desired := models.LabState(planData.State.ValueString())
 			switch desired {
 			case models.LabStateStarted:
 				for _, node := range nodes {
-					if node.State.IsNull() || node.State.IsUnknown() {
+					if !shouldBeStarted(node) || node.State.IsNull() || node.State.IsUnknown() {
 						continue
 					}
 					s := node.State.ValueString()
@@ -104,7 +135,10 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 					if node.State.IsNull() || node.State.IsUnknown() {
 						continue
 					}
-					if node.State.ValueString() != string(models.NodeStateStopped) {
+					s := node.State.ValueString()
+					// Nodes that were never started can legitimately remain
+					// DEFINED_ON_CORE when the lifecycle desired state is STOPPED.
+					if s != string(models.NodeStateStopped) && s != string(models.NodeStateDefined) {
 						changeNeeded = true
 						break
 					}
