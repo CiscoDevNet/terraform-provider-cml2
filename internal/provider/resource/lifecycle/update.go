@@ -133,6 +133,10 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 				}
 			}
 			r.wipe(ctx, resp.Diagnostics, planData.LabID.ValueString())
+			if start.wait {
+				timeout := start.timeouts.Update.ValueString()
+				common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.LabID.ValueString(), timeout)
+			}
 		}
 
 		// Re-read after action so we reflect the post-apply state.
