@@ -197,8 +197,29 @@ resource "cml2_link" "l10" {
   # slot_b = 0
 }
 
+locals {
+  lifecycle_nodes = {
+    ext  = cml2_node.ext
+    ums1 = cml2_node.ums1
+    ios  = cml2_node.ios
+    r1   = cml2_node.r1
+    r3   = cml2_node.r3
+    r4   = cml2_node.r4
+    r5   = cml2_node.r5
+    r6   = cml2_node.r6
+    r7   = cml2_node.r7
+    r8   = cml2_node.r8
+    r9   = cml2_node.r9
+  }
+}
+
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
+  update_triggers = {
+    for name, node in local.lifecycle_nodes : name => "${node.id}:${node.generation}"
+  }
+  # Links are siblings of lifecycle in the graph, so list them explicitly.
+  # This keeps the lifecycle update after the full topology is present.
   depends_on = [
     # Note that referencing all elements is not strictly
     # required. As an alternative, a single "sentinel"

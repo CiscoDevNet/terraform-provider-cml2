@@ -88,6 +88,16 @@ resource "cml2_link" "l4" {
   node_b = cml2_node.r3.id
 }
 
+locals {
+  lifecycle_nodes = {
+    ext  = cml2_node.ext
+    ums1 = cml2_node.ums1
+    r1   = cml2_node.r1
+    r2   = cml2_node.r2
+    r3   = cml2_node.r3
+  }
+}
+
 resource "cml2_lifecycle" "top" {
   lab_id = cml2_lab.this.id
 
@@ -99,17 +109,15 @@ resource "cml2_lifecycle" "top" {
   #
   # Practical example:
   # external_connector nodes are commonly replaced when configuration changes
-  # (for example "virbr0" -> "bridge0"). Tying lifecycle to
-  # cml2_node.ext.generation ensures the lifecycle update is scheduled and the
-  # lab is reconciled back to the configured state (e.g. STARTED).
+  # (for example "virbr0" -> "bridge0"). The composite trigger below combines
+  # node id + generation so lifecycle notices both replacement and config-only
+  # changes.
   update_triggers = {
-    ext  = cml2_node.ext.generation
-    ums1 = cml2_node.ums1.generation
-    r1   = cml2_node.r1.generation
-    r2   = cml2_node.r2.generation
-    r3   = cml2_node.r3.generation
+    for name, node in local.lifecycle_nodes : name => "${node.id}:${node.generation}"
   }
 
+  # Links are siblings of lifecycle in the graph, so list them explicitly.
+  # This keeps the lifecycle update after the full topology is present.
   depends_on = [
     cml2_node.ext,
     cml2_node.ums1,

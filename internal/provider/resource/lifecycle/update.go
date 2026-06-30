@@ -39,6 +39,7 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 
 	desired := models.LabState(planData.State.ValueString())
 	stateChanged := models.LabState(stateData.State.ValueString()) != desired
+	wait := planData.Wait.IsNull() || planData.Wait.ValueBool()
 
 	// Fetch current lab state once.  We need it both to detect drift (when
 	// lifecycle.state is unchanged) and to drive the corrective action.
@@ -59,17 +60,27 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 	//   resource (e.g. an external_connector node) may have been replaced during
 	//   this apply cycle.  Lab.Start / Node.Start are idempotent — already-running
 	//   nodes are left untouched by the CML API.
-	if stateChanged || desired == models.LabStateStarted || labHasDrift(&lab, desired) {
+	drift := labHasDrift(&lab, desired)
+	tflog.Info(ctx, "Resource LabLifecycle UPDATE: sync decision", map[string]any{
+		"desired":       desired,
+		"state_changed": stateChanged,
+		"drift":         drift,
+		"lab_state":     lab.State,
+		"nodes":         len(lab.Nodes),
+		"links":         len(lab.Links),
+	})
+
+	if stateChanged || desired == models.LabStateStarted || drift {
 		tflog.Info(
 			ctx, "Resource LabLifecycle UPDATE: applying state change or correcting drift",
-			map[string]any{"desired": desired, "state_changed": stateChanged},
+			map[string]any{"desired": desired, "state_changed": stateChanged, "wait": wait, "lab_state": lab.State},
 		)
 
 		start := startData{
 			lab:      &lab,
 			staging:  getStaging(ctx, req.Config, &resp.Diagnostics),
 			timeouts: getTimeouts(ctx, req.Config, &resp.Diagnostics),
-			wait:     planData.Wait.IsNull() || planData.Wait.ValueBool(),
+			wait:     wait,
 		}
 
 		reconcileLinks := func(current *models.Lab, want models.LabState) {

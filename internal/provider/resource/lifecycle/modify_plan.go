@@ -78,6 +78,32 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		tflog.Info(ctx, "Lifecycle MP state snapshot", map[string]any{
+			"state":            stateData.State.ValueString(),
+			"planned_state":    planData.State.ValueString(),
+			"nodes":            len(nodes),
+			"node_state_elems": len(stateData.Nodes.Elements()),
+			"triggers_cfg":     len(configData.UpdateTriggers.Elements()),
+			"triggers_state":   len(stateData.UpdateTriggers.Elements()),
+			"triggers_equal":   configData.UpdateTriggers.Equal(stateData.UpdateTriggers),
+		})
+		for id, node := range nodes {
+			if node.State.IsNull() || node.State.IsUnknown() {
+				tflog.Info(ctx, "Lifecycle MP node snapshot", map[string]any{
+					"node_id": id,
+					"label":   node.Label.ValueString(),
+					"def":     node.NodeDefinition.ValueString(),
+					"state":   "<unknown>",
+				})
+				continue
+			}
+			tflog.Info(ctx, "Lifecycle MP node snapshot", map[string]any{
+				"node_id": id,
+				"label":   node.Label.ValueString(),
+				"def":     node.NodeDefinition.ValueString(),
+				"state":   node.State.ValueString(),
+			})
+		}
 
 		// Explicit lifecycle.state transition.
 		stateTransition = planData.State.ValueString() != stateData.State.ValueString()
@@ -205,6 +231,12 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 				}
 			}
 		}
+		tflog.Info(ctx, "Lifecycle MP decision", map[string]any{
+			"state_transition": stateTransition,
+			"trigger_changed":  triggerChanged,
+			"change_needed":    changeNeeded,
+			"desired_state":    planData.State.ValueString(),
+		})
 	}
 
 	if changeNeeded {

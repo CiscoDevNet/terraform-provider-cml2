@@ -1574,3 +1574,241 @@ resource "cml2_lifecycle" "top" {
 		},
 	})
 }
+
+func testAccLifecycleStartedWithUMSConfig(providerCfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "this" {}
+
+resource "cml2_node" "ext" {
+  lab_id         = cml2_lab.this.id
+  label          = "Internet"
+  nodedefinition = "external_connector"
+  configuration  = "virbr0"
+}
+
+resource "cml2_node" "ums" {
+  lab_id         = cml2_lab.this.id
+  label          = "Unmanaged Switch"
+  nodedefinition = "unmanaged_switch"
+}
+
+resource "cml2_node" "r1" {
+  lab_id         = cml2_lab.this.id
+  label          = "nginx-1"
+  nodedefinition = "nginx"
+}
+
+resource "cml2_node" "r2" {
+  lab_id         = cml2_lab.this.id
+  label          = "nginx-2"
+  nodedefinition = "nginx"
+}
+
+resource "cml2_link" "l0" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ext.id
+  node_b = cml2_node.ums.id
+}
+
+resource "cml2_link" "l1" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r1.id
+}
+
+resource "cml2_link" "l2" {
+  lab_id = cml2_lab.this.id
+  node_a = cml2_node.ums.id
+  node_b = cml2_node.r2.id
+}
+
+resource "cml2_lifecycle" "top" {
+  lab_id = cml2_lab.this.id
+  state  = "STARTED"
+  update_triggers = {
+    ext = cml2_node.ext.generation
+    ums = "${cml2_node.ums.id}:${cml2_node.ums.generation}"
+    r1  = cml2_node.r1.generation
+    r2  = cml2_node.r2.generation
+  }
+  depends_on = [
+    cml2_node.ext,
+    cml2_node.ums,
+    cml2_node.r1,
+    cml2_node.r2,
+    cml2_link.l0,
+    cml2_link.l1,
+    cml2_link.l2,
+  ]
+}
+`, providerCfg)
+}
+
+// TestAccLifecycleUMSRecreatedRestartsLinks verifies that when an unmanaged
+// switch is deleted out-of-band and then recreated via update_triggers, the
+// lifecycle resource restarts the switch and its attached links.
+func TestAccLifecycleUMSRecreatedRestartsLinks(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleStartedWithUMSConfig(cfg.Cfg)
+	var labID string
+	var initialUMSID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources["cml2_node.ums"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.ums")
+						}
+						labID = rs.Primary.Attributes["lab_id"]
+						initialUMSID = rs.Primary.ID
+						if labID == "" || initialUMSID == "" {
+							return fmt.Errorf("expected lab_id and ums id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					if labID == "" || initialUMSID == "" {
+						return fmt.Errorf("internal test error: expected captured lab_id and ums id")
+					}
+
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+
+					waitForUMSState := func(want models.NodeState, desc string) error {
+						deadline := time.Now().Add(60 * time.Second)
+						for time.Now().Before(deadline) {
+							lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+							if err != nil {
+								time.Sleep(2 * time.Second)
+								continue
+							}
+							n := lab.Nodes[models.UUID(initialUMSID)]
+							if n != nil && n.State == want {
+								return nil
+							}
+							time.Sleep(2 * time.Second)
+						}
+						return fmt.Errorf("timeout waiting for unmanaged switch to become %s", desc)
+					}
+
+					if err := client.Node.Stop(context.Background(), models.UUID(labID), models.UUID(initialUMSID)); err != nil {
+						return err
+					}
+					if err := waitForUMSState(models.NodeStateStopped, "STOPPED"); err != nil {
+						return err
+					}
+
+					if err := client.Node.Wipe(context.Background(), models.UUID(labID), models.UUID(initialUMSID)); err != nil {
+						return err
+					}
+					if err := waitForUMSState(models.NodeStateDefined, "DEFINED_ON_CORE"); err != nil {
+						return err
+					}
+
+					if err := client.Node.Delete(context.Background(), models.UUID(labID), models.UUID(initialUMSID)); err != nil {
+						return err
+					}
+
+					deadline := time.Now().Add(30 * time.Second)
+					for time.Now().Before(deadline) {
+						lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if err != nil {
+							time.Sleep(2 * time.Second)
+							continue
+						}
+						if _, ok := lab.Nodes[models.UUID(initialUMSID)]; !ok {
+							return nil
+						}
+						time.Sleep(2 * time.Second)
+					}
+
+					return fmt.Errorf("timeout waiting for unmanaged switch deletion")
+				},
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					func(s *terraform.State) error {
+						client, err := cfg.NewCMLClientFromTFEnv()
+						if err != nil {
+							return err
+						}
+
+						rs, ok := s.RootModule().Resources["cml2_node.ums"]
+						if !ok {
+							return fmt.Errorf("not found in state: cml2_node.ums")
+						}
+						currentUMSID := rs.Primary.ID
+						if currentUMSID == "" {
+							return fmt.Errorf("expected recreated unmanaged switch id")
+						}
+						if currentUMSID == initialUMSID {
+							return fmt.Errorf("expected unmanaged switch to be recreated, id still %q", initialUMSID)
+						}
+
+						lab, err := client.Lab.GetByID(context.Background(), models.UUID(labID), true)
+						if err != nil {
+							return err
+						}
+
+						ums := lab.Nodes[models.UUID(currentUMSID)]
+						if ums == nil {
+							return fmt.Errorf("recreated unmanaged switch not found in lab")
+						}
+						if ums.State != models.NodeStateStarted && ums.State != models.NodeStateBooted {
+							return fmt.Errorf("expected unmanaged switch to be started after lifecycle restart, got %s", ums.State)
+						}
+
+						for _, resName := range []string{"cml2_link.l0", "cml2_link.l1", "cml2_link.l2"} {
+							linkRS, ok := s.RootModule().Resources[resName]
+							if !ok {
+								return fmt.Errorf("not found in state: %s", resName)
+							}
+							linkID := linkRS.Primary.ID
+							if linkID == "" {
+								return fmt.Errorf("expected link id for %s", resName)
+							}
+
+							var linkState string
+							found := false
+							for _, l := range lab.Links {
+								if l.ID == models.UUID(linkID) {
+									linkState = l.State
+									found = true
+									break
+								}
+							}
+							if !found {
+								return fmt.Errorf("%s not found in lab after lifecycle restart", resName)
+							}
+							if linkState != models.LinkStateStarted {
+								return fmt.Errorf("expected %s to be STARTED after lifecycle restart, got %s", resName, linkState)
+							}
+						}
+
+						return nil
+					},
+				),
+			},
+		},
+	})
+}

@@ -42,6 +42,7 @@ func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostic
 			return
 		}
 		if converged {
+			tflog.Info(ctx, "convergence reached", map[string]any{"seconds": attempts * snoozeFor})
 			return
 		}
 
@@ -51,6 +52,7 @@ func Converge(ctx context.Context, client *client.Client, diags *diag.Diagnostic
 			return
 		}
 		if time.Now().After(endTime) {
+			tflog.Warn(ctx, "convergence timeout", map[string]any{"timeout": timeout, "seconds": attempts * snoozeFor})
 			diags.AddError(ErrorLabel, fmt.Sprintf("ran into timeout (max %s)", timeout))
 			return
 		}

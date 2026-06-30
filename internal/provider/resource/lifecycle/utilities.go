@@ -74,7 +74,19 @@ func (r *LabLifecycleResource) wipe(ctx context.Context, diags diag.Diagnostics,
 }
 
 func (r *LabLifecycleResource) startNodesAll(ctx context.Context, diags *diag.Diagnostics, start startData) {
-	tflog.Info(ctx, "lab start")
+	tflog.Info(ctx, "lab start", map[string]any{"lab_id": start.lab.ID, "nodes": len(start.lab.Nodes), "links": len(start.lab.Links)})
+	for _, node := range start.lab.Nodes {
+		if node == nil {
+			continue
+		}
+		tflog.Info(ctx, "lab start candidate", map[string]any{
+			"node_id":        node.ID,
+			"label":          node.Label,
+			"definition":     node.NodeDefinition,
+			"state":          node.State,
+			"config_present": node.Configuration != nil || len(node.Configurations) > 0,
+		})
+	}
 	err := r.cfg.Client().Lab.Start(ctx, start.lab.ID)
 	if err != nil {
 		diags.AddError(
