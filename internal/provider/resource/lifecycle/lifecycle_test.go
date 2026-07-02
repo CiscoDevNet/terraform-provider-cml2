@@ -731,8 +731,8 @@ func TestAccLifecycleImportLab(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
 	const (
-		initialAlpineConfig = "new config for alpine"
-		changedAlpineConfig = "changed config for alpine"
+		initialNginxConfig = "new config for nginx"
+		changedNginxConfig = "changed config for nginx"
 	)
 
 	resource.Test(t, resource.TestCase{
@@ -742,29 +742,29 @@ func TestAccLifecycleImportLab(t *testing.T) {
 			// node with label xxx is not found, we expect an error
 			{
 				Config: testAccLifecycleImportLab(
-					cfg.Cfg, "xxx", initialAlpineConfig,
+					cfg.Cfg, "xxx", initialNginxConfig,
 				),
 				ExpectError: regexp.MustCompile(`node with label xxx not found`),
 			},
 			// start lab and ensure that n0config output has the initial config
 			{
 				Config: testAccLifecycleImportLab(
-					cfg.Cfg, "alpine-0", initialAlpineConfig,
+					cfg.Cfg, "nginx-0", initialNginxConfig,
 				),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
-					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "alpine-0", initialAlpineConfig),
+					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "nginx-0", initialNginxConfig),
 				),
 			},
 			// change config and ensure that n0config output now has the changed config
 			// (this requires a replace)
 			{
 				Config: testAccLifecycleImportLab(
-					cfg.Cfg, "alpine-0", changedAlpineConfig,
+					cfg.Cfg, "nginx-0", changedNginxConfig,
 				),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrWith("cml2_lifecycle.top", "lab_id", uuidCheck),
-					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "alpine-0", changedAlpineConfig),
+					testCheckLifecycleNodeConfigByLabel("cml2_lifecycle.top", "nginx-0", changedNginxConfig),
 				),
 			},
 		},
@@ -974,13 +974,13 @@ resource "cml2_lab" "this" {
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_node" "r2" {
   lab_id         = cml2_lab.this.id
   label          = "R2"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_link" "l1" {
@@ -1039,14 +1039,14 @@ resource "cml2_node" "ums" {
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
   tags           = [ "bla" ]
 }
 
 resource "cml2_node" "r2" {
   lab_id         = cml2_lab.this.id
   label          = "R2"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_link" "l1" {
@@ -1123,10 +1123,10 @@ resource "cml2_lifecycle" "top" {
     links: []
     nodes:
         - id: n0
-          label: alpine-0
+          label: nginx-0
           x: 1
           y: 1
-          node_definition: alpine
+          node_definition: nginx
           configuration: hostname bla
           interfaces: []
           tags: ["infra"]
@@ -1142,7 +1142,7 @@ EOT
 }
 
 locals {
-	n0config = [for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "alpine-0"][0]
+	n0config = [for k, v in cml2_lifecycle.top.nodes : v.configuration if v.label == "nginx-0"][0]
 }
 
 output "n0config" {
@@ -1186,13 +1186,13 @@ resource "cml2_node" "ums" {
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_node" "r2" {
   lab_id         = cml2_lab.this.id
   label          = "R2"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_link" "l0" {
@@ -1255,19 +1255,19 @@ resource "cml2_node" "ums" {
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_node" "r2" {
   lab_id         = cml2_lab.this.id
   label          = "R2"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_node" "r3" {
   lab_id         = cml2_lab.this.id
   label          = "R3"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_link" "l0" {
@@ -1388,13 +1388,13 @@ resource "cml2_lab" "this" {
 resource "cml2_node" "r1" {
   lab_id         = cml2_lab.this.id
   label          = "R1"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_node" "r2" {
   lab_id         = cml2_lab.this.id
   label          = "R2"
-  nodedefinition = "alpine"
+  nodedefinition = "nginx"
 }
 
 resource "cml2_link" "l1" {

@@ -200,12 +200,12 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 }
 resource "cml2_node" "r2" {
 	lab_id         = cml2_lab.test.id
 	label          = "r2"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 }
 resource "cml2_link" "l0" {
 	lab_id = cml2_lab.test.id
@@ -252,7 +252,7 @@ resource "cml2_node" "ext" {
   resource "cml2_node" "cws1" {
 	lab_id         = cml2_lab.devnet-expert.id
 	label          = "CWS"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
   }
 
   resource "cml2_link" "l0" {

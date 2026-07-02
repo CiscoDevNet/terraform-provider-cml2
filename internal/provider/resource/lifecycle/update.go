@@ -123,6 +123,10 @@ func (r LabLifecycleResource) Update(ctx context.Context, req resource.UpdateReq
 		case models.LabStateStopped:
 			r.stop(ctx, resp.Diagnostics, planData.LabID.ValueString())
 			reconcileLinks(&lab, desired)
+			if start.wait {
+				timeout := start.timeouts.Update.ValueString()
+				common.Converge(ctx, r.cfg.Client(), &resp.Diagnostics, planData.LabID.ValueString(), timeout)
+			}
 		case models.LabStateDefined:
 			// Wipe requires a stop first if the lab (or any node) is still running.
 			if lab.State == models.LabStateStarted || lab.Running() {

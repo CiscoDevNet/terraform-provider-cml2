@@ -61,8 +61,8 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
 					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
@@ -75,8 +75,8 @@ func TestAccNodeResource(t *testing.T) {
 				// ExpectNonEmptyPlan: true,
 				Config: testAccNodeResourceConfig(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-99"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "hide_links", "true"),
@@ -88,8 +88,8 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 3),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-99"),
 					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
@@ -138,8 +138,8 @@ func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
 			{
 				Config: baseCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
 					func(s *terraform.State) error {
 						rs, ok := s.RootModule().Resources["cml2_node.r1"]
 						if !ok {
@@ -189,7 +189,7 @@ func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
 						}
 						return nil
 					},
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
 				),
 			},
 		},
@@ -544,16 +544,16 @@ func testAccNodeResourceCreateAllAttrs(cfg string) string {
 	return fmt.Sprintf(`
 		%[1]s
 		data "cml2_images" "test" {
-			nodedefinition = "alpine"
+			nodedefinition = "nginx"
 		}
 		resource "cml2_lab" "test" {
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "alpine-0"
+			label           = "nginx-0"
 			x               = 100
 			y               = 100
-			nodedefinition  = "alpine"
+			nodedefinition  = "nginx"
 			priority        = 10
 			tags            = [ "test" ]
 			configuration   = "hostname bla"
@@ -575,10 +575,10 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "alpine-0"
+			label           = "nginx-0"
 			x               = 100
 			y               = 100
-			nodedefinition  = "alpine"
+			nodedefinition  = "nginx"
 			tags            = [ "test" ]
 		}
 		`, cfg)
@@ -590,11 +590,11 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "alpine-99"
+			label           = "nginx-99"
 			x               = 100
 			y               = 200
 			hide_links      = true
-			nodedefinition  = "alpine"
+			nodedefinition  = "nginx"
 			tags            = [ "test", "tag2" ]
 		}
 		`, cfg)
@@ -603,17 +603,17 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		return fmt.Sprintf(`
 		%[1]s
 		data "cml2_images" "test" {
-			nodedefinition = "alpine"
+			nodedefinition = "nginx"
 		}
 		resource "cml2_lab" "test" {
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "alpine-99"
+			label           = "nginx-99"
 			x               = 100
 			y               = 200
 			hide_links      = false
-			nodedefinition  = "alpine"
+			nodedefinition  = "nginx"
 			imagedefinition = element(data.cml2_images.test.image_list, 0).id
 			ram             = 1024
 			cpus            = 2
@@ -650,8 +650,8 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 	}
 	resource "cml2_node" "r1" {
 		lab_id          = cml2_lab.test.id
-		label           = "alpine-0"
-		nodedefinition  = "alpine"
+		label           = "nginx-0"
+		nodedefinition  = "nginx"
 		%[2]s
 	}
 	`, cfg, tags)
@@ -666,7 +666,7 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 	configuration  = %[2]q
 }
 `, cfg, *nodeCfg)
@@ -680,7 +680,7 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 }
 `, cfg)
 }
@@ -693,7 +693,7 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 	configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
 }
 `, cfg)
@@ -708,7 +708,7 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 	# configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
 	configurations = [
 	  {
@@ -729,7 +729,7 @@ resource "cml2_lab" "test" {
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 	configuration  = "hostname cant-have-both"
 	configurations = [
 	  {

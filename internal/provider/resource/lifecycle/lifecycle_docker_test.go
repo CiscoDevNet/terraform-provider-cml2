@@ -16,7 +16,7 @@ import (
 // ("docker" style) rather than VM-heavy images.
 //
 // Topology intent:
-// external_connector -- ioll2-xe -- chrome
+// external_connector -- ioll2-xe -- nginx
 //
 // Note: The exact node definition IDs must exist on the target controller.
 // If your controller uses different IDs for these, adjust them in the config.
@@ -65,10 +65,10 @@ resource "cml2_node" "rtr" {
 	tags           = ["stage-2"]
 }
 
-resource "cml2_node" "chrome" {
+resource "cml2_node" "nginx" {
 	lab_id         = cml2_lab.this.id
-	label          = "Chrome"
-	nodedefinition = "chrome"
+	label          = "Nginx"
+	nodedefinition = "nginx"
 	tags           = ["stage-3"]
 }
 
@@ -81,7 +81,7 @@ resource "cml2_link" "l1" {
 resource "cml2_link" "l2" {
 	lab_id = cml2_lab.this.id
 	node_a = cml2_node.rtr.id
-	node_b = cml2_node.chrome.id
+	node_b = cml2_node.nginx.id
 }
 
 resource "cml2_lifecycle" "top" {
@@ -89,7 +89,7 @@ resource "cml2_lifecycle" "top" {
 	depends_on = [
 		cml2_node.ext,
 		cml2_node.rtr,
-		cml2_node.chrome,
+		cml2_node.nginx,
 		cml2_link.l1,
 		cml2_link.l2,
 	]
