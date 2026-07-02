@@ -196,16 +196,17 @@ func testAccLinkResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc link resource"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 }
 resource "cml2_node" "r2" {
 	lab_id         = cml2_lab.test.id
 	label          = "r2"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
 }
 resource "cml2_link" "l0" {
 	lab_id = cml2_lab.test.id
@@ -226,7 +227,7 @@ func testAccLifecycleDaniel(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "devnet-expert" {
-	title       = "DevNet Expert Lab"
+	title       = "acc link devnet expert"
 	description = "This is the DevNet Expert Lab for study"
   }
 
@@ -252,7 +253,7 @@ resource "cml2_node" "ext" {
   resource "cml2_node" "cws1" {
 	lab_id         = cml2_lab.devnet-expert.id
 	label          = "CWS"
-	nodedefinition = "alpine"
+	nodedefinition = "nginx"
   }
 
   resource "cml2_link" "l0" {
@@ -288,6 +289,7 @@ func testAccLinkResourceConfigSlotChange(cfg string, step int) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc link slot change"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id

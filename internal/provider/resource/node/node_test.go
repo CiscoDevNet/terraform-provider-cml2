@@ -18,6 +18,9 @@ import (
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
+// Note: should use alpine as the node definition throughout: these tests
+// do not actually start a VM via lifecycle, so the node size does not matter!
+
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform
 // CLI command executed to create a provider server to which the CLI can
@@ -498,6 +501,7 @@ func testAccNodeResourceConfigNodeDefExtConn(cfg, extconnname string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node extconn"
 }
 resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.test.id
@@ -512,6 +516,7 @@ func testAccNodeResourceConfigNodeDefExtConnNamed(cfg, extconnName string) strin
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node extconn named"
 }
 resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.test.id
@@ -531,6 +536,7 @@ func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node invalid node def"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -541,12 +547,15 @@ resource "cml2_node" "r1" {
 }
 
 func testAccNodeResourceCreateAllAttrs(cfg string) string {
+	// note: the definition here needs to be alpine as some attrs can't
+	// be changed for nginx (like cpus).
 	return fmt.Sprintf(`
 		%[1]s
 		data "cml2_images" "test" {
 			nodedefinition = "alpine"
 		}
 		resource "cml2_lab" "test" {
+			title = "acc node create all attrs"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
@@ -568,10 +577,15 @@ func testAccNodeResourceCreateAllAttrs(cfg string) string {
 }
 
 func testAccNodeResourceConfig(cfg string, step int) string {
+	// node definition should be alpine due to change of node attributes
+	// which can't be changed for e.g. nginx. doesn't matter much as nothing
+	// gets actually started
+
 	if step == 1 {
 		return fmt.Sprintf(`
 		%[1]s
 		resource "cml2_lab" "test" {
+			title = "acc node config step 1"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
@@ -587,6 +601,7 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		return fmt.Sprintf(`
 		%[1]s
 		resource "cml2_lab" "test" {
+			title = "acc node config step 2"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
@@ -606,6 +621,7 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 			nodedefinition = "alpine"
 		}
 		resource "cml2_lab" "test" {
+			title = "acc node config step 3"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
@@ -647,6 +663,7 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 	return fmt.Sprintf(`
 	%[1]s
 	resource "cml2_lab" "test" {
+		title = "acc node tags"
 	}
 	resource "cml2_node" "r1" {
 		lab_id          = cml2_lab.test.id
@@ -662,6 +679,7 @@ func testAccNodeResourceConfigEmpty(cfg string, nodeCfg *string) string {
 		return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node empty config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -676,6 +694,7 @@ resource "cml2_node" "r1" {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node empty config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -689,6 +708,7 @@ func testAccNodeResourceConfigCRLF(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node crlf config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -703,7 +723,7 @@ func testAccNodeResourceNamedConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
-	title = "named configs"
+	title = "acc node named configs"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -724,7 +744,7 @@ func testAccNodeResourceNamedConfigErr(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
-	title = "named config with error"
+	title = "acc node named config with error"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -749,6 +769,7 @@ func testAccNodeResourceConfigChange(cfg, nodeconfig string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node config change"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -763,6 +784,7 @@ func testAccNodeResourceConfigUMS(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node ums config"
 }
 resource "cml2_node" "ums" {
 	lab_id         = cml2_lab.test.id

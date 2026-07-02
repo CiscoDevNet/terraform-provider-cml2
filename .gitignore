@@ -1,4 +1,5 @@
 .envrc
+.opencode
 .vscode
 
 *.code-workspace
