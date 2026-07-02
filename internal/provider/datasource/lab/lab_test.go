@@ -26,7 +26,7 @@ func testAccPreCheck(t *testing.T) {
 func TestLabDataSource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
-	title := "thislab"
+	const title = "acc lab datasource"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

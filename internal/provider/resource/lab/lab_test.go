@@ -35,6 +35,8 @@ func testAccPreCheck(t *testing.T) {
 func TestAccLabResource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
+	const title = "acc lab resource"
+
 	// Use unique group names to avoid 409 "already exists" errors across test runs.
 	group1Name := fmt.Sprintf("user_acc_lab_test_group1_%d", time.Now().UnixNano())
 	group2Name := fmt.Sprintf("user_acc_lab_test_group2_%d", time.Now().UnixNano())
@@ -45,9 +47,9 @@ func TestAccLabResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccLabResourceConfig(cfg.Cfg, "thistitle", "description", 1, group1Name, group2Name),
+				Config: testAccLabResourceConfig(cfg.Cfg, "description", 1, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_lab.test", "title", "thistitle"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", title),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "description"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "groups.#", "2"),
 				),
@@ -68,9 +70,9 @@ func TestAccLabResource(t *testing.T) {
 				// Update: workaround for now is to disable the UseStateForUnknown modifier
 				// in the schema for the nested schema objects in the set.
 				// SkipFunc: func() (bool, error) { return true, nil },
-				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 2, group1Name, group2Name),
+				Config: testAccLabResourceConfig(cfg.Cfg, "newdesc", 2, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", title),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
 					resource.TestCheckResourceAttr("cml2_lab.test", "groups.#", "1"),
 					resource.TestCheckTypeSetElemNestedAttrs("cml2_lab.test", "groups.*", map[string]string{
@@ -81,9 +83,9 @@ func TestAccLabResource(t *testing.T) {
 			{
 				// should use the disabled one above and remove this.
 				// using this to have some test for update.
-				Config: testAccLabResourceConfig(cfg.Cfg, "newtitle", "newdesc", 1, group1Name, group2Name),
+				Config: testAccLabResourceConfig(cfg.Cfg, "newdesc", 1, group1Name, group2Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_lab.test", "title", "newtitle"),
+					resource.TestCheckResourceAttr("cml2_lab.test", "title", title),
 					resource.TestCheckResourceAttr("cml2_lab.test", "description", "newdesc"),
 				),
 			},
@@ -95,14 +97,14 @@ func TestAccLabResource(t *testing.T) {
 func TestAccLabResourceRecreatesWhenDeletedExternally(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
-	title := fmt.Sprintf("drift-lab-%d", time.Now().UnixNano())
+	const title = "acc lab resource"
 	config := "" // set below with unique group names
 	var initialLabID string
 
 	// Use unique group names to avoid 409 "already exists" errors across test runs.
 	group1Name := fmt.Sprintf("user_acc_lab_test_group1_%d", time.Now().UnixNano())
 	group2Name := fmt.Sprintf("user_acc_lab_test_group2_%d", time.Now().UnixNano())
-	config = testAccLabResourceConfig(cfg.Cfg, title, "description", 1, group1Name, group2Name)
+	config = testAccLabResourceConfig(cfg.Cfg, "description", 1, group1Name, group2Name)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -157,7 +159,7 @@ func TestAccLabResourceRecreatesWhenDeletedExternally(t *testing.T) {
 	})
 }
 
-func testAccLabResourceConfig(cfg, title, description string, group int, group1Name, group2Name string) string {
+func testAccLabResourceConfig(cfg, description string, group int, group1Name, group2Name string) string {
 	var groupCfg string
 	if group == 1 {
 		groupCfg = `
@@ -192,7 +194,7 @@ func testAccLabResourceConfig(cfg, title, description string, group int, group1N
 	}
 
 	resource "cml2_lab" "test" {
-		title       = %q
+		title       = "acc lab resource"
 		description = %q
 		notes       = <<-EOT
 		# Heading
@@ -207,5 +209,5 @@ func testAccLabResourceConfig(cfg, title, description string, group int, group1N
 			%s
 		]
 	}
-`, cfg, group1Name, group2Name, title, description, groupCfg)
+`, cfg, group1Name, group2Name, description, groupCfg)
 }

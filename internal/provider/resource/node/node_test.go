@@ -18,6 +18,9 @@ import (
 	cfg "github.com/ciscodevnet/terraform-provider-cml2/internal/testing"
 )
 
+// Note: should use alpine as the node definition throughout: these tests
+// do not actually start a VM via lifecycle, so the node size does not matter!
+
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
 // acceptance testing. The factory function will be invoked for every Terraform
 // CLI command executed to create a provider server to which the CLI can
@@ -61,8 +64,8 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "100"),
@@ -75,8 +78,8 @@ func TestAccNodeResource(t *testing.T) {
 				// ExpectNonEmptyPlan: true,
 				Config: testAccNodeResourceConfig(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "hide_links", "true"),
@@ -88,8 +91,8 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 3),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-99"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
@@ -138,8 +141,8 @@ func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
 			{
 				Config: baseCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "nginx"),
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 					func(s *terraform.State) error {
 						rs, ok := s.RootModule().Resources["cml2_node.r1"]
 						if !ok {
@@ -189,7 +192,7 @@ func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
 						}
 						return nil
 					},
-					resource.TestCheckResourceAttr("cml2_node.r1", "label", "nginx-0"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 				),
 			},
 		},
@@ -498,6 +501,7 @@ func testAccNodeResourceConfigNodeDefExtConn(cfg, extconnname string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node extconn"
 }
 resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.test.id
@@ -512,6 +516,7 @@ func testAccNodeResourceConfigNodeDefExtConnNamed(cfg, extconnName string) strin
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node extconn named"
 }
 resource "cml2_node" "ext" {
 	lab_id         = cml2_lab.test.id
@@ -531,6 +536,7 @@ func testAccNodeResourceConfigNodeDefInvalid(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node invalid node def"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -541,19 +547,22 @@ resource "cml2_node" "r1" {
 }
 
 func testAccNodeResourceCreateAllAttrs(cfg string) string {
+	// note: the definition here needs to be alpine as some attrs can't
+	// be changed for nginx (like cpus).
 	return fmt.Sprintf(`
 		%[1]s
 		data "cml2_images" "test" {
-			nodedefinition = "nginx"
+			nodedefinition = "alpine"
 		}
 		resource "cml2_lab" "test" {
+			title = "acc node create all attrs"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "nginx-0"
+			label           = "alpine-0"
 			x               = 100
 			y               = 100
-			nodedefinition  = "nginx"
+			nodedefinition  = "alpine"
 			priority        = 10
 			tags            = [ "test" ]
 			configuration   = "hostname bla"
@@ -568,17 +577,22 @@ func testAccNodeResourceCreateAllAttrs(cfg string) string {
 }
 
 func testAccNodeResourceConfig(cfg string, step int) string {
+	// node definition should be alpine due to change of node attributes
+	// which can't be changed for e.g. nginx. doesn't matter much as nothing
+	// gets actually started
+
 	if step == 1 {
 		return fmt.Sprintf(`
 		%[1]s
 		resource "cml2_lab" "test" {
+			title = "acc node config step 1"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "nginx-0"
+			label           = "alpine-0"
 			x               = 100
 			y               = 100
-			nodedefinition  = "nginx"
+			nodedefinition  = "alpine"
 			tags            = [ "test" ]
 		}
 		`, cfg)
@@ -587,14 +601,15 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		return fmt.Sprintf(`
 		%[1]s
 		resource "cml2_lab" "test" {
+			title = "acc node config step 2"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "nginx-99"
+			label           = "alpine-99"
 			x               = 100
 			y               = 200
 			hide_links      = true
-			nodedefinition  = "nginx"
+			nodedefinition  = "alpine"
 			tags            = [ "test", "tag2" ]
 		}
 		`, cfg)
@@ -603,17 +618,18 @@ func testAccNodeResourceConfig(cfg string, step int) string {
 		return fmt.Sprintf(`
 		%[1]s
 		data "cml2_images" "test" {
-			nodedefinition = "nginx"
+			nodedefinition = "alpine"
 		}
 		resource "cml2_lab" "test" {
+			title = "acc node config step 3"
 		}
 		resource "cml2_node" "r1" {
 			lab_id          = cml2_lab.test.id
-			label           = "nginx-99"
+			label           = "alpine-99"
 			x               = 100
 			y               = 200
 			hide_links      = false
-			nodedefinition  = "nginx"
+			nodedefinition  = "alpine"
 			imagedefinition = element(data.cml2_images.test.image_list, 0).id
 			ram             = 1024
 			cpus            = 2
@@ -647,11 +663,12 @@ func testAccNodeResourceConfigTags(cfg string, step int) string {
 	return fmt.Sprintf(`
 	%[1]s
 	resource "cml2_lab" "test" {
+		title = "acc node tags"
 	}
 	resource "cml2_node" "r1" {
 		lab_id          = cml2_lab.test.id
-		label           = "nginx-0"
-		nodedefinition  = "nginx"
+		label           = "alpine-0"
+		nodedefinition  = "alpine"
 		%[2]s
 	}
 	`, cfg, tags)
@@ -662,11 +679,12 @@ func testAccNodeResourceConfigEmpty(cfg string, nodeCfg *string) string {
 		return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node empty config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "nginx"
+	nodedefinition = "alpine"
 	configuration  = %[2]q
 }
 `, cfg, *nodeCfg)
@@ -676,11 +694,12 @@ resource "cml2_node" "r1" {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node empty config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "nginx"
+	nodedefinition = "alpine"
 }
 `, cfg)
 }
@@ -689,11 +708,12 @@ func testAccNodeResourceConfigCRLF(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node crlf config"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "nginx"
+	nodedefinition = "alpine"
 	configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
 }
 `, cfg)
@@ -703,12 +723,12 @@ func testAccNodeResourceNamedConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
-	title = "named configs"
+	title = "acc node named configs"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "nginx"
+	nodedefinition = "alpine"
 	# configuration  = "hostname bla\r\nip add add 10.0.0.1/24 dev eth0\r\nexit"
 	configurations = [
 	  {
@@ -724,12 +744,12 @@ func testAccNodeResourceNamedConfigErr(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
-	title = "named config with error"
+	title = "acc node named config with error"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
 	label          = "r1"
-	nodedefinition = "nginx"
+	nodedefinition = "alpine"
 	configuration  = "hostname cant-have-both"
 	configurations = [
 	  {
@@ -749,6 +769,7 @@ func testAccNodeResourceConfigChange(cfg, nodeconfig string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node config change"
 }
 resource "cml2_node" "r1" {
 	lab_id         = cml2_lab.test.id
@@ -763,6 +784,7 @@ func testAccNodeResourceConfigUMS(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "test" {
+	title = "acc node ums config"
 }
 resource "cml2_node" "ums" {
 	lab_id         = cml2_lab.test.id

@@ -179,8 +179,8 @@ func TestAccGroupResourceNoLists(t *testing.T) {
 func testAccGroupResourceConfig(cfg, suffix string) string {
 	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
 	groupName := fmt.Sprintf("acc_test_group_%s", suffix)
-	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
-	lab2Title := fmt.Sprintf("group_acc_test_lab2_%s", suffix)
+	lab1Title := "acc group lab1"
+	lab2Title := "acc group lab2"
 
 	return fmt.Sprintf(`
 %[1]s
@@ -222,8 +222,8 @@ resource "cml2_group" "test" {
 
 func testAccGroupResourceConfigUpdate(cfg, suffix string) string {
 	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
-	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
-	lab2Title := fmt.Sprintf("group_acc_test_lab2_%s", suffix)
+	lab1Title := "acc group lab1"
+	lab2Title := "acc group lab2"
 
 	return fmt.Sprintf(`
 %[1]s
@@ -262,7 +262,7 @@ resource "cml2_group" "test" {
 func testAccGroupResourceConfigUpdate2(cfg, permission, suffix string) string {
 	groupUserName := fmt.Sprintf("acc_test_group_user_%s", suffix)
 	groupUser2Name := fmt.Sprintf("acc_test_group_user_2_%s", suffix)
-	lab1Title := fmt.Sprintf("group_acc_test_lab1_%s", suffix)
+	lab1Title := "acc group lab1"
 
 	return fmt.Sprintf(`
 %[1]s

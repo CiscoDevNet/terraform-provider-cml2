@@ -647,9 +647,20 @@ func TestAccLifecycleResourceStartsWhenDefinedExternally(t *testing.T) {
 }
 
 func testAccLifecycleResourceConfigWithState(cfg, state string) string {
+	title := "acc lifecycle resource"
+	switch state {
+	case "STARTED":
+		title = "acc lifecycle resource started"
+	case "STOPPED":
+		title = "acc lifecycle resource stopped"
+	case "DEFINED_ON_CORE":
+		title = "acc lifecycle resource defined"
+	}
 	return fmt.Sprintf(`
 	%[1]s
-	resource "cml2_lab" "this" {}
+	resource "cml2_lab" "this" {
+		title = %[2]q
+	}
 
 	resource "cml2_node" "r1" {
 	  lab_id         = cml2_lab.this.id
@@ -678,7 +689,7 @@ func testAccLifecycleResourceConfigWithState(cfg, state string) string {
 	    cml2_link.l1,
 	  ]
 	}
-`, cfg, state)
+`, cfg, title, state)
 }
 
 func TestAccLifecycleImport(t *testing.T) {
@@ -918,13 +929,13 @@ func TestAccLifecycleAddNodeToBooted(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, 0),
+				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, "acc lifecycle add node to booted initial", 0),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 				),
 			},
 			{
-				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, 1),
+				Config: testAccLifecycleAddNodeToBooted(cfg.Cfg, "acc lifecycle add node to booted add r3", 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
 				),
@@ -969,6 +980,7 @@ func testAccLifecycleResourceConfig(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
+	title = "acc lifecycle resource"
 }
 
 resource "cml2_node" "r1" {
@@ -1018,7 +1030,7 @@ func testAccLifecycleSequence(cfg string, seq int, all bool) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
-	title = "lifecycle seq ac-test"
+	title = "acc lifecycle sequence"
 }
 
 resource "cml2_node" "ext" {
@@ -1084,6 +1096,7 @@ func testAccLifecycleStateCheck(cfg, state string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
+	title = "acc lifecycle state check"
 }
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
@@ -1101,6 +1114,7 @@ func testAccLifecycleConfigCheck(cfg string, insertTopo bool) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
+	title = "acc lifecycle config check"
 }
 resource "cml2_lifecycle" "top" {
 	lab_id = cml2_lab.this.id
@@ -1118,7 +1132,7 @@ resource "cml2_lifecycle" "top" {
     lab:
         description: 'need one node'
         notes: ''
-        title: empty
+        title: acc lifecycle import lab
         version: 0.1.0
     links: []
     nodes:
@@ -1157,17 +1171,17 @@ func testAccLifecycleImport(cfg string) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
-	title = "labimport"
+	title = "acc lifecycle import"
 }
 `, cfg)
 }
 
-func testAccLifecycleAddNodeToBooted(cfg string, stage int) string {
+func testAccLifecycleAddNodeToBooted(cfg, title string, stage int) string {
 	if stage == 0 {
 		return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
-	title = "lifecycle add node to booted"
+	title = %[2]q
 }
 
 resource "cml2_node" "ext" {
@@ -1231,12 +1245,12 @@ resource "cml2_lifecycle" "top" {
 		cml2_link.l2,
 	]
 }
-	`, cfg)
+	`, cfg, title)
 	} else {
 		return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
-	title = "lifecycle add node to booted"
+	title = %[2]q
 }
 
 resource "cml2_node" "ext" {
@@ -1315,7 +1329,7 @@ resource "cml2_lifecycle" "top" {
 		cml2_link.l3,
 	]
 }
-	`, cfg)
+	`, cfg, title)
 	}
 }
 
@@ -1383,6 +1397,7 @@ func testAccLifecycleNamedConfigs(cfg string, stage int) string {
 	return fmt.Sprintf(`
 %[1]s
 resource "cml2_lab" "this" {
+	title = "acc lifecycle named configs"
 }
 
 resource "cml2_node" "r1" {
@@ -1466,7 +1481,9 @@ func TestAccLifecycleExtConnDeviceNameNoInconsistency(t *testing.T) {
 func testAccLifecycleExtConnConfig(providerCfg, extconnConfig string) string {
 	return fmt.Sprintf(`
 %[1]s
-resource "cml2_lab" "this" {}
+resource "cml2_lab" "this" {
+	title = "acc lifecycle extconn"
+}
 
 resource "cml2_node" "ext" {
   lab_id         = cml2_lab.this.id
@@ -1501,7 +1518,9 @@ func TestAccLifecycleExtConnNodeReplaceRestartsLab(t *testing.T) {
 	configStarted := func(extconn string) string {
 		return fmt.Sprintf(`
 %[1]s
-resource "cml2_lab" "this" {}
+resource "cml2_lab" "this" {
+	title = "acc lifecycle extconn replace"
+}
 
 resource "cml2_node" "ext" {
   lab_id         = cml2_lab.this.id
@@ -1578,7 +1597,9 @@ resource "cml2_lifecycle" "top" {
 func testAccLifecycleStartedWithUMSConfig(providerCfg string) string {
 	return fmt.Sprintf(`
 %[1]s
-resource "cml2_lab" "this" {}
+resource "cml2_lab" "this" {
+	title = "acc lifecycle ums recreated"
+}
 
 resource "cml2_node" "ext" {
   lab_id         = cml2_lab.this.id

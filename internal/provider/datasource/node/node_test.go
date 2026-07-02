@@ -25,7 +25,7 @@ func testAccPreCheck(t *testing.T) {
 func TestNodeDataSource(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
-	title := "thislab"
+	const title = "acc node datasource"
 	label := "thetestnode"
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
