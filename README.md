@@ -68,6 +68,11 @@ See `docs/development/local-provider.md`.
 Please refer to the `examples` directory and look at the built-in documentation
 provided via the registry.
 
+Provider configuration attributes can also be supplied via `CML2_*`
+environment variables. For example, `CML2_ADDRESS`, `CML2_USERNAME`,
+`CML2_PASSWORD`, `CML2_TOKEN`, `CML2_SKIP_VERIFY`, and related settings can be
+used instead of setting those values directly in HCL.
+
 > [!NOTE]
 >
 > It's recommended to use the UI token (from the User menu, top right "Copy
