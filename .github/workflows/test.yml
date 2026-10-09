@@ -177,16 +177,15 @@ jobs:
         # list whatever Terraform versions here you would like to support jobs
         # run in parallel -- some tests create resources with specific IDs
         # which must be unique... some test resource randomization is needed
-        # but doesn't exist... Currently only testing w/ 1.6 max-parallel: 1
-        # should fix this!
-        # Specific versions needed!
+        # but doesn't exist. Keep the matrix serial until tests generate
+        # unique resource IDs.
         # NOTE: required tests are configured in branch protection!
         #
         # https://releases.hashicorp.com/terraform/
         #
         terraform:
           - "1.13.5"
-          - "1.14.8"
+          - "1.16.3"
 
     steps:
       - name: Skip (docs-only)

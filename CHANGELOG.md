@@ -15,6 +15,11 @@ Lists the changes in the provider.
 
 ### Other changes
 
+- Fixed `cml2_node.configurations` state when CML returns named
+  configurations in a different order or adds controller-managed entries.
+  Explicit named configuration lists now retain their configured order.
+- Trim surrounding whitespace from API tokens before sending the Authorization
+  header, preventing failures from newline-terminated CI secrets.
 - Lifecycle reconciliation improvements:
   - Added link drift detection in `cml2_lifecycle.ModifyPlan` so externally stopped links can trigger lifecycle updates.
   - Added runtime link reconciliation in `cml2_lifecycle.Update` using link start/stop API calls.

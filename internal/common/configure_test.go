@@ -17,6 +17,39 @@ import (
 	"github.com/ciscodevnet/terraform-provider-cml2/internal/common"
 )
 
+func TestProviderConfigInitialize_TrimsStaticToken(t *testing.T) {
+	var authorization string
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v0/system_information" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		authorization = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"version":"2.9.0","ready":true}`)
+	}))
+	defer server.Close()
+
+	data := &cmlschema.ProviderModel{
+		Address:      types.StringValue(server.URL),
+		Token:        types.StringValue("jwt-token\n"),
+		SkipVerify:   types.BoolValue(true),
+		NamedConfigs: types.BoolValue(false),
+		TokenCache:   types.BoolValue(false),
+		UseCache:     types.BoolValue(false),
+	}
+
+	config := common.NewProviderConfig(data)
+	var diags diag.Diagnostics
+	config.Initialize(context.Background(), &diags)
+	require.False(t, diags.HasError(), diags.Errors())
+
+	err := config.Client().System.Ready(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer jwt-token", authorization)
+}
+
 func TestProviderConfigInitialize_RequestHeaders(t *testing.T) {
 	t.Parallel()
 

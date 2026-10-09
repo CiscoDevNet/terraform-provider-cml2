@@ -199,8 +199,11 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 	}
 
 	// Auth
-	if len(r.data.Token.ValueString()) > 0 {
-		opts = append(opts, cmlclient.WithStaticToken(r.data.Token.ValueString()))
+	// Tokens copied from CI secrets may include a trailing newline. JWTs cannot
+	// contain surrounding whitespace, and net/http rejects it in Authorization.
+	token := strings.TrimSpace(r.data.Token.ValueString())
+	if len(token) > 0 {
+		opts = append(opts, cmlclient.WithStaticToken(token))
 	}
 	if len(r.data.Username.ValueString()) > 0 {
 		opts = append(opts, cmlclient.WithUsernamePassword(
