@@ -67,7 +67,10 @@ func (r *NodeResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		node.Configurations = nil
 	case !data.Configurations.IsNull() && !data.Configurations.IsUnknown():
 		node.Configuration = nil
-		// keep node.Configurations as-is
+		node.Configurations = cmlschema.OrderNamedConfigs(
+			node.Configurations,
+			cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations),
+		)
 	case !data.Configuration.IsNull() && len(node.Configurations) > 0:
 		node.Configuration = node.Configurations[0].Content
 		node.Configurations = nil

@@ -179,6 +179,13 @@ func (r *NodeResource) Create(ctx context.Context, req resource.CreateRequest, r
 		newNode.Configurations = nil
 	}
 
+	if !data.Configurations.IsUnknown() && !data.Configurations.IsNull() {
+		newNode.Configurations = cmlschema.OrderNamedConfigs(
+			newNode.Configurations,
+			cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, data.Configurations),
+		)
+	}
+
 	// External connector: keep Terraform state aligned with user-provided
 	// device-name configuration, even if controller responses vary.
 	if node.NodeDefinition == "external_connector" {
