@@ -32,10 +32,7 @@ func (r *AnnotationResource) Configure(ctx context.Context, req resource.Configu
 }
 
 func (r *AnnotationResource) modernBorderStyles(ctx context.Context) (bool, error) {
-	if err := r.cfg.Client().System.Ready(ctx); err != nil {
-		return false, err
-	}
-	return r.cfg.Client().System.VersionCheck(ctx, ">=2.11.0")
+	return r.cfg.SystemVersionCheck(ctx, ">=2.11.0")
 }
 
 // Metadata sets the resource type name.
