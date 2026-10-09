@@ -20,6 +20,8 @@ Lists the changes in the provider.
   Explicit named configuration lists now retain their configured order.
 - Trim surrounding whitespace from API tokens before sending the Authorization
   header, preventing failures from newline-terminated CI secrets.
+- Support classic annotation border styles on CML 2.11+, which replaces legacy
+  dash patterns with `solid`, `dotted`, and `dashed` API values.
 - Lifecycle reconciliation improvements:
   - Added link drift detection in `cml2_lifecycle.ModifyPlan` so externally stopped links can trigger lifecycle updates.
   - Added runtime link reconciliation in `cml2_lifecycle.Update` using link start/stop API calls.
