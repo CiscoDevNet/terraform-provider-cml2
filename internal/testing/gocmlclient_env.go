@@ -3,6 +3,7 @@ package testing
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	gocml "github.com/rschmied/gocmlclient"
 	"github.com/rschmied/gocmlclient/pkg/client"
@@ -18,7 +19,7 @@ func NewCMLClientFromTFEnv() (*client.Client, error) {
 	addr := os.Getenv("TF_VAR_address")
 	username := os.Getenv("TF_VAR_username")
 	password := os.Getenv("TF_VAR_password")
-	token := os.Getenv("TF_VAR_token")
+	token := strings.TrimSpace(os.Getenv("TF_VAR_token"))
 
 	if addr == "" {
 		return nil, fmt.Errorf("TF_VAR_address must be set")
