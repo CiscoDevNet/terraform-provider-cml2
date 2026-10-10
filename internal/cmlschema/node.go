@@ -412,6 +412,26 @@ func newTags(_ context.Context, node *models.Node, diags *diag.Diagnostics) type
 	return tags
 }
 
+// OrderNamedConfigs preserves Terraform's list order for configurations returned
+// by CML. CML may return the same named configuration set in canonical order,
+// or add controller-managed configurations that are absent from Terraform's
+// plan. Only configured names belong in the managed list state.
+func OrderNamedConfigs(returned, configured []models.NodeConfig) []models.NodeConfig {
+	ordered := make([]models.NodeConfig, 0, len(configured))
+	used := make([]bool, len(returned))
+
+	for _, wanted := range configured {
+		for i, actual := range returned {
+			if !used[i] && actual.Name == wanted.Name {
+				ordered = append(ordered, actual)
+				used[i] = true
+				break
+			}
+		}
+	}
+	return ordered
+}
+
 // NewNamedConfigs converts node named configurations into a Terraform list.
 func NewNamedConfigs(ctx context.Context, node *models.Node, diags *diag.Diagnostics) types.List {
 	if len(node.Configurations) == 0 {

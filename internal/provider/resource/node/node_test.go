@@ -417,6 +417,29 @@ func TestAccNodeResourceNamedConfig(t *testing.T) {
 	})
 }
 
+func TestAccNodeResourceNamedConfigOrder(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.#", "2"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.0.name", "network-config"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.1.name", "user-data"),
+				),
+			},
+			{
+				Config:   testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccNodeResourceNamedConfigErr(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
@@ -734,6 +757,30 @@ resource "cml2_node" "r1" {
 	  {
 		name    = "node.cfg"
 		content = "hostname bla"
+	  }
+	]
+}
+`, cfg)
+}
+
+func testAccNodeResourceNamedConfigOrder(cfg string) string {
+	return fmt.Sprintf(`
+%[1]s
+resource "cml2_lab" "test" {
+	title = "acc node named config order"
+}
+resource "cml2_node" "r1" {
+	lab_id         = cml2_lab.test.id
+	label          = "ubuntu-0"
+	nodedefinition = "ubuntu"
+	configurations = [
+	  {
+		name    = "network-config"
+		content = "version: 2"
+	  },
+	  {
+		name    = "user-data"
+		content = "#cloud-config"
 	  }
 	]
 }

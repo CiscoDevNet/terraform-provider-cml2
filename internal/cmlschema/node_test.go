@@ -112,6 +112,41 @@ func TestNodeAttrs(t *testing.T) {
 	assert.Equal(t, types.StringType, got)
 }
 
+func TestOrderNamedConfigsUsesTerraformOrder(t *testing.T) {
+	// CML returns this set in UI/canonical order, while Terraform configured
+	// network-config first. A Terraform list state must keep the latter order.
+	returned := []models.NodeConfig{
+		{Name: "user-data", Content: "user"},
+		{Name: "network-config", Content: "network"},
+	}
+	configured := []models.NodeConfig{
+		{Name: "network-config"},
+		{Name: "user-data"},
+	}
+
+	assert.Equal(t, []models.NodeConfig{
+		{Name: "network-config", Content: "network"},
+		{Name: "user-data", Content: "user"},
+	}, cmlschema.OrderNamedConfigs(returned, configured))
+}
+
+func TestOrderNamedConfigsFiltersUnmatchedReturnedConfigs(t *testing.T) {
+	returned := []models.NodeConfig{
+		{Name: "user-data", Content: "user"},
+		{Name: "vendor-data", Content: "vendor"},
+		{Name: "network-config", Content: "network"},
+	}
+	configured := []models.NodeConfig{
+		{Name: "network-config"},
+		{Name: "user-data"},
+	}
+
+	assert.Equal(t, []models.NodeConfig{
+		{Name: "network-config", Content: "network"},
+		{Name: "user-data", Content: "user"},
+	}, cmlschema.OrderNamedConfigs(returned, configured))
+}
+
 func TestNewNamedConfigs(t *testing.T) {
 	diag := &diag.Diagnostics{}
 	ctx := context.Background()

@@ -63,6 +63,23 @@ func NewProviderConfig(data *cmlschema.ProviderModel) *ProviderConfig {
 	}
 }
 
+// SystemVersionCheck reports whether the controller version matches a constraint.
+// It fetches system information only until the client has a cached version.
+func (r *ProviderConfig) SystemVersionCheck(ctx context.Context, constraint string) (bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.client == nil {
+		return false, fmt.Errorf("client not initialized")
+	}
+	if r.client.System.Version() == "" {
+		if err := r.client.System.Ready(ctx); err != nil {
+			return false, err
+		}
+	}
+	return r.client.System.VersionCheck(ctx, constraint)
+}
+
 // NodeDefinitions returns the controller's node definition map.
 // The result is cached for the lifetime of the provider instance.
 func (r *ProviderConfig) NodeDefinitions(ctx context.Context) (models.NodeDefinitionMap, error) {
@@ -199,8 +216,11 @@ func (r *ProviderConfig) Initialize(ctx context.Context, diags *diag.Diagnostics
 	}
 
 	// Auth
-	if len(r.data.Token.ValueString()) > 0 {
-		opts = append(opts, cmlclient.WithStaticToken(r.data.Token.ValueString()))
+	// Tokens copied from CI secrets may include a trailing newline. JWTs cannot
+	// contain surrounding whitespace, and net/http rejects it in Authorization.
+	token := strings.TrimSpace(r.data.Token.ValueString())
+	if len(token) > 0 {
+		opts = append(opts, cmlclient.WithStaticToken(token))
 	}
 	if len(r.data.Username.ValueString()) > 0 {
 		opts = append(opts, cmlclient.WithUsernamePassword(

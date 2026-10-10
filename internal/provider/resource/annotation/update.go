@@ -36,6 +36,13 @@ func (r *AnnotationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	modern, err := r.modernBorderStyles(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("unable to check CML version: %s", err))
+		return
+	}
+	translateAnnotationUpdateBorderStyle(&upd, modern)
+
 	labID := models.UUID(plan.LabID.ValueString())
 	annID := models.UUID(plan.ID.ValueString())
 
@@ -45,6 +52,7 @@ func (r *AnnotationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	translateAnnotationResponseBorderStyle(&updated, modern)
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(ctx, cmlschema.NewAnnotation(ctx, labID, updated, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.AnnotationAttrType}, &plan)...,
 	)

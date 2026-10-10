@@ -40,6 +40,12 @@ func (r *AnnotationResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	modern, err := r.modernBorderStyles(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError(common.ErrorLabel, fmt.Sprintf("unable to check CML version: %s", err))
+		return
+	}
+	translateAnnotationResponseBorderStyle(&out, modern)
 	resp.Diagnostics.Append(
 		tfsdk.ValueFrom(ctx, cmlschema.NewAnnotation(ctx, labID, out, &resp.Diagnostics), types.ObjectType{AttrTypes: cmlschema.AnnotationAttrType}, &data)...,
 	)
