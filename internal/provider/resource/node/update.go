@@ -136,6 +136,15 @@ func (r *NodeResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	// Keep returned named configs in Terraform order so plan/state comparisons
+	// stay stable across update too.
+	if !planData.Configurations.IsNull() && !planData.Configurations.IsUnknown() {
+		newNode.Configurations = cmlschema.OrderNamedConfigs(
+			newNode.Configurations,
+			cmlschema.GetNamedConfigs(ctx, resp.Diagnostics, planData.Configurations),
+		)
+	}
+
 	// When named configs are disabled provider-side, normalize any server-returned
 	// named configs back into the single configuration field to avoid state drift.
 	if !r.cfg.UseNamedConfigs() && len(newNode.Configurations) > 0 {

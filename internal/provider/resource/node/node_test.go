@@ -427,14 +427,20 @@ func TestAccNodeResourceNamedConfigOrder(t *testing.T) {
 			{
 				Config: testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.#", "2"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.0.name", "network-config"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.1.name", "user-data"),
 				),
 			},
 			{
-				Config:   testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
-				PlanOnly: true,
+				Config: testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.#", "2"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.0.name", "network-config"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.1.name", "user-data"),
+				),
 			},
 		},
 	})
