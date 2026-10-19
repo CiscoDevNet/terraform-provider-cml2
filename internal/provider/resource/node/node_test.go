@@ -64,7 +64,7 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 1),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 					resource.TestCheckNoResourceAttr("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
@@ -78,7 +78,7 @@ func TestAccNodeResource(t *testing.T) {
 				// ExpectNonEmptyPlan: true,
 				Config: testAccNodeResourceConfig(cfg.Cfg, 2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "y", "200"),
@@ -91,7 +91,7 @@ func TestAccNodeResource(t *testing.T) {
 			{
 				Config: testAccNodeResourceConfig(cfg.Cfg, 3),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-99"),
 					resource.TestCheckResourceAttrSet("cml2_node.r1", "imagedefinition"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "x", "100"),
@@ -141,7 +141,7 @@ func TestAccNodeResourceRecreatesWhenDeletedExternally(t *testing.T) {
 			{
 				Config: baseCfg,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "alpine"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "label", "alpine-0"),
 					func(s *terraform.State) error {
 						rs, ok := s.RootModule().Resources["cml2_node.r1"]
@@ -427,14 +427,20 @@ func TestAccNodeResourceNamedConfigOrder(t *testing.T) {
 			{
 				Config: testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.#", "2"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.0.name", "network-config"),
 					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.1.name", "user-data"),
 				),
 			},
 			{
-				Config:   testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
-				PlanOnly: true,
+				Config: testAccNodeResourceNamedConfigOrder(cfg.CfgNamedConfigs),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_node.r1", "nodedefinition", "ubuntu"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.#", "2"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.0.name", "network-config"),
+					resource.TestCheckResourceAttr("cml2_node.r1", "configurations.1.name", "user-data"),
+				),
 			},
 		},
 	})
