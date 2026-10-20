@@ -2,18 +2,17 @@
 
 Lists the changes in the provider.
 
-## Version 0.9.3
+## Version 0.10.1
 
-### Breaking changes
+### Fixes
 
-- External connector configuration now requires the connector **device name** (for example `virbr0`, `bridge0`) instead of the connector label (for example `NAT`, `System Bridge`).
-- Provider behavior changes for `cml2_node` / `external_connector` configuration:
-  - label inputs now fail with an actionable error (for example: `"NAT" is a label; use device name "virbr0"`)
-  - unknown connector values fail fast (`... does not exist`)
-  - warning-based device-name→label normalization has been removed
-- If existing configurations use labels, update them to device names before upgrading.
+- Fixed `cml2_node.configurations` state when CML returns named
+  configurations in a different order or adds controller-managed entries.
+  Explicit named configuration lists now retain their configured order on
+  create, read, and update.
+- Updated dependencies
 
-### Other changes
+## Version 0.10.0
 
 - Fixed `cml2_node.configurations` state when CML returns named
   configurations in a different order or adds controller-managed entries.
@@ -34,6 +33,17 @@ Lists the changes in the provider.
   - Updated lifecycle acceptance tests for add/replace scenarios to use `generation` + `update_triggers`.
 - Updated docs/examples for the new scheduling mechanism (`generation` and `update_triggers`).
 - Upgraded `gocmlclient` to `v0.2.5`.
+
+## Version 0.9.3
+
+### Breaking changes
+
+- External connector configuration now requires the connector **device name** (for example `virbr0`, `bridge0`) instead of the connector label (for example `NAT`, `System Bridge`).
+- Provider behavior changes for `cml2_node` / `external_connector` configuration:
+  - label inputs now fail with an actionable error (for example: `"NAT" is a label; use device name "virbr0"`)
+  - unknown connector values fail fast (`... does not exist`)
+  - warning-based device-name→label normalization has been removed
+- If existing configurations use labels, update them to device names before upgrading.
 
 ## Version 0.9.2
 

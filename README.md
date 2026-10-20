@@ -43,7 +43,7 @@ The current implementation provides:
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.25.x
+- [Go](https://golang.org/doc/install) >= 1.26.4
 - [CML2](https://cisco.com/go/cml) >= 2.9.0
 
 ## Building The Provider
@@ -151,7 +151,7 @@ TF_VAR_address="https://cml-controller.cml.lab"
 export TF_VAR_username TF_VAR_password TF_VAR_address
 ```
 
-Those variables are referenced for acceptance testing in `internal/provider/testing`.
+Those variables are referenced for acceptance testing in `internal/testing`.
 
 ```shell
 make testacc
