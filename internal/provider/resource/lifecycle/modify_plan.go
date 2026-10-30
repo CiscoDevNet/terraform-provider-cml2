@@ -383,6 +383,9 @@ func (r *LabLifecycleResource) ModifyPlan(ctx context.Context, req resource.Modi
 			}
 
 			for idx := range ifaces {
+				// Links may be created/deleted in the same apply (e.g. drift
+				// repair), so connectivity is only known after apply.
+				ifaces[idx].IsConnected = types.BoolUnknown()
 				if plannedState == string(models.LabStateStarted) {
 					ifaces[idx].IP4 = types.ListUnknown(types.StringType)
 					ifaces[idx].IP6 = types.ListUnknown(types.StringType)
