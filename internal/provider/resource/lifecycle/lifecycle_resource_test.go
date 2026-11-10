@@ -279,6 +279,96 @@ func TestAccLifecycleResourceRestartsWhenNodeAndLinkStoppedExternally(t *testing
 	})
 }
 
+// Regression test: a link deleted outside Terraform together with a stopped
+// node used to fail with "Provider produced inconsistent result after apply"
+// because lifecycle pinned interfaces[*].is_connected to the prior (false)
+// value while the link was recreated in the same apply.
+func TestAccLifecycleResourceRecreatesLinkDeletedExternally(t *testing.T) {
+	cfg.SkipUnlessAcc(t)
+
+	config := testAccLifecycleResourceConfigWithState(cfg.Cfg, "STARTED")
+	var labID string
+	var nodeID string
+	var linkID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					func(s *terraform.State) error {
+						labID = s.RootModule().Resources["cml2_lifecycle.top"].Primary.Attributes["lab_id"]
+						nodeID = s.RootModule().Resources["cml2_node.r1"].Primary.ID
+						linkID = s.RootModule().Resources["cml2_link.l1"].Primary.ID
+						if labID == "" || nodeID == "" || linkID == "" {
+							return fmt.Errorf("expected lab_id, node id and link id")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:             config,
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					client, err := cfg.NewCMLClientFromTFEnv()
+					if err != nil {
+						return err
+					}
+					ctx := context.Background()
+
+					// Simulate external drift: delete the link and stop a node.
+					if err := client.Link.Delete(ctx, models.UUID(labID), models.UUID(linkID)); err != nil {
+						return err
+					}
+					if err := client.Node.Stop(ctx, models.UUID(labID), models.UUID(nodeID)); err != nil {
+						return err
+					}
+
+					deadline := time.Now().Add(30 * time.Second)
+					for time.Now().Before(deadline) {
+						lab, err := client.Lab.GetByID(ctx, models.UUID(labID), true)
+						if err == nil {
+							if n := lab.Nodes[models.UUID(nodeID)]; n != nil && n.State == models.NodeStateStopped {
+								return nil
+							}
+						}
+						time.Sleep(2 * time.Second)
+					}
+					return fmt.Errorf("timeout waiting for node to become STOPPED")
+				},
+			},
+			{
+				// Must apply cleanly: link recreated, node restarted.
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "state", "STARTED"),
+					resource.TestCheckResourceAttr("cml2_lifecycle.top", "booted", "true"),
+					func(s *terraform.State) error {
+						newLinkID := s.RootModule().Resources["cml2_link.l1"].Primary.ID
+						if newLinkID == "" || newLinkID == linkID {
+							return fmt.Errorf("expected link to be recreated; old %q, new %q", linkID, newLinkID)
+						}
+						attrs := s.RootModule().Resources["cml2_lifecycle.top"].Primary.Attributes
+						for i := 0; ; i++ {
+							v, ok := attrs[fmt.Sprintf("nodes.%s.interfaces.%d.is_connected", nodeID, i)]
+							if !ok {
+								return fmt.Errorf("expected a connected interface on node %s", nodeID)
+							}
+							if v == "true" {
+								return nil
+							}
+						}
+					},
+				),
+			},
+		},
+	})
+}
+
 func TestAccLifecycleResourceRestartsWhenLinkStoppedExternally(t *testing.T) {
 	cfg.SkipUnlessAcc(t)
 
